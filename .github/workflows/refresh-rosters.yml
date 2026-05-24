@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────────────────
+#  Daily roster refresh — scrapes BBR from a GitHub-hosted runner (different
+#  IP pool from Cloudflare's workers, doesn't get rate-limited the same way)
+#  and commits src/data/rosters.json. If the JSON actually changed, also
+#  redeploys the worker so the new bundle goes live in production.
+#
+#  Setup required (one-time):
+#    1. In Cloudflare dashboard → My Profile → API Tokens → Create Token.
+#       Use the "Edit Cloudflare Workers" template (or a custom token with
+#       `Account → Workers Scripts → Edit` permission).
+#    2. Copy the token.
+#    3. In the GitHub repo → Settings → Secrets and variables → Actions →
+#       New repository secret. Name: CLOUDFLARE_API_TOKEN. Value: the token.
+#
+#  Manual trigger: Actions tab → "Refresh BBR rosters" → "Run workflow".
+#
+#  Failure mode: if the scraper's sanity guards fail (parser broke, BBR
+#  shape changed, etc.), the script exits non-zero, this workflow goes red,
+#  and the JSON file stays untouched. Last-known-good data keeps serving.
+# ─────────────────────────────────────────────────────────────────────────
+
+name: Refresh BBR rosters
+
+on:
+  # 10:00 UTC = 6 AM ET (5 AM during DST) — well before the worker's
+  # nightly cron and before any user is checking predictions.
+  schedule:
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+# Avoid two refreshes overlapping if a manual run races the cron.
+concurrency:
+  group: refresh-rosters
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed for the commit + push below
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install worker deps
+        # Needed because the redeploy step below runs wrangler from worker/
+        working-directory: worker
+        run: npm ci || npm install
+
+      - name: Scrape BBR rosters
+        run: node scripts/scrape-rosters.mjs
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet src/data/rosters.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "rosters.json unchanged — nothing to deploy"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "rosters.json changed:"
+            git diff --stat src/data/rosters.json
+          fi
+
+      - name: Commit + push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data/rosters.json
+          git commit -m "Refresh BBR rosters [skip ci]"
+          git push
+
+      - name: Deploy worker (bundled JSON change)
+        if: steps.diff.outputs.changed == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: worker
+          command: deploy

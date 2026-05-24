@@ -16,6 +16,7 @@ import { scrapeInjuries } from './scrapers/rotowire.js';
 import { scrapeLineMovement } from './scrapers/vegasinsider.js';
 import { scrapeOfficialInjuries } from './scrapers/nbaOfficial.js';
 import { scrapeUnderdogWire } from './scrapers/underdog.js';
+import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
 import {
   refreshPredictions,
@@ -238,6 +239,18 @@ export default {
           scrapeUnderdogWire(env)
         );
         return json({ ok: true, ...data });
+      }
+
+      // GET /rosters/:league
+      // Per-team roster with MPG + BPM + PER per player. Now served from
+      // the bundled src/data/rosters.json snapshot (refreshed daily by the
+      // GitHub Actions workflow .github/workflows/refresh-rosters.yml).
+      // No runtime BBR fetch — that lived here previously and got rate-
+      // limited hard by Cloudflare worker IPs.
+      if (parts[0] === 'rosters' && parts[1]) {
+        const league = leagueFromPath(parts[1]);
+        if (!league) return err('unknown league', 400);
+        return json({ ok: true, league, ...getRosters(league) });
       }
 
       if (parts[0] === 'line-movement' && parts[1]) {
