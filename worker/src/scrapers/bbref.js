@@ -53,6 +53,11 @@ function wnbaSeasonYear() {
   return new Date().getUTCFullYear();
 }
 
+// nbastats.js (NBA.com API) is kept for future use but NBA.com blocks
+// automated fetches from Cloudflare IPs. We use the BBR playoffs page
+// for recent-form ORtg instead, which is a better proxy in April–June.
+// import { fetchLastNGamesStats } from './nbastats.js';
+
 export async function scrapeTeamStats(league, env) {
   const year = league === 'nba' ? nbaSeasonYear() : wnbaSeasonYear();
   const url = BBR[league](year);
@@ -70,31 +75,77 @@ export async function scrapeTeamStats(league, env) {
   let html = await res.text();
   html = html.replace(/<!--/g, '').replace(/-->/g, '');
 
-  // Try the two known table IDs in priority order. BBR has historically
-  // renamed these (advanced-team / advanced_stats / advanced).
+  // BBR's table inventory on the main season page (NBA_<year>.html):
+  //   advanced-team        → Pace, ORtg, DRtg, TOV%, ORB%, opp TOV%, DRB%
+  //   confs_standings_E    → SRS (Eastern Conference)
+  //   confs_standings_W    → SRS (Western Conference)
+  //   WNBA single page uses one standings table (no East/West split).
   const advanced = extractTable(html, ['advanced-team', 'advanced_stats', 'advanced']);
-  const misc     = extractTable(html, ['team-stats-misc', 'misc_stats', 'misc']);
+
+  const standings = {};
+  for (const tid of ['confs_standings_E', 'confs_standings_W', 'standings', 'wnba_standings', 'expanded_standings']) {
+    Object.assign(standings, extractTable(html, [tid]));
+  }
 
   const teams = {};
   for (const [abbr, row] of Object.entries(advanced)) {
     teams[abbr] = {
       name: row.name,
+      srs:     num(row.srs),    // BBR keeps SRS on the advanced-team row too
+      mov:     num(row.mov),
+      sos:     num(row.sos),
       pace:    num(row.pace),
       off:     num(row.off_rtg),
       def:     num(row.def_rtg),
+      netRtg:  num(row.net_rtg),
       toOff:   num(row.tov_pct),
       orbOff:  num(row.orb_pct),
-      // Opponent stats sit on the same row, prefixed with opp_
       toDef:   num(row.opp_tov_pct),
-      drbDef:  num(row.drb_pct), // % of available defensive boards grabbed
+      drbDef:  num(row.drb_pct),
     };
   }
-  for (const [abbr, row] of Object.entries(misc)) {
-    if (!teams[abbr]) teams[abbr] = { name: row.name };
-    teams[abbr].srs    = num(row.srs);
-    teams[abbr].sos    = num(row.sos);
-    teams[abbr].mov    = num(row.mov);
-    teams[abbr].netRtg = num(row.net_rtg);
+  // Standings tables fill in W/L (and SRS fallback for the WNBA layout).
+  for (const [abbr, row] of Object.entries(standings)) {
+    if (!teams[abbr]) teams[abbr] = { name: row.team_name || abbr };
+    if (teams[abbr].srs == null) teams[abbr].srs = num(row.srs);
+    teams[abbr].wins   = num(row.wins);
+    teams[abbr].losses = num(row.losses);
+  }
+
+  // Fetch recent-form ORtg inline — using playoff page for NBA Apr–Jun.
+  {
+    const m = new Date().getUTCMonth() + 1;
+    const isPlayoffs = league === 'nba' && m >= 4 && m <= 6;
+    const recentUrl = isPlayoffs
+      ? `https://www.basketball-reference.com/playoffs/NBA_${year}.html`
+      : league === 'nba'
+        ? `https://www.basketball-reference.com/leagues/NBA_${year}.html`
+        : `https://www.basketball-reference.com/wnba/years/${year}.html`;
+
+    const rRes = await fetch(recentUrl, {
+      headers: { 'user-agent': env.USER_AGENT, 'accept': 'text/html', 'cache-control': 'no-cache' },
+    });
+    if (rRes.ok) {
+      let rHtml = await rRes.text();
+      rHtml = rHtml.replace(/<!--/g, '').replace(/-->/g, '');
+      const rTableM = rHtml.match(/<table[^>]*id="advanced-team"[\s\S]*?<\/table>/);
+      if (rTableM) {
+        const rTbody = rTableM[0].match(/<tbody[\s\S]*?<\/tbody>/);
+        if (rTbody) {
+          const rRows = rTbody[0].match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+          for (const rRow of rRows) {
+            const hM = rRow.match(/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
+            if (!hM) continue;
+            const abbr = hM[1];
+            const oM = rRow.match(/data-stat="off_rtg"[^>]*>([0-9.]+)/);
+            const dM = rRow.match(/data-stat="def_rtg"[^>]*>([0-9.]+)/);
+            if (!teams[abbr]) teams[abbr] = {};
+            teams[abbr].offLast10 = oM ? parseFloat(oM[1]) : null;
+            teams[abbr].defLast10 = dM ? parseFloat(dM[1]) : null;
+          }
+        }
+      }
+    }
   }
 
   return {
@@ -103,6 +154,57 @@ export async function scrapeTeamStats(league, env) {
     fetchedAt: new Date().toISOString(),
     teams,
   };
+}
+
+export async function scrapeRecentFormORtg(league, year, env) {
+  const isNBAPlayoffSeason = league === 'nba' && (() => {
+    const m = new Date().getUTCMonth() + 1;
+    return m >= 4 && m <= 6;
+  })();
+
+  const url = isNBAPlayoffSeason
+    ? `https://www.basketball-reference.com/playoffs/NBA_${year}.html`
+    : league === 'nba'
+      ? `https://www.basketball-reference.com/leagues/NBA_${year}.html`
+      : `https://www.basketball-reference.com/wnba/years/${year}.html`;
+
+  const res = await fetch(url, {
+    headers: {
+      'user-agent': env.USER_AGENT,
+      'accept': 'text/html,application/xhtml+xml',
+      // Force a fresh fetch — this data changes every game so stale edge
+      // caches produce nulls when the table structure shifts.
+      'cache-control': 'no-cache',
+    },
+    cf: { cacheTtl: -1 }, // bypass Cloudflare edge cache
+  });
+  if (!res.ok) throw new Error(`Recent form fetch failed: ${res.status}`);
+
+  let html = await res.text();
+  html = html.replace(/<!--/g, '').replace(/-->/g, '');
+
+  // Direct parse: find the advanced-team tbody, then per-row extract
+  // team href + off_rtg. Bypasses the full extractTable/parseTable chain
+  // which has trouble with the numeric cell format in the playoffs table.
+  const tableM = html.match(/<table[^>]*id="advanced-team"[\s\S]*?<\/table>/);
+  if (!tableM) return {};
+  const tbody = tableM[0].match(/<tbody[\s\S]*?<\/tbody>/);
+  if (!tbody) return {};
+  const rows = tbody[0].match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+
+  const out = {};
+  for (const row of rows) {
+    const hrefM = row.match(/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
+    if (!hrefM) continue;
+    const abbr = hrefM[1];
+    const offM = row.match(/data-stat="off_rtg"[^>]*>([0-9.]+)/);
+    const defM = row.match(/data-stat="def_rtg"[^>]*>([0-9.]+)/);
+    out[abbr] = {
+      off: offM ? parseFloat(offM[1]) : null,
+      def: defM ? parseFloat(defM[1]) : null,
+    };
+  }
+  return out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -134,7 +236,8 @@ function parseTable(tableHtml) {
     }
 
     // Pull abbreviation out of the team cell's href: /teams/BOS/2026.html
-    const teamHrefMatch = row.match(/href="\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
+    // BBR uses single quotes on these hrefs, so accept either quote style.
+    const teamHrefMatch = row.match(/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
     const abbr = teamHrefMatch ? teamHrefMatch[1] : null;
     if (!abbr) continue;
 

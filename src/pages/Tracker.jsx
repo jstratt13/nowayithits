@@ -4,6 +4,7 @@ import AccuracyPanel from '../components/AccuracyPanel.jsx';
 import { useLiveStats } from '../hooks/useLiveStats.js';
 import { useSyncStatus } from '../hooks/useTrackerSync.js';
 import { BLOWOUT_THRESHOLD, zoneLabels } from '../data/formula.js';
+import NewsPanel from '../components/NewsPanel.jsx';
 
 const STORAGE_KEY = 'dbp-tracker-v1';
 
@@ -137,7 +138,8 @@ export default function Tracker() {
     const bH = graded.filter((r) => (r.blowout || '').startsWith('Hit')).length;
     const ungradedN = n - gradedN;
 
-    const pct = (num, den) => den ? Math.round((num / den) * 100) : null;
+    // 1-decimal precision — e.g. 64.1% instead of 64%
+    const pct = (num, den) => den ? Math.round((num / den) * 1000) / 10 : null;
 
     return {
       n,
@@ -149,7 +151,7 @@ export default function Tracker() {
       sH, oH, bH,
       // Margin + total are always populated, even on ungraded rows.
       avgMargin: (filtered.reduce((s, r) => s + (r.margin || 0), 0) / n).toFixed(1),
-      avgTotal: Math.round(filtered.reduce((s, r) => s + (r.total || 0), 0) / n),
+      avgTotal: (filtered.reduce((s, r) => s + (r.total || 0), 0) / n).toFixed(1),
       // DBP is only on graded rows.
       avgDBP: gradedN
         ? (graded.reduce((s, r) => s + (r.dbp || 0), 0) / gradedN).toFixed(1)
@@ -170,7 +172,8 @@ export default function Tracker() {
   };
 
   return (
-    <>
+    <div className="page-with-sidebar">
+      <div className="page-main">
       <div className="section-head">
         <div className="section-title">
           <h2>Model performance tracker</h2>
@@ -184,6 +187,8 @@ export default function Tracker() {
       </div>
 
       <div className="tracker-top">
+        <AccuracyPanel rows={rows} />
+
         <div className="panel perf-panel">
           <div className="panel-head">
             <div>
@@ -199,19 +204,19 @@ export default function Tracker() {
             />
             <StatCell
               l="Spread hit %"
-              v={stats.spreadPct == null ? '—' : `${stats.spreadPct}%`}
+              v={stats.spreadPct == null ? '—' : `${stats.spreadPct.toFixed(1)}%`}
               sub={stats.gradedN ? `${stats.sH}/${stats.gradedN}` : ''}
               color={stats.spreadPct == null ? 'var(--muted)' : stats.spreadPct >= 50 ? 'var(--hit)' : 'var(--miss)'}
             />
             <StatCell
               l="O/U hit %"
-              v={stats.ouPct == null ? '—' : `${stats.ouPct}%`}
+              v={stats.ouPct == null ? '—' : `${stats.ouPct.toFixed(1)}%`}
               sub={stats.gradedN ? `${stats.oH}/${stats.gradedN}` : ''}
               color={stats.ouPct == null ? 'var(--muted)' : stats.ouPct >= 50 ? 'var(--hit)' : 'var(--miss)'}
             />
             <StatCell
               l="Blowout hit %"
-              v={stats.blowPct == null ? '—' : `${stats.blowPct}%`}
+              v={stats.blowPct == null ? '—' : `${stats.blowPct.toFixed(1)}%`}
               sub={stats.gradedN ? `${stats.bH}/${stats.gradedN}` : ''}
               color={stats.blowPct == null ? 'var(--muted)' : stats.blowPct >= 50 ? 'var(--hit)' : 'var(--miss)'}
             />
@@ -220,8 +225,6 @@ export default function Tracker() {
             <StatCell l="Avg DBP" v={stats.avgDBP == null ? '—' : `${stats.avgDBP}%`} color="var(--accent2)" />
           </div>
         </div>
-
-        <AccuracyPanel rows={rows} />
       </div>
 
       <div className="filter-bar">
@@ -298,7 +301,9 @@ export default function Tracker() {
           </div>
         )}
       </div>
-    </>
+      </div>
+      <NewsPanel league={league} />
+    </div>
   );
 }
 

@@ -9,10 +9,14 @@ function startOfDay(d) {
   return x.getTime();
 }
 
+// `lookback` is the rolling-average window (in days) applied to each point
+// on the chart. `null` means cumulative — every game from the start of
+// recorded history through that day.
 const WINDOWS = [
   {
     key: 'y',
     label: 'Yesterday',
+    lookback: 1,
     range: () => {
       const today = startOfDay(new Date());
       return { start: today - 86_400_000, end: today };
@@ -21,21 +25,25 @@ const WINDOWS = [
   {
     key: '10d',
     label: 'Last 10 days',
+    lookback: 10,
     range: () => ({ start: startOfDay(new Date()) - 9 * 86_400_000, end: Date.now() }),
   },
   {
     key: 'm',
     label: 'Last month',
+    lookback: 30,
     range: () => ({ start: startOfDay(new Date()) - 29 * 86_400_000, end: Date.now() }),
   },
   {
     key: '3m',
     label: 'Last 3 months',
+    lookback: 90,
     range: () => ({ start: startOfDay(new Date()) - 89 * 86_400_000, end: Date.now() }),
   },
   {
     key: 'all',
     label: 'All time',
+    lookback: null,
     range: () => ({ start: null, end: null }),
   },
 ];
@@ -79,21 +87,16 @@ export default function AccuracyPanel({ rows }) {
         </select>
       </div>
 
-      <LeagueChart league="nba"  rows={inWindow} />
-      <LeagueChart league="wnba" rows={inWindow} />
+      <LeagueChart league="nba"  rows={inWindow} allRows={rows} windowKey={windowKey} />
+      <LeagueChart league="wnba" rows={inWindow} allRows={rows} windowKey={windowKey} />
     </div>
   );
 }
 
-function LeagueChart({ league, rows }) {
+function LeagueChart({ league, rows, allRows, windowKey }) {
   const threshold = blowoutThreshold(league);
 
-  // Two populations:
-  //   gamesAll    — every game in this league + window, used for actual outcomes
-  //                 (includes ungraded — we know if it was a blowout regardless
-  //                 of whether the model made a pregame call).
-  //   gamesGraded — only games where a pregame prediction was locked, used for
-  //                 anything that requires the model's DBP%.
+  // Window-scoped sets — used for the metric cards (avg DBP, actual blowout %)
   const gamesAll = rows.filter((r) => (r.league || 'nba') === league);
   const gamesGraded = gamesAll.filter((r) => r.graded !== false);
   const nAll = gamesAll.length;
@@ -106,9 +109,28 @@ function LeagueChart({ league, rows }) {
   const blowoutCount = gamesAll.filter((r) => (r.margin || 0) >= threshold).length;
   const blowoutPct = nAll ? Math.round((blowoutCount / nAll) * 100) : null;
 
+  // Chart series — rolling average over time, not per-day snapshots.
+  // Uses the ENTIRE league dataset (not just the window) for the rolling
+  // lookback population. The X-axis still covers the window's days; each
+  // point shows the rolling avg ending on that day. Lookback duration
+  // matches the selected window:
+  //   Yesterday    → 1-day rolling   (essentially the day itself)
+  //   Last 10 days → 10-day rolling
+  //   Last month   → 30-day rolling
+  //   Last 3 months → 90-day rolling
+  //   All time     → cumulative running average (no lower bound)
+  const leagueAllRows = allRows.filter((r) => (r.league || 'nba') === league);
+  const winCfg = WINDOWS.find((w) => w.key === windowKey) || WINDOWS[0];
+  const lookbackDays = winCfg.lookback;
+
   const series = useMemo(
-    () => buildDailySeries({ gamesGraded, gamesAll, threshold }),
-    [gamesGraded, gamesAll, threshold]
+    () => buildRollingSeries({
+      windowGames: gamesAll,
+      allLeagueGames: leagueAllRows,
+      lookbackDays,
+      threshold,
+    }),
+    [gamesAll, leagueAllRows, lookbackDays, threshold]
   );
   const delta = avgDBP != null && blowoutPct != null
     ? Math.round((blowoutPct - avgDBP) * 10) / 10
@@ -142,6 +164,7 @@ function LeagueChart({ league, rows }) {
         <>
           <Sparkline
             ariaLabel={`${league.toUpperCase()} predicted vs actual blowout rate`}
+            yMax={windowKey === 'y' ? 100 : 70}
             series={[
               { label: 'Avg DBP%',     color: 'var(--base)',  points: series.dbp },
               { label: 'Blowout rate', color: 'var(--alert)', points: series.actual, dashed: true },
@@ -166,30 +189,55 @@ function Metric({ label, value, color, mono }) {
   );
 }
 
-// Build two daily series from different populations:
-//   dbp    — avg DBP% per day from gamesGraded
-//   actual — actual blowout % per day from gamesAll (ungraded included)
-// They share an X axis but may not have the same set of days (a day with
-// only ungraded games has an actual point but no DBP point).
-function buildDailySeries({ gamesGraded, gamesAll, threshold }) {
-  return {
-    dbp:    daily(gamesGraded, (list) => list.reduce((s, r) => s + (r.dbp || 0), 0) / list.length),
-    actual: daily(gamesAll,    (list) => (list.filter((r) => (r.margin || 0) >= threshold).length / list.length) * 100),
-  };
-}
+// Rolling-average series. For each unique game-day in the chart's window,
+// compute the average DBP% and actual blowout % across the lookback period
+// ending on that day.
+//
+//   lookbackDays = 90  → 3-month rolling average (used for finite windows)
+//   lookbackDays = null → cumulative running average (used for "All time")
+//
+// Two passes:
+//   dbp series  — uses only graded games (need a model DBP to average)
+//   actual series — uses all games (margin is known regardless of grading)
+function buildRollingSeries({ windowGames, allLeagueGames, lookbackDays, threshold }) {
+  // Unique day buckets present in the visible window
+  const days = new Set();
+  for (const g of windowGames) {
+    const t = new Date(g.date).getTime();
+    if (Number.isFinite(t)) days.add(Math.floor(t / 86400000));
+  }
+  const sortedDays = [...days].sort((a, b) => a - b);
 
-function daily(games, reducer) {
-  const byDay = new Map();
-  for (const g of games) {
+  // Pre-bucket the full league dataset once for performance.
+  const gradedByDay = [];
+  const allByDay = [];
+  for (const g of allLeagueGames) {
     const t = new Date(g.date).getTime();
     if (!Number.isFinite(t)) continue;
     const day = Math.floor(t / 86400000);
-    if (!byDay.has(day)) byDay.set(day, []);
-    byDay.get(day).push(g);
+    allByDay.push({ day, game: g });
+    if (g.graded !== false) gradedByDay.push({ day, game: g });
   }
-  const points = [];
-  for (const day of [...byDay.keys()].sort((a, b) => a - b)) {
-    points.push({ x: day, y: reducer(byDay.get(day)) });
+
+  const dbp = [];
+  const actual = [];
+  for (const day of sortedDays) {
+    const start = lookbackDays == null ? -Infinity : day - lookbackDays;
+    const end = day; // inclusive
+
+    // Rolling DBP average across graded games in window [start, end]
+    const dbpPool = gradedByDay.filter((x) => x.day >= start && x.day <= end);
+    if (dbpPool.length) {
+      const avg = dbpPool.reduce((s, x) => s + (x.game.dbp || 0), 0) / dbpPool.length;
+      dbp.push({ x: day, y: avg });
+    }
+
+    // Rolling actual blowout % across all games (graded + ungraded)
+    const actualPool = allByDay.filter((x) => x.day >= start && x.day <= end);
+    if (actualPool.length) {
+      const blows = actualPool.filter((x) => (x.game.margin || 0) >= threshold).length;
+      actual.push({ x: day, y: (blows / actualPool.length) * 100 });
+    }
   }
-  return points;
+  return { dbp, actual };
 }

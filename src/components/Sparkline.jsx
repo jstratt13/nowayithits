@@ -12,18 +12,29 @@ function scaleX(x, minX, maxX) {
   return PAD.l + ((x - minX) / (maxX - minX)) * (W - PAD.l - PAD.r);
 }
 
-function scaleY(y) {
-  return PAD.t + (1 - y / 100) * (H - PAD.t - PAD.b);
+function scaleY(y, yMax) {
+  // Clamp values that exceed the chart's max so the line stays on-canvas
+  const clamped = Math.max(0, Math.min(yMax, y));
+  return PAD.t + (1 - clamped / yMax) * (H - PAD.t - PAD.b);
 }
 
-function buildPath(points, minX, maxX) {
+function buildPath(points, minX, maxX, yMax) {
   if (!points.length) return '';
   return points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${scaleX(p.x, minX, maxX).toFixed(1)},${scaleY(p.y).toFixed(1)}`)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${scaleX(p.x, minX, maxX).toFixed(1)},${scaleY(p.y, yMax).toFixed(1)}`)
     .join(' ');
 }
 
-export default function Sparkline({ series, ariaLabel }) {
+// Round-number tick generator. For tighter Y caps we shrink the step
+// so the gridlines stay readable.
+function computeTicks(yMax) {
+  if (yMax >= 90) return [0, 25, 50, 75, 100];
+  if (yMax >= 60) return [0, 20, 40, 60];
+  if (yMax >= 30) return [0, 10, 20, 30];
+  return [0, 5, 10, 15, 20];
+}
+
+export default function Sparkline({ series, ariaLabel, yMax = 100 }) {
   const allX = series.flatMap((s) => s.points.map((p) => p.x));
   const minX = Math.min(...allX);
   const maxX = Math.max(...allX);
@@ -36,7 +47,7 @@ export default function Sparkline({ series, ariaLabel }) {
     );
   }
 
-  const yTicks = [0, 25, 50, 75, 100];
+  const yTicks = computeTicks(yMax);
 
   return (
     <svg
@@ -51,13 +62,13 @@ export default function Sparkline({ series, ariaLabel }) {
         <g key={t}>
           <line
             x1={PAD.l} x2={W - PAD.r}
-            y1={scaleY(t)} y2={scaleY(t)}
+            y1={scaleY(t, yMax)} y2={scaleY(t, yMax)}
             stroke="rgba(0,0,0,0.06)"
             strokeWidth="1"
           />
           <text
             x={PAD.l - 6}
-            y={scaleY(t) + 3}
+            y={scaleY(t, yMax) + 3}
             textAnchor="end"
             className="chart-tick"
           >
@@ -78,7 +89,7 @@ export default function Sparkline({ series, ariaLabel }) {
       {series.map((s) => (
         <g key={s.label}>
           <path
-            d={buildPath(s.points, minX, maxX)}
+            d={buildPath(s.points, minX, maxX, yMax)}
             fill="none"
             stroke={s.color}
             strokeWidth="1.75"
@@ -90,7 +101,7 @@ export default function Sparkline({ series, ariaLabel }) {
             <circle
               key={i}
               cx={scaleX(p.x, minX, maxX)}
-              cy={scaleY(p.y)}
+              cy={scaleY(p.y, yMax)}
               r="2.4"
               fill={s.color}
             />

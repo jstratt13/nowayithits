@@ -1,13 +1,13 @@
 {
-  "name": "dbp-tracker",
+  "name": "nowayithits",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:pages": "VITE_BASE=/dbp-tracker/ vite build",
-    "deploy": "VITE_BASE=/dbp-tracker/ vite build && gh-pages -d dist",
+    "build:pages": "VITE_BASE=/nowayithits/ vite build",
+    "deploy": "VITE_BASE=/nowayithits/ vite build && gh-pages -d dist",
     "lint": "eslint .",
     "preview": "vite preview"
   },

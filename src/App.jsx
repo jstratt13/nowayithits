@@ -28,8 +28,8 @@ export default function App() {
       <header className="nav">
         <div className="nav-inner">
           <div className="brand">
-            <span className="brand-name">BLOWY</span>
-            <span className="brand-tag">DBP Tracker · 5.2</span>
+            <span className="brand-name">NO WAY <span className="brand-break"/>IT HITS</span>
+            <span className="brand-tag">Daily Blowout Predictor</span>
           </div>
           <nav className="nav-links">
             <NavLink to="/predictions" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
@@ -52,7 +52,7 @@ export default function App() {
       </main>
 
       <footer>
-        Blowy DBP · Live model projections vs. sportsbooks
+        No Way It Hits · Live model projections vs. sportsbooks
       </footer>
     </div>
   );

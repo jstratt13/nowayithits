@@ -1,4 +1,4 @@
-# Blowy DBP Tracker
+# No Way It Hits — DBP Tracker
 
 Live NBA + WNBA blowout / spread / O/U projections, plus a results tracker.
 
