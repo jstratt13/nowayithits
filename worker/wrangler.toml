@@ -11,8 +11,17 @@ workers_dev = true
 # then paste the id below.
 [[kv_namespaces]]
 binding = "CACHE"
-id = "REPLACE_WITH_KV_ID"
+id = "2c5a815539a6487398c6229200870fd1"
 
 [vars]
-# Override per-environment via `wrangler secret` if you need to.
-USER_AGENT = "dbp-tracker/0.1 (+https://github.com/your-username/dbp-tracker)"
+# Basketball-Reference + Rotowire reject obvious bot UAs, so we identify
+# as a current desktop Firefox. Override via `wrangler secret put USER_AGENT`
+# if you'd rather use a different string.
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:128.0) Gecko/20100101 Firefox/128.0"
+
+# Run the predictions pipeline every 10 minutes. The scheduled() handler in
+# src/index.js refreshes predictions for both leagues (NBA + WNBA) across
+# today and tomorrow (America/New_York). Games inside the 5-minute pre-tip
+# window get their snapshots permanently locked.
+[triggers]
+crons = ["*/10 * * * *"]

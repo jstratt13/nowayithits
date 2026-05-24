@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useScoreboard } from '../hooks/useScoreboard.js';
 import { useLiveStats } from '../hooks/useLiveStats.js';
+import { useSharedPredictions } from '../hooks/useSharedPredictions.js';
 import GameCard from '../components/GameCard.jsx';
+import NewsPanel from '../components/NewsPanel.jsx';
 
 const LEAGUES = [
   { key: 'nba',  label: 'NBA' },
@@ -52,7 +54,8 @@ export default function Predictions() {
   const isToday = useMemo(() => sameDay(date, new Date()), [date]);
 
   return (
-    <>
+    <div className="page-with-sidebar">
+      <div className="page-main">
       <div className="prediction-controls">
         <div className="league-tabs" role="tablist" aria-label="League">
           {LEAGUES.map((l) => (
@@ -79,7 +82,17 @@ export default function Predictions() {
             ◀
           </button>
           <div className="date-nav-label">
-            <span className="date-nav-rel">{relativeDateLabel(date) || ''}</span>
+            {isToday
+              ? <span className="date-nav-rel">TODAY</span>
+              : <button
+                  type="button"
+                  className="date-nav-today-inline"
+                  onClick={() => setDate(startOfDay(new Date()))}
+                  title="Back to today"
+                >
+                  ↩ Today
+                </button>
+            }
             <span className="date-nav-full">{fullDateLabel(date)}</span>
           </div>
           <button
@@ -90,25 +103,23 @@ export default function Predictions() {
           >
             ▶
           </button>
-          {!isToday && (
-            <button
-              type="button"
-              className="date-nav-today"
-              onClick={() => setDate(startOfDay(new Date()))}
-            >
-              Today
-            </button>
-          )}
         </div>
       </div>
 
       <LeagueSection league={league} date={date} />
-    </>
+      </div>
+      <NewsPanel league={league} />
+    </div>
   );
 }
 
 function LeagueSection({ league, date }) {
   const { games, status, error } = useScoreboard(league, date);
+  // Server-computed predictions for this (league, date). Polls every 10 min;
+  // each GameCard reads its own snapshot by ESPN event id. If the worker is
+  // unreachable, cards fall through to a "Loading…" state — never to a local
+  // compute fallback, which would re-introduce per-device drift.
+  const { byGameId: predictionsByGameId } = useSharedPredictions(league, date);
 
   return (
     <section>
@@ -118,8 +129,7 @@ function LeagueSection({ league, date }) {
           <h2>Live predictions</h2>
         </div>
         <div className="section-meta">
-          {fullDateLabel(date)}
-          {status === 'ok' && ` · ${games.length} game${games.length === 1 ? '' : 's'}`}
+          {status === 'ok' && `${games.length} game${games.length === 1 ? '' : 's'}`}
         </div>
       </div>
 
@@ -143,7 +153,13 @@ function LeagueSection({ league, date }) {
 
       {status === 'ok' && games.length > 0 && (
         <div className="game-grid">
-          {games.map((g) => <GameCard key={g.id} game={g} />)}
+          {games.map((g) => (
+            <GameCard
+              key={g.id}
+              game={g}
+              serverPrediction={predictionsByGameId[g.id] || null}
+            />
+          ))}
         </div>
       )}
     </section>

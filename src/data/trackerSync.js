@@ -14,24 +14,83 @@
 import { fetchScoreboard } from './espn.js';
 import { getLocked } from './lockedPredictions.js';
 import { getZone, BLOWOUT_THRESHOLD } from './formula.js';
+import { SEED_TRACKER } from './seedTracker.js';
 
 const TRACKER_KEY = 'dbp-tracker-v1';
 const SYNC_META_KEY = 'dbp-tracker-sync-v1';
 
 // How many days of completed games to consider on each sync pass.
-const SYNC_WINDOW_DAYS = 7;
+// Bigger window = older boundary days don't roll off when the user comes
+// back after a few days away. ESPN scoreboard fetches are cheap; we do
+// this once on app load + every 15 min via the ticker.
+const SYNC_WINDOW_DAYS = 30;
 
 const LEAGUES = ['nba', 'wnba'];
 
+// Worker URL for server-side locked snapshots. The reconciler prefers
+// these over `dbp-locked-preds-v1` localStorage entries so all devices
+// grade against the same authoritative snapshot.
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
+
+// ── Date helpers ──────────────────────────────────────────────────────
+
+function ymd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}${m}${d}`;
+}
+
+function addDays(date, n) {
+  const x = new Date(date);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+// ── Server lock fetcher ───────────────────────────────────────────────
+
+// Hits the worker's batch /predictions/:league?from=...&to=... route and
+// returns a Map keyed by ESPN event id. Only entries with non-null
+// `predictions` are included — orphaned games (locked:true, predictions:null)
+// can't be graded so we let the reconciler fall back to localStorage or
+// emit an ungraded row.
+//
+// Throws on transport / parse failure so the caller can fall back to
+// localStorage-only for that sync tick.
+async function fetchServerLocks(league, fromYmd, toYmd) {
+  if (!WORKER_URL) return new Map();
+  // Per-hour cache-buster matches the pattern used elsewhere — keeps
+  // Cloudflare's edge cache from serving stale responses.
+  const hourSlot = Math.floor(Date.now() / 3_600_000);
+  const url = `${WORKER_URL}/predictions/${league}?from=${fromYmd}&to=${toYmd}&_h=${hourSlot}`;
+  const res = await fetch(url, { mode: 'cors' });
+  if (!res.ok) throw new Error(`worker → ${res.status}`);
+  const body = await res.json();
+  if (!body.ok) throw new Error(body.error || 'worker error');
+
+  const map = new Map();
+  for (const day of body.days || []) {
+    for (const g of day.games || []) {
+      if (g.gameId && g.predictions) map.set(g.gameId, g.predictions);
+    }
+  }
+  return map;
+}
+
 // ── Storage helpers ────────────────────────────────────────────────────
 
+// IMPORTANT: must match the fallback logic in Tracker.jsx's loadRows() —
+// when localStorage is empty (first visit, fresh browser) we seed from
+// SEED_TRACKER so both the Tracker page and the sync ticker agree on the
+// initial dataset, regardless of which one races to read first.
 function readRows() {
   try {
     const raw = localStorage.getItem(TRACKER_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+    if (raw) return JSON.parse(raw);
+  } catch { /* fall through */ }
+  // Persist the seed immediately so we don't have to re-seed on every read.
+  writeRows(SEED_TRACKER);
+  return [...SEED_TRACKER];
 }
 
 function writeRows(rows) {
@@ -205,13 +264,55 @@ function* iterateRecentDates(days) {
   }
 }
 
+// Compose a stable dedup key from date + league + matchup so seed rows
+// (which have hand-rolled ids like "63") match games we'd otherwise add
+// from ESPN (which would get an id like "g401873342"). Both code paths
+// emit identical date / matchup / league strings.
+function dedupKey(row) {
+  return `${row.date}|${row.league || 'nba'}|${row.matchup}`;
+}
+
 export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
   const existingRows = readRows();
   const existingIds = new Set(existingRows.map((r) => r.id));
+  const existingKeys = new Set(existingRows.map(dedupKey));
 
   const added = [];
   const skipped = { notFinal: 0, alreadyTracked: 0 };
   const ungradedAdded = [];
+
+  // Pre-fetch the server lock maps for both leagues across the full window
+  // in parallel. Two HTTP requests vs (days × leagues) per-day fetches.
+  // Each league fetch can fail independently — we just degrade to legacy
+  // localStorage for that league this tick and retry next time.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const fromYmd = ymd(addDays(today, -(days - 1)));
+  const toYmd   = ymd(today);
+
+  const serverLocks = { nba: new Map(), wnba: new Map() };
+  const serverErrors = {};
+  await Promise.all(LEAGUES.map(async (lg) => {
+    try {
+      serverLocks[lg] = await fetchServerLocks(lg, fromYmd, toYmd);
+    } catch (e) {
+      serverErrors[lg] = e.message || String(e);
+      if (typeof console !== 'undefined') {
+        console.warn(`[tracker-sync] ${lg} server locks unavailable → ${serverErrors[lg]}`);
+      }
+    }
+  }));
+
+  // Snapshot resolution order, per Step 4:
+  //   1. Server map (preferred — authoritative, shared across devices)
+  //   2. localStorage `dbp-locked-preds-v1` (legacy fallback for pre-Step-2
+  //      games, or when the worker fetch failed this tick)
+  //   3. None → ungraded row
+  function resolveSnapshot(game) {
+    const fromServer = serverLocks[game.league]?.get(game.id);
+    if (fromServer) return fromServer;
+    return getLocked(game.id) || null;
+  }
 
   for (const date of iterateRecentDates(days)) {
     for (const league of LEAGUES) {
@@ -226,15 +327,20 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
         if (game.state !== 'post') { skipped.notFinal++; continue; }
 
         const id = trackerIdFor(game);
-        if (existingIds.has(id)) { skipped.alreadyTracked++; continue; }
-
-        const snapshot = getLocked(game.id);
+        const snapshot = resolveSnapshot(game);
         const row = snapshot
           ? buildTrackerRow(game, snapshot)
           : buildUngradedRow(game);
+
+        // Dedupe by ID first (sync's own rows), then by date+matchup so
+        // we never duplicate a seed row that lacks an ESPN id.
+        if (existingIds.has(id))         { skipped.alreadyTracked++; continue; }
+        if (existingKeys.has(dedupKey(row))) { skipped.alreadyTracked++; continue; }
+
         added.push(row);
         if (!snapshot) ungradedAdded.push(row.id);
         existingIds.add(id);
+        existingKeys.add(dedupKey(row));
       }
     }
   }
@@ -249,6 +355,8 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
     lastAddedCount: added.length,
     lastUngradedCount: ungradedAdded.length,
     lastSkipped: skipped,
+    serverReached: Object.keys(serverErrors).length === 0,
+    serverErrors,
   };
   writeMeta(meta);
 

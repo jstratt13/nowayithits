@@ -1,15 +1,5 @@
-import { useEffect } from 'react';
-import {
-  computeDBP,
-  getZone,
-  projectedMargin,
-  projectedTotal,
-  spreadPick,
-  ouPick,
-  fmtLine,
-  predictionInputs,
-} from '../data/formula.js';
-import { getLocked, setLocked, hasUsableOdds } from '../data/lockedPredictions.js';
+import { getZone, fmtLine } from '../data/formula.js';
+import { getTeamInjuries } from '../data/liveStats.js';
 
 function statusLabel(game) {
   if (game.state === 'in')   return { text: game.statusLabel || 'LIVE', cls: 'live' };
@@ -17,54 +7,33 @@ function statusLabel(game) {
   return { text: 'Scheduled', cls: 'scheduled' };
 }
 
-// Build the snapshot we persist while the game is pregame + has odds.
-function buildSnapshot(game) {
-  return {
-    sp: spreadPick(game),
-    ou: ouPick(game),
-    dbp: computeDBP(game),
-    projTotal: projectedTotal(game),
-    projMargin: projectedMargin(game),
-    inputs: predictionInputs(game),
-    book: {
-      favored: game.odds.favored,
-      spread:  game.odds.spread,
-      total:   game.odds.total,
-    },
-  };
-}
-
-// Decide what to render for this card.
-//   pregame              → live compute (formula updates during pregame are
-//                          allowed; snapshot is written on the side so it
-//                          freezes at tipoff)
-//   in / post + locked   → read from the locked snapshot, never recompute
-//   in / post + no lock  → render a "no pregame prediction" state instead
-//                          of falling back to live compute, which would
-//                          silently drift with formula changes after tipoff
-function resolveDisplay(game) {
-  if (game.state === 'pre') {
-    return { source: 'live', view: buildSnapshot(game) };
+// Decide what to render. Source of truth is the server snapshot (worker's
+// /predictions endpoint), never local compute — that would re-introduce
+// the per-device divergence this whole change exists to eliminate.
+//
+//   serverPrediction with predictions       → render (locked OR live based on flag)
+//   serverPrediction locked, predictions null → missing (orphaned: worker first observed the game in-progress)
+//   no serverPrediction at all              → loading (cron hasn't reached this game yet)
+function resolveDisplay(serverPrediction) {
+  if (serverPrediction && serverPrediction.predictions) {
+    return {
+      source: serverPrediction.locked ? 'locked' : 'live',
+      view: serverPrediction.predictions,
+    };
   }
-  const locked = getLocked(game.id);
-  if (locked) return { source: 'locked', view: locked };
-  return { source: 'missing', view: null };
+  if (serverPrediction && serverPrediction.locked) {
+    return { source: 'missing', view: null };
+  }
+  return { source: 'loading', view: null };
 }
 
-export default function GameCard({ game }) {
-  const { source, view } = resolveDisplay(game);
+export default function GameCard({ game, serverPrediction = null }) {
+  const { source, view } = resolveDisplay(serverPrediction);
 
-  // Persist the snapshot while the game is still pregame and odds are
-  // available. setLocked() refuses to write for any non-'pre' state, so the
-  // snapshot freezes the moment the game tips off.
-  const oddsKey = hasUsableOdds(game)
-    ? `${game.odds.homeLine}:${game.odds.total}:${game.odds.favored}`
-    : '';
-  useEffect(() => {
-    if (game.state === 'pre' && hasUsableOdds(game)) {
-      setLocked(game.id, buildSnapshot(game), game.state);
-    }
-  }, [game.id, game.state, oddsKey]);
+  // No localStorage mirror — the Tracker reconciler now reads locked
+  // snapshots directly from the worker (Step 4). Legacy `dbp-locked-preds-v1`
+  // entries from before this change still get unioned in as a fallback
+  // for pre-Step-2 games.
 
   const s = statusLabel(game);
   const cardCls = 'game-card' + (game.state === 'in' ? ' is-live' : game.state === 'post' ? ' is-final' : '');
@@ -89,6 +58,28 @@ export default function GameCard({ game }) {
     );
   }
 
+  if (source === 'loading') {
+    return (
+      <article className={cardCls}>
+        <div className="game-card-top">
+          <span className="game-time">{game.startTimeLabel}</span>
+          <span className={'game-status ' + s.cls}>{s.text}</span>
+        </div>
+
+        <div className="matchup">
+          <TeamRow team={game.away} away showScore={game.state !== 'pre'} />
+          <TeamRow team={game.home} showScore={game.state !== 'pre'} />
+        </div>
+
+        <div className="missing-pred">
+          Loading projections…
+        </div>
+
+        <InjurySection game={game} />
+      </article>
+    );
+  }
+
   const dbp = view.dbp;
   const zone = getZone(dbp, game.league);
   const sp = view.sp;
@@ -96,7 +87,6 @@ export default function GameCard({ game }) {
   const projTotal = view.projTotal;
   const projMargin = view.projMargin;
   const inputs = view.inputs;
-  const book = view.book || {};
 
   return (
     <article className={cardCls}>
@@ -132,10 +122,9 @@ export default function GameCard({ game }) {
             {sp ? `${sp.side} ${fmtLine(sp.line)}` : '—'}
           </span>
           <span className="pred-book">
-            Book: {book.favored && book.spread != null
-              ? `${book.favored} -${book.spread.toFixed(1)}`
-              : 'n/a'}
-            {sp ? ` · edge ${fmtLine(Math.abs(sp.edge))}` : ''}
+            {projMargin != null
+              ? `Proj winner: ${projMargin >= 0 ? game.home.abbr : game.away.abbr} by ${Math.abs(projMargin).toFixed(1)} pts`
+              : '—'}
           </span>
         </div>
         <div className="pred">
@@ -152,11 +141,12 @@ export default function GameCard({ game }) {
         </div>
       </div>
 
+      <InjurySection game={game} />
+
       <div className="input-row">
         <span className="input-stat"><span className="k">Base ANG</span><span className="v">{fmtLine(inputs.baseANG)}</span></span>
         <span className="input-stat"><span className="k">Δ Vol</span><span className="v">{fmtLine(inputs.deltaVol)}</span></span>
         <span className="input-stat"><span className="k">True Gap</span><span className="v">{fmtLine(inputs.trueGap)}</span></span>
-        <span className="input-stat"><span className="k">Proj M</span><span className="v">{fmtLine(projMargin)}</span></span>
       </div>
     </article>
   );
@@ -175,6 +165,54 @@ function LockHint() {
     >
       🔒 LOCKED
     </span>
+  );
+}
+
+// ── Injury Report ────────────────────────────────────────────────────────
+
+// Status classification: Out/Suspended → red  |  everything else → orange
+function injuryTier(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'out' || s === 'suspended') return 'out';
+  return 'questionable';
+}
+
+function InjurySection({ game }) {
+  const awayList = getTeamInjuries(game.league, game.away.id);
+  const homeList = getTeamInjuries(game.league, game.home.id);
+  if (!awayList.length && !homeList.length) return null;
+
+  return (
+    <div className="injury-section">
+      {awayList.length > 0 && (
+        <InjuryTeam name={game.away.shortName || game.away.abbr} players={awayList} />
+      )}
+      {homeList.length > 0 && (
+        <InjuryTeam name={game.home.shortName || game.home.abbr} players={homeList} />
+      )}
+    </div>
+  );
+}
+
+function InjuryTeam({ name, players }) {
+  return (
+    <div className="injury-team">
+      <span className="injury-team-name">{name}</span>
+      <div className="injury-players">
+        {players.map((p, i) => {
+          const tier = injuryTier(p.status);
+          return (
+            <div key={i} className="injury-player">
+              <span className={'injury-dot injury-dot-' + tier} />
+              <span className="injury-name">{p.player}</span>
+              <span className={'injury-status injury-status-' + tier}>
+                {tier === 'out' ? 'OUT' : 'QUESTIONABLE'}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
