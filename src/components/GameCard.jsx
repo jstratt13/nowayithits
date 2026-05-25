@@ -197,6 +197,12 @@ function BroadcastSection({ game }) {
         </div>
       ) : (
         <>
+          {/* Local-only listings: prefix with a standalone WATCH header so
+              the section always reads with the same anchor word, then list
+              each team's local feeds on their own row below. */}
+          <div className="broadcast-row broadcast-header">
+            <span className="broadcast-label">WATCH</span>
+          </div>
           {away.length > 0 && (
             <div className="broadcast-row">
               <span className="broadcast-label">{game.away.abbr}</span>
