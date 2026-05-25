@@ -177,8 +177,10 @@ function gradeBlowout(dbp, actualMargin, league) {
 // stats (hit rates, accuracy chart) exclude these rows without losing
 // the historical record that the game happened.
 function buildUngradedRow(game) {
-  const margin = Math.abs((game.home.score ?? 0) - (game.away.score ?? 0));
-  const total  = (game.home.score ?? 0) + (game.away.score ?? 0);
+  const awayScore = game.away.score ?? null;
+  const homeScore = game.home.score ?? null;
+  const margin = Math.abs((homeScore ?? 0) - (awayScore ?? 0));
+  const total  = (homeScore ?? 0) + (awayScore ?? 0);
   return {
     id: trackerIdFor(game),
     league: game.league,
@@ -197,6 +199,8 @@ function buildUngradedRow(game) {
     ouResult: '',
     margin,
     total,
+    awayScore,
+    homeScore,
     bookSpread: null,
     bookTotal: null,
     graded: false,
@@ -209,8 +213,10 @@ function buildTrackerRow(game, snapshot) {
   const { sp, ou, dbp, inputs, book } = snapshot;
   const zone = getZone(dbp).label;
 
-  const margin = Math.abs((game.home.score ?? 0) - (game.away.score ?? 0));
-  const total  = (game.home.score ?? 0) + (game.away.score ?? 0);
+  const awayScore = game.away.score ?? null;
+  const homeScore = game.home.score ?? null;
+  const margin = Math.abs((homeScore ?? 0) - (awayScore ?? 0));
+  const total  = (homeScore ?? 0) + (awayScore ?? 0);
 
   const favAbbr = inputs?.favoredIsHome ? game.home.abbr : game.away.abbr;
 
@@ -239,6 +245,8 @@ function buildTrackerRow(game, snapshot) {
     ouResult: ouResult || '',
     margin,
     total,
+    awayScore,
+    homeScore,
     bookSpread: book?.spread ?? null,
     bookTotal:  book?.total ?? null,
     graded: true,
@@ -274,12 +282,14 @@ function dedupKey(row) {
 
 export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
   const existingRows = readRows();
+  const existingById = new Map(existingRows.map((r) => [r.id, r]));
   const existingIds = new Set(existingRows.map((r) => r.id));
   const existingKeys = new Set(existingRows.map(dedupKey));
 
   const added = [];
   const skipped = { notFinal: 0, alreadyTracked: 0 };
   const ungradedAdded = [];
+  let backfilled = 0; // existing rows where we filled in missing fields
 
   // Pre-fetch the server lock maps for both leagues across the full window
   // in parallel. Two HTTP requests vs (days × leagues) per-day fetches.
@@ -334,7 +344,21 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
 
         // Dedupe by ID first (sync's own rows), then by date+matchup so
         // we never duplicate a seed row that lacks an ESPN id.
-        if (existingIds.has(id))         { skipped.alreadyTracked++; continue; }
+        if (existingIds.has(id)) {
+          // Already tracked — but backfill any fields the previous version
+          // of the reconciler didn't store. Currently: per-team final
+          // scores (added so the Tracker page can show "AWAY−HOME"). Only
+          // fills MISSING fields; never overwrites existing values to
+          // preserve the integrity rule.
+          const existing = existingById.get(id);
+          if (existing && existing.awayScore == null && row.awayScore != null) {
+            existing.awayScore = row.awayScore;
+            existing.homeScore = row.homeScore;
+            backfilled++;
+          }
+          skipped.alreadyTracked++;
+          continue;
+        }
         if (existingKeys.has(dedupKey(row))) { skipped.alreadyTracked++; continue; }
 
         added.push(row);
@@ -345,7 +369,8 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
     }
   }
 
-  if (added.length) {
+  // Persist if we added new rows OR backfilled any existing ones.
+  if (added.length || backfilled > 0) {
     const next = [...existingRows, ...added];
     writeRows(next);
   }
@@ -353,6 +378,7 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
   const meta = {
     lastSyncAt: new Date().toISOString(),
     lastAddedCount: added.length,
+    lastBackfilledCount: backfilled,
     lastUngradedCount: ungradedAdded.length,
     lastSkipped: skipped,
     serverReached: Object.keys(serverErrors).length === 0,
@@ -360,7 +386,7 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
   };
   writeMeta(meta);
 
-  return { added, ungradedAdded, skipped, meta };
+  return { added, ungradedAdded, backfilled, skipped, meta };
 }
 
 export function getSyncMeta() {

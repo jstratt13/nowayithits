@@ -258,6 +258,7 @@ export default function Tracker() {
                 <TH k="date"         label="Date"   onClick={handleSort} sortKey={sortKey} sortDir={sortDir} />
                 <TH k="league"       label="Lg"     onClick={handleSort} sortKey={sortKey} sortDir={sortDir} />
                 <TH k="matchup"      label="Matchup" onClick={handleSort} sortKey={sortKey} sortDir={sortDir} />
+                <TH k="awayScore"    label="Final"  onClick={handleSort} sortKey={sortKey} sortDir={sortDir} />
                 <TH k="zone"         label="Zone"   onClick={handleSort} sortKey={sortKey} sortDir={sortDir} />
                 <TH k="dbp"          label="DBP%"   onClick={handleSort} sortKey={sortKey} sortDir={sortDir} />
                 <TH k="spreadPick"   label="Spread" onClick={handleSort} sortKey={sortKey} sortDir={sortDir} />
@@ -280,7 +281,7 @@ export default function Tracker() {
                   <FragmentRows key={gKey}>
                     {groupByDate && (
                       <tr className="group-head">
-                        <td colSpan={12}>
+                        <td colSpan={13}>
                           ▸ {gKey}
                           <span style={{ marginLeft: 14, color: 'var(--muted2)', letterSpacing: '0.06em' }}>
                             {gn} games · Sp {Math.round(sH/gn*100)}% · OU {Math.round(oH/gn*100)}% · Blow {Math.round(bH/gn*100)}%
@@ -366,6 +367,9 @@ function Row({ r }) {
         <span className="matchup-cell">{r.matchup}</span>
         {!graded && <NoPredBadge />}
       </td>
+      <td style={{ whiteSpace: 'nowrap', color: 'var(--muted)' }}>
+        <FinalScore r={r} />
+      </td>
       <td>
         {r.zone
           ? <span className={'badge ' + (ZONE_BADGE[r.zone] || '')}>{r.zone}</span>
@@ -414,6 +418,25 @@ function DBPBar({ value }) {
 
 function Dash() {
   return <span style={{ color: 'var(--muted2)' }}>—</span>;
+}
+
+// Final score in "AWAY−HOME" order, matching the matchup column's "AWAY @ HOME"
+// reading direction. Bolds the winning side. Falls back to a dash for legacy
+// rows (seed data + any row synced before this field was added) that don't
+// have individual scores stored.
+function FinalScore({ r }) {
+  const a = r.awayScore;
+  const h = r.homeScore;
+  if (a == null || h == null) return <Dash />;
+  const homeWon = h > a;
+  const awayWon = a > h;
+  return (
+    <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+      <span style={{ fontWeight: awayWon ? 600 : 400, color: awayWon ? 'var(--accent)' : undefined }}>{a}</span>
+      <span style={{ margin: '0 4px', color: 'var(--muted2)' }}>−</span>
+      <span style={{ fontWeight: homeWon ? 600 : 400, color: homeWon ? 'var(--accent)' : undefined }}>{h}</span>
+    </span>
+  );
 }
 
 function NoPredBadge() {
