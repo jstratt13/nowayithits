@@ -327,10 +327,39 @@ function deltaStar(ctx, league, favId, undId) {
   return Math.max(min, Math.min(max, raw));
 }
 
+// SRS blended with a recent-form proxy. Mirrors how blendedOff/blendedDef
+// inject L10 data into the total projection — same 50/50 weight, same
+// "fall back to full-season when L10 isn't available" semantics.
+//
+// BBR's SRS column on the season page is frozen once the regular season
+// ends. During playoffs (NBA April-June) it never updates, which made the
+// margin/DBP path totally insensitive to playoff results. The fix: use
+// (offL10 − defL10) as a per-100-possession recent NetRtg, multiply by
+// the team's own pace to get points-per-game units (matches SRS units),
+// then 50/50 blend with full-season SRS.
+//
+// L10 source today:
+//   NBA April–June  → BBR's playoff page Off/Def Rtg (worker scraper)
+//   NBA Oct–Mar      → no L10 yet → falls back to plain SRS
+//   WNBA             → no L10 yet → falls back to plain SRS
+// (Adding regular-season L10 scraping is on the future-work list.)
+function blendedSRS(teamStats, league) {
+  const c = cfg(league);
+  const srs = get(teamStats, 'srs', 0);
+  const offL10 = get(teamStats, 'offLast10', null);
+  const defL10 = get(teamStats, 'defLast10', null);
+  if (offL10 == null || defL10 == null) return srs;
+
+  const pace = get(teamStats, 'pace', c.paceDefault);
+  // Convert NetRtg (per-100-poss) → points-per-game so the units align with SRS.
+  const recentSrsProxy = ((offL10 - defL10) * pace) / 100;
+  return 0.5 * srs + 0.5 * recentSrsProxy;
+}
+
 // Returns { favoredIsHome, favSRS, undSRS, hca, deltaStar, baseANG }.
 function favoritedView(game, ctx) {
-  const homeSRS = get(stats(ctx, game.league, game.home.abbr), 'srs', 0);
-  const awaySRS = get(stats(ctx, game.league, game.away.abbr), 'srs', 0);
+  const homeSRS = blendedSRS(stats(ctx, game.league, game.home.abbr), game.league);
+  const awaySRS = blendedSRS(stats(ctx, game.league, game.away.abbr), game.league);
 
   const hca = hcaDynamic(game, ctx);
 
