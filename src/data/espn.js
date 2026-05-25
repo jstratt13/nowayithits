@@ -94,7 +94,24 @@ function normalizeEvent(ev, league) {
       favored: favoredAbbr,
       provider: odds?.provider?.name || null,
     },
+    // Where to watch: ESPN's `comp.broadcasts` is an array of
+    //   { market: 'national' | 'home' | 'away', names: [...] }
+    // We bucket the network names by market so the card can prefer
+    // national listings and fall back to local feeds.
+    broadcasts: normalizeBroadcasts(comp),
   };
+}
+
+function normalizeBroadcasts(comp) {
+  const out = { national: [], home: [], away: [] };
+  for (const b of comp?.broadcasts || []) {
+    const market = b.market;
+    if (!out[market]) continue;
+    for (const name of b.names || []) {
+      if (name && !out[market].includes(name)) out[market].push(name);
+    }
+  }
+  return out;
 }
 
 function teamFrom(side) {

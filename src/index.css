@@ -710,6 +710,38 @@ main {
 .input-stat .k { color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
 .input-stat .v { color: var(--accent); font-weight: 500; }
 
+/* ── Broadcast (where to watch) ───────────────────────────────────── */
+
+.broadcast-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.7rem;
+  border-top: 0.5px dashed var(--border2);
+}
+
+.broadcast-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.72rem;
+}
+
+.broadcast-label {
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  min-width: 2.4rem;
+  font-weight: 600;
+}
+
+.broadcast-names {
+  color: var(--accent);
+  font-weight: 500;
+}
+
 /* ── Injury report (game card) ─────────────────────────────────────── */
 
 .injury-section {

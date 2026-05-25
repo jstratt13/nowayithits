@@ -54,6 +54,8 @@ export default function GameCard({ game, serverPrediction = null }) {
         <div className="missing-pred">
           No pregame prediction was locked for this game.
         </div>
+
+        <BroadcastSection game={game} />
       </article>
     );
   }
@@ -74,6 +76,8 @@ export default function GameCard({ game, serverPrediction = null }) {
         <div className="missing-pred">
           Loading projections…
         </div>
+
+        <BroadcastSection game={game} />
 
         <InjurySection game={game} />
       </article>
@@ -141,6 +145,8 @@ export default function GameCard({ game, serverPrediction = null }) {
         </div>
       </div>
 
+      <BroadcastSection game={game} />
+
       <InjurySection game={game} />
 
       <div className="input-row">
@@ -165,6 +171,47 @@ function LockHint() {
     >
       🔒 LOCKED
     </span>
+  );
+}
+
+// ── Broadcast Section ───────────────────────────────────────────────────
+//
+// Where to watch the game. National broadcasts (Peacock, ESPN, ABC, etc.)
+// lead because most viewers care about national listings; local feeds are
+// only shown when no national broadcast exists. Renders nothing when
+// ESPN has no broadcast metadata at all (rare — usually means a game
+// added very late to the schedule).
+function BroadcastSection({ game }) {
+  const b = game.broadcasts || {};
+  const national = b.national || [];
+  const home = b.home || [];
+  const away = b.away || [];
+  if (!national.length && !home.length && !away.length) return null;
+
+  return (
+    <div className="broadcast-section">
+      {national.length > 0 ? (
+        <div className="broadcast-row">
+          <span className="broadcast-label">WATCH</span>
+          <span className="broadcast-names">{national.join(' · ')}</span>
+        </div>
+      ) : (
+        <>
+          {away.length > 0 && (
+            <div className="broadcast-row">
+              <span className="broadcast-label">{game.away.abbr}</span>
+              <span className="broadcast-names">{away.join(' · ')}</span>
+            </div>
+          )}
+          {home.length > 0 && (
+            <div className="broadcast-row">
+              <span className="broadcast-label">{game.home.abbr}</span>
+              <span className="broadcast-names">{home.join(' · ')}</span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
