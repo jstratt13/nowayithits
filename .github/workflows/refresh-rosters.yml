@@ -81,3 +81,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: worker
           command: deploy
+          # The action defaults to wrangler v3; our worker uses v4 features
+          # (per handoff, v3 hit entitlements.not_available). Pin to keep
+          # the GH Actions build matching what we deploy locally.
+          wranglerVersion: '4.94.0'

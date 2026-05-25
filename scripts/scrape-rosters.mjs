@@ -248,6 +248,23 @@ function validate(league, data, previous) {
 
 // ── Main ──────────────────────────────────────────────────────────────
 
+// Strip the freshness timestamp before comparing — otherwise every scrape
+// run produces a non-empty diff and the workflow commits + redeploys daily
+// regardless of whether anything actually changed.
+function stripFetchedAt(data) {
+  if (!data) return data;
+  const out = {};
+  for (const [league, blob] of Object.entries(data)) {
+    out[league] = { ...blob, fetchedAt: null };
+  }
+  return out;
+}
+
+function isPayloadEqual(a, b) {
+  if (!a || !b) return false;
+  return JSON.stringify(stripFetchedAt(a)) === JSON.stringify(stripFetchedAt(b));
+}
+
 async function main() {
   const previous = existsSync(OUT_PATH)
     ? JSON.parse(readFileSync(OUT_PATH, 'utf8'))
@@ -259,6 +276,18 @@ async function main() {
   for (const league of ['nba', 'wnba']) {
     result[league] = await scrapeLeague(league);
     validate(league, result[league], previous);
+  }
+
+  // If team data is identical to what's already on disk, carry over the
+  // prior fetchedAt so the file is byte-for-byte equal → workflow's
+  // `git diff --quiet` sees no change and skips the commit + redeploy.
+  if (previous && isPayloadEqual(previous, result)) {
+    console.log('\nno player data changes since previous scrape — preserving fetchedAt');
+    for (const league of Object.keys(result)) {
+      if (previous[league]?.fetchedAt) {
+        result[league].fetchedAt = previous[league].fetchedAt;
+      }
+    }
   }
 
   if (DRY_RUN) {
