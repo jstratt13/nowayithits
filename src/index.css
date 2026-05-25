@@ -237,37 +237,297 @@ main {
 
 /* ── Home page (root /) ──────────────────────────────────────────── */
 
-.home-page {
-  max-width: 740px;
-  margin: 0 auto;
-  padding: 2rem 0;
+.home-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.75rem;
+  align-items: start;
 }
 
-.home-eyebrow {
+.home-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
+.home-sidebar {
+  position: sticky;
+  top: 1rem;
+  /* On desktop the live-scores panel pins to the top of the viewport so
+     it stays visible as the user scrolls the about / picks sections. */
+}
+
+/* Below 980px, stack the panels vertically — live scores becomes a
+   compact block beneath the main column. */
+@media (max-width: 980px) {
+  .home-layout {
+    grid-template-columns: 1fr;
+  }
+  .home-sidebar { position: static; }
+}
+
+.home-section {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.home-section-head {
+  margin-bottom: 1rem;
+}
+
+.home-section-eyebrow {
   font-family: 'Syne', sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--accent2);
+  font-weight: 600;
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
-.home-title {
+.home-section-title {
   font-family: 'Syne', sans-serif;
   font-weight: 800;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
+  font-size: 1.45rem;
+  letter-spacing: -0.015em;
   color: var(--accent);
-  margin: 0 0 0.85rem 0;
+  margin: 0;
 }
 
-.home-lede {
+.home-subsection {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 0.5px dashed var(--border2);
+}
+
+.home-subsection:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.home-subsection-title {
   font-family: 'Syne', sans-serif;
+  font-weight: 700;
   font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+  margin: 0 0 0.55rem;
+}
+
+.home-prose {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 0.7rem;
+}
+
+.home-prose:last-child { margin-bottom: 0; }
+.home-prose strong { color: var(--accent); }
+
+.home-bullets {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.9rem;
   color: var(--muted);
   line-height: 1.55;
+  margin: 0.45rem 0 0;
+  padding-left: 1.1rem;
+}
+.home-bullets li { margin: 0.25rem 0; }
+.home-bullets strong { color: var(--accent); }
+
+.home-glossary {
+  font-family: 'Syne', sans-serif;
   margin: 0;
+}
+
+.home-glossary dt {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+  margin-top: 0.85rem;
+}
+.home-glossary dt:first-child { margin-top: 0; }
+
+.home-glossary dd {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0.3rem 0 0;
+}
+
+.home-empty {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+/* Pick of the Day cards */
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.pick-card {
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  border-radius: 10px;
+  padding: 0.85rem 1rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pick-eyebrow {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.pick-matchup {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+}
+
+.pick-time {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--muted2);
+  text-transform: uppercase;
+}
+
+.pick-primary {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent2);
+  margin-top: 0.35rem;
+}
+
+.pick-secondary {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: -0.005em;
+}
+
+/* Tiny league badge (already exists for predictions section header,
+   here we just make sure it composes neatly inside the pick eyebrow). */
+.league-pill-nba  { background: var(--accent);   color: var(--bg); }
+.league-pill-wnba { background: var(--accent2);  color: var(--bg); }
+
+/* Live scores side panel */
+
+.live-scores-panel {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+.live-scores-head {
+  margin-bottom: 0.8rem;
+}
+
+.live-scores-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+  margin: 0;
+}
+
+.live-scores-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.live-score-row {
+  padding: 0.6rem 0.7rem;
+  border: 0.5px solid var(--border2);
+  border-radius: 8px;
+  background: var(--surface2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.live-score-in   { border-color: var(--alert); }
+.live-score-post { opacity: 0.85; }
+
+.live-score-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.live-score-status-text { color: var(--accent); }
+.live-score-in .live-score-status-text { color: var(--alert); }
+
+.live-score-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.live-score-team {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: 'Syne', sans-serif;
+}
+
+.live-score-abbr {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.live-score-pts {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-score-pts.is-winner { color: var(--accent); font-weight: 800; }
+
+.live-scores-empty {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0.5rem 0;
+  text-align: center;
 }
 
 @media (max-width: 1100px) {
