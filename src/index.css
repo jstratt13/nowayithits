@@ -102,6 +102,15 @@ input, select {
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
+  /* Brand wordmark is a Link to /. Strip default underline/color so it
+     stays visually identical to its pre-Link rendering. The hover bump
+     on .brand-name signals it's clickable without being loud. */
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand:hover .brand-name {
+  color: var(--accent2);
 }
 
 .brand-name {
@@ -225,6 +234,41 @@ main {
 }
 
 .page-main { min-width: 0; } /* allow grid track to shrink properly */
+
+/* ── Home page (root /) ──────────────────────────────────────────── */
+
+.home-page {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.home-eyebrow {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.home-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin: 0 0 0.85rem 0;
+}
+
+.home-lede {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
 
 @media (max-width: 1100px) {
   .page-with-sidebar { grid-template-columns: 1fr; }

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useTrackerSyncTicker } from './hooks/useTrackerSync.js';
 
 function todayLabel() {
@@ -27,10 +27,10 @@ export default function App() {
     <div className="app">
       <header className="nav">
         <div className="nav-inner">
-          <div className="brand">
+          <Link to="/" className="brand" aria-label="Home — No Way It Hits">
             <span className="brand-name">NO WAY <span className="brand-break"/>IT HITS</span>
             <span className="brand-tag">Daily Blowout Predictor</span>
-          </div>
+          </Link>
           <nav className="nav-links">
             <NavLink to="/predictions" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
               Predictions
