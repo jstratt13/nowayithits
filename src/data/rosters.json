@@ -2,7 +2,7 @@
   "nba": {
     "source": "basketball-reference.com",
     "season": "2026",
-    "fetchedAt": "2026-05-24T20:16:34.342Z",
+    "fetchedAt": "2026-05-25T00:23:14.242Z",
     "teams": {
       "LAL": {
         "bbrCode": "LAL",
@@ -4233,7 +4233,7 @@
   "wnba": {
     "source": "basketball-reference.com",
     "season": "2026",
-    "fetchedAt": "2026-05-24T20:16:34.406Z",
+    "fetchedAt": "2026-05-25T00:23:14.328Z",
     "teams": {
       "TOR": {
         "bbrCode": "TOR",
