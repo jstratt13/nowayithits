@@ -25,9 +25,10 @@
 
 import * as core from '../../src/data/formulaCore.js';
 import { scrapeTeamStats } from './scrapers/bbref.js';
+import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
 
-const { computeInjuryScore } = core;
+const { computeInjuryScore, normalizeName } = core;
 
 // ── ESPN abbreviation aliasing ────────────────────────────────────────
 // Mirrors src/data/teamStats.js ABBR_ALIAS. BBR uses 3-letter codes
@@ -97,19 +98,43 @@ async function fetchSlate(league, etDateStr) {
 
 // Fetches the ESPN injuries endpoint and reduces it to a map of
 //   { [teamId: string]: number }   // injury score for Δ_Star
+//
+// When `espnAbbrByTeamId` is provided, also joins each ESPN team's injury
+// list against the bundled BBR roster (src/data/rosters.json) so the score
+// is PLAYER-WEIGHTED: a star OUT counts more than a 12th-man OUT (Step B).
+// Falls through to status-only weights for teams we don't have an abbr
+// mapping for (e.g. team isn't playing today, so it wasn't in the slate).
+//
 // Returns {} on failure so a transient ESPN hiccup doesn't blank
 // predictions — Δ_Star just degrades to 0 for that cron tick.
-async function fetchInjuryScores(league) {
+async function fetchInjuryScores(league, espnAbbrByTeamId) {
   const path = LEAGUE_PATH[league];
   if (!path) return {};
   try {
     const res = await fetch(`${ESPN_BASE}/${path}/injuries`);
     if (!res.ok) throw new Error(`ESPN ${path} injuries → ${res.status}`);
     const data = await res.json();
+    const rosters = getRosters(league).teams || {};
+
     const scores = {};
     for (const team of data.injuries || []) {
-      const players = (team.injuries || []).map((inj) => ({ status: inj.status || '' }));
-      if (players.length) scores[String(team.id)] = computeInjuryScore(players);
+      const teamId = String(team.id);
+      const players = (team.injuries || []).map((inj) => ({
+        player: inj.athlete?.displayName || '',
+        status: inj.status || '',
+      }));
+      if (!players.length) continue;
+
+      // Build the (normalized name) → (roster entry) map for this team
+      // if we know its ESPN abbreviation. If we don't (e.g. not playing
+      // today), computeInjuryScore falls back to status-only weights.
+      const espnAbbr = espnAbbrByTeamId?.[teamId];
+      const roster = espnAbbr ? rosters[espnAbbr] : null;
+      const rosterByName = roster
+        ? new Map(roster.players.map((p) => [normalizeName(p.name), p]))
+        : null;
+
+      scores[teamId] = computeInjuryScore(players, rosterByName);
     }
     return scores;
   } catch (e) {
@@ -260,14 +285,22 @@ function mergeGame(existing, fresh, nowMs) {
 export async function refreshPredictions(env, league, etDateStr) {
   const now = Date.now();
 
-  // Slate + team stats + injury scores in parallel — independent fetches,
-  // no point serializing them.
+  // Slate + team stats in parallel. Injuries comes AFTER the slate so we
+  // can build the espnAbbr-by-teamId map (Step B: needed to join ESPN's
+  // injury entries with the bundled BBR roster for per-player weighting).
   const hSlot = Math.floor(now / 3_600_000);
-  const [slate, teamsBlob, injuryScores] = await Promise.all([
+  const [slate, teamsBlob] = await Promise.all([
     fetchSlate(league, etDateStr),
     cached(env, `teams:${league}:${hSlot}`, 60 * 60 * 6, () => scrapeTeamStats(league, env)),
-    fetchInjuryScores(league),
   ]);
+
+  const espnAbbrByTeamId = {};
+  for (const g of slate) {
+    if (g.home?.id) espnAbbrByTeamId[String(g.home.id)] = g.home.abbr;
+    if (g.away?.id) espnAbbrByTeamId[String(g.away.id)] = g.away.abbr;
+  }
+
+  const injuryScores = await fetchInjuryScores(league, espnAbbrByTeamId);
   const teamsByEspnAbbr = normalizeBBRKeys(teamsBlob.teams || {});
   const ctx = buildContext(teamsByEspnAbbr, injuryScores);
 

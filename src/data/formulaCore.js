@@ -117,12 +117,127 @@ export const INJURY_STATUS_WEIGHTS = {
   probable:               0.1,
 };
 
-export function computeInjuryScore(players) {
+// ── Per-player impact weighting (Step B) ───────────────────────────────
+//
+// A player's contribution to the team injury score is:
+//   player_weight = status_weight × impactFactor(rosterEntry)
+//
+// impactFactor blends advanced rating (BPM for NBA, PER fallback for WNBA)
+// 60% with minutes-per-game 40%, per the model spec:
+//
+//   mpg_factor = min(mpg / 36, 1.0)              # full at 36+ mpg
+//   bpm_factor = max(0, BPM) / 5                 # 1.0 at BPM 5 (all-star)
+//   per_factor = max(0, (PER - 15) / 10)         # 1.0 at PER 25 (MVP-ish)
+//   impact = 0.6 × adv_factor + 0.4 × mpg_factor
+//
+// A star at 36 mpg + 9 BPM lands around 1.5 (clamped only by the per-league
+// Δ_Star cap downstream). A garbage-time 4 mpg / -2 BPM player lands ~0.04.
+// Unmatched names fall back to 1.0 (status-only behavior) so name-matching
+// gaps don't silently zero out an injury entry.
+export const ADVANCED_BPM_NORM = 5;   // BPM 5 ≈ all-star benchmark → 1.0
+export const ADVANCED_PER_BASE = 15;  // PER 15 = league average → 0
+export const ADVANCED_PER_NORM = 10;  // +10 PER over avg → 1.0
+export const MPG_FULL = 36;
+export const IMPACT_BPM_WEIGHT = 0.6;
+export const IMPACT_MPG_WEIGHT = 0.4;
+export const NAME_MATCH_THRESHOLD = 0.75;
+
+export function impactFactor(rosterEntry) {
+  if (!rosterEntry) return 1.0; // unmatched → treat as average
+  const mpg = rosterEntry.mpg ?? 0;
+  const mpgFactor = Math.min(mpg / MPG_FULL, 1.0);
+
+  let advFactor;
+  if (rosterEntry.bpm != null) {
+    advFactor = Math.max(0, rosterEntry.bpm) / ADVANCED_BPM_NORM;
+  } else if (rosterEntry.per != null) {
+    advFactor = Math.max(0, (rosterEntry.per - ADVANCED_PER_BASE) / ADVANCED_PER_NORM);
+  } else {
+    advFactor = 0;
+  }
+
+  return IMPACT_BPM_WEIGHT * advFactor + IMPACT_MPG_WEIGHT * mpgFactor;
+}
+
+// Name normalization for matching ESPN injury entries against BBR rosters.
+// Lowercases, strips accents (NFD decomposition + drop combining marks),
+// strips punctuation, collapses whitespace. So "Luka Dončić" (BBR) and
+// "Luka Doncic" (ESPN, no accent) both become "luka doncic".
+export function normalizeName(s) {
+  return String(s || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Classic two-row dynamic programming Levenshtein. Fast for short strings
+// like player names (~15 chars × ~15 chars = trivial).
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = new Array(b.length + 1);
+  let curr = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[b.length];
+}
+
+function levenshteinSim(a, b) {
+  const longer = Math.max(a.length, b.length);
+  if (longer === 0) return 1;
+  return 1 - levenshtein(a, b) / longer;
+}
+
+// Look up an injured player's roster entry by normalized name. Tries exact
+// match first; on miss, walks the team's roster for the best fuzzy match
+// at or above NAME_MATCH_THRESHOLD. Returns null if no match — caller's
+// impactFactor(null) returns 1.0 (status-only fallback) so we never zero
+// out an injury just because the name didn't line up.
+function findRosterEntry(injuredName, rosterByNormName) {
+  if (!rosterByNormName || !rosterByNormName.size) return null;
+  const target = normalizeName(injuredName);
+  if (!target) return null;
+  const exact = rosterByNormName.get(target);
+  if (exact) return exact;
+
+  let best = null;
+  let bestSim = 0;
+  for (const [name, entry] of rosterByNormName) {
+    const sim = levenshteinSim(target, name);
+    if (sim >= NAME_MATCH_THRESHOLD && sim > bestSim) {
+      bestSim = sim;
+      best = entry;
+    }
+  }
+  return best;
+}
+
+// computeInjuryScore: sum of (status_weight × player_impact) across the
+// team's injury list. `rosterByNormName` is optional — when provided, the
+// score is player-weighted. When not provided (e.g. frontend without
+// bundled rosters), falls back to status-only (impact = 1.0 for everyone).
+export function computeInjuryScore(players, rosterByNormName) {
   if (!Array.isArray(players)) return 0;
   let score = 0;
   for (const p of players) {
     const key = String(p?.status || '').toLowerCase().trim();
-    score += INJURY_STATUS_WEIGHTS[key] || 0;
+    const statusWeight = INJURY_STATUS_WEIGHTS[key] || 0;
+    if (statusWeight === 0) continue;
+    const impact = rosterByNormName
+      ? impactFactor(findRosterEntry(p?.player, rosterByNormName))
+      : 1.0;
+    score += statusWeight * impact;
   }
   return score;
 }
