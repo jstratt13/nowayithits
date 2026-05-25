@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react';
-import { ensureTeamStats, ensureInjuries, refreshInjuries, subscribe, getLiveSources } from '../data/liveStats.js';
+import { ensureInjuries, refreshInjuries, subscribe } from '../data/liveStats.js';
 
 const INJURY_REFRESH_MS = 10 * 60 * 1000; // 10 minutes
 
-// Triggers the worker fetch for team stats and ESPN fetch for injuries.
-// Re-renders when new data arrives. Injuries auto-refresh every 10 min.
+// Subscribes to the ESPN injuries cache so cards re-render when new data
+// arrives, and runs a 10-min background refresh while the page is open
+// (catches late scratches without a manual reload).
+//
+// `withInjuries: false` is supported but currently unused by any caller —
+// kept for callers that don't render injury chips. Predictions page passes
+// true; Tracker page passes false.
 export function useLiveStats(leagues = ['nba', 'wnba'], { withInjuries = true } = {}) {
   const [, force] = useState(0);
 
   useEffect(() => {
     const unsub = subscribe(() => force((x) => x + 1));
-    for (const l of leagues) {
-      ensureTeamStats(l);
-      if (withInjuries) ensureInjuries(l);
+    if (withInjuries) {
+      for (const l of leagues) ensureInjuries(l);
     }
     return unsub;
   }, [leagues.join(','), withInjuries]);
 
-  // Background injury refresh — catches late scratches and status changes
-  // without requiring a manual page reload.
   useEffect(() => {
     if (!withInjuries) return;
     const timer = setInterval(() => {
@@ -26,6 +28,4 @@ export function useLiveStats(leagues = ['nba', 'wnba'], { withInjuries = true } 
     }, INJURY_REFRESH_MS);
     return () => clearInterval(timer);
   }, [leagues.join(','), withInjuries]);
-
-  return getLiveSources();
 }

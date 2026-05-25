@@ -13,7 +13,7 @@
 
 import { fetchScoreboard } from './espn.js';
 import { getLocked } from './lockedPredictions.js';
-import { getZone, BLOWOUT_THRESHOLD } from './formula.js';
+import { getZone, BLOWOUT_THRESHOLD } from './formulaCore.js';
 import { SEED_TRACKER } from './seedTracker.js';
 
 const TRACKER_KEY = 'dbp-tracker-v1';

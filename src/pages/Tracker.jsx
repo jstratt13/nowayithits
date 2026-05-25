@@ -3,7 +3,7 @@ import { SEED_TRACKER } from '../data/seedTracker.js';
 import AccuracyPanel from '../components/AccuracyPanel.jsx';
 import { useLiveStats } from '../hooks/useLiveStats.js';
 import { useSyncStatus } from '../hooks/useTrackerSync.js';
-import { BLOWOUT_THRESHOLD, zoneLabels } from '../data/formula.js';
+import { BLOWOUT_THRESHOLD, zoneLabels } from '../data/formulaCore.js';
 import NewsPanel from '../components/NewsPanel.jsx';
 
 const STORAGE_KEY = 'dbp-tracker-v1';

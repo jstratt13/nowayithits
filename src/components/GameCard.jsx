@@ -1,4 +1,4 @@
-import { getZone, fmtLine } from '../data/formula.js';
+import { getZone, fmtLine } from '../data/formulaCore.js';
 import { getTeamInjuries } from '../data/liveStats.js';
 
 function statusLabel(game) {
