@@ -2,7 +2,7 @@
   "nba": {
     "source": "basketball-reference.com",
     "season": "2026",
-    "fetchedAt": "2026-05-25T17:17:59.839Z",
+    "fetchedAt": "2026-05-25T18:53:03.507Z",
     "teams": {
       "LAL": {
         "bbrCode": "LAL",
@@ -4233,7 +4233,7 @@
   "wnba": {
     "source": "basketball-reference.com",
     "season": "2026",
-    "fetchedAt": "2026-05-25T17:17:59.936Z",
+    "fetchedAt": "2026-05-25T18:53:03.697Z",
     "teams": {
       "TOR": {
         "bbrCode": "TOR",
@@ -4619,7 +4619,7 @@
           }
         ]
       },
-      "CONN": {
+      "CON": {
         "bbrCode": "CON",
         "players": [
           {

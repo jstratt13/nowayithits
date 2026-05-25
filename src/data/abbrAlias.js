@@ -38,7 +38,11 @@ export const ABBR_ALIAS = {
   LVA: 'LV',
   LAS: 'LA',
   GSV: 'GS',
-  CON: 'CONN',
+  // Connecticut Sun uses "CON" in BOTH BBR and ESPN — no alias needed.
+  // (Earlier this was mistakenly `CON: 'CONN'`, which keyed the team
+  // under a non-existent ESPN code in rosters.json. Worker lookups by
+  // game.away.abbr = 'CON' missed → all CON injuries fell back to
+  // status-only weights, masking the true per-player impact.)
 };
 
 export function resolveAbbr(bbrCode) {
