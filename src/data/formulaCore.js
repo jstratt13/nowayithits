@@ -122,41 +122,70 @@ export const INJURY_STATUS_WEIGHTS = {
 // A player's contribution to the team injury score is:
 //   player_weight = status_weight × impactFactor(rosterEntry)
 //
-// impactFactor blends advanced rating (BPM for NBA, PER fallback for WNBA)
-// 60% with minutes-per-game 40%, per the model spec:
+// Multiplicative form: minutes act as the dominant filter, and advanced
+// metrics (BPM for NBA, PER fallback for WNBA) differentiate within that.
+// A player who doesn't play can't matter no matter how good per-minute,
+// because the team isn't using them.
 //
-//   mpg_factor = min(mpg / 36, 1.0)              # full at 36+ mpg
-//   bpm_factor = max(0, BPM) / 5                 # 1.0 at BPM 5 (all-star)
-//   per_factor = max(0, (PER - 15) / 10)         # 1.0 at PER 25 (MVP-ish)
-//   impact = 0.6 × adv_factor + 0.4 × mpg_factor
+//   mpg_factor      = min(mpg / 36, 1.0)            # full at 36+ mpg
+//   bpm_trust       = min(mpg / 18, 1.0)            # BPM reliable at 18+ mpg
+//   bpm_multiplier  = 1 + max(0, BPM − (−2)) / 2.8 × bpm_trust
+//   impact          = mpg_factor × bpm_multiplier
 //
-// A star at 36 mpg + 9 BPM lands around 1.5 (clamped only by the per-league
-// Δ_Star cap downstream). A garbage-time 4 mpg / -2 BPM player lands ~0.04.
-// Unmatched names fall back to 1.0 (status-only behavior) so name-matching
-// gaps don't silently zero out an injury entry.
-export const ADVANCED_BPM_NORM = 5;   // BPM 5 ≈ all-star benchmark → 1.0
-export const ADVANCED_PER_BASE = 15;  // PER 15 = league average → 0
-export const ADVANCED_PER_NORM = 10;  // +10 PER over avg → 1.0
+//   (WNBA fallback: per_multiplier = 1 + max(0, PER − 12) / 5 × per_trust)
+//
+// Tuning rationale:
+//   - REPLACEMENT_BPM = −2 (BPM at which a player is "replaceable")
+//   - BPM_SCALE = 2.8 → top stars (BPM 9.3, e.g. Luka) land at ~5,
+//     matching the model spec target of "few points but not more than 6"
+//   - bpm_trust factor stops a 6-mpg-with-hot-BPM player from inflating
+//     (BPM is statistically noisy for small samples)
+//   - Per-league Δ_Star caps (NBA ±5/+5.5, WNBA ±8) still bound the
+//     extreme top end if a team has multiple stars OUT
+//
+// Calibrated impact magnitudes:
+//   Luka  (35.8 mpg / 9.3 BPM)     →  5.01
+//   LeBron (33.2 / 3.5)            →  2.73
+//   Avg starter (28 / 1.0)         →  1.61
+//   12-mpg bench (12 / 0)          →  0.57
+//   DJ Garcia rookie (6.2 / 6.4)   →  0.35   (was 0.84 under old linear)
+//   Deep bench (4 / −2)            →  0.11
+//   A'ja Wilson (28.8 / PER 32.5)  →  4.08
+//
+// Unmatched names fall back to impact = 1.0 (status-only behavior) so
+// name-matching gaps don't silently zero out an injury entry.
+
 export const MPG_FULL = 36;
-export const IMPACT_BPM_WEIGHT = 0.6;
-export const IMPACT_MPG_WEIGHT = 0.4;
+
+// NBA — BPM as advanced metric
+export const BPM_REPLACEMENT  = -2;
+export const BPM_SCALE        = 2.8;
+export const BPM_TRUST_MIN    = 18;
+
+// WNBA — PER as advanced metric (BBR doesn't compute BPM for WNBA)
+export const PER_BASE         = 12;
+export const PER_SCALE        = 5;
+export const PER_TRUST_MIN    = 12;
+
 export const NAME_MATCH_THRESHOLD = 0.75;
 
 export function impactFactor(rosterEntry) {
-  if (!rosterEntry) return 1.0; // unmatched → treat as average
+  if (!rosterEntry) return 1.0; // unmatched → status-only fallback
   const mpg = rosterEntry.mpg ?? 0;
   const mpgFactor = Math.min(mpg / MPG_FULL, 1.0);
 
-  let advFactor;
+  let advMultiplier = 1.0;
   if (rosterEntry.bpm != null) {
-    advFactor = Math.max(0, rosterEntry.bpm) / ADVANCED_BPM_NORM;
+    const trust = Math.min(mpg / BPM_TRUST_MIN, 1.0);
+    const above = Math.max(0, rosterEntry.bpm - BPM_REPLACEMENT);
+    advMultiplier = 1 + (above / BPM_SCALE) * trust;
   } else if (rosterEntry.per != null) {
-    advFactor = Math.max(0, (rosterEntry.per - ADVANCED_PER_BASE) / ADVANCED_PER_NORM);
-  } else {
-    advFactor = 0;
+    const trust = Math.min(mpg / PER_TRUST_MIN, 1.0);
+    const above = Math.max(0, rosterEntry.per - PER_BASE);
+    advMultiplier = 1 + (above / PER_SCALE) * trust;
   }
 
-  return IMPACT_BPM_WEIGHT * advFactor + IMPACT_MPG_WEIGHT * mpgFactor;
+  return mpgFactor * advMultiplier;
 }
 
 // Name normalization for matching ESPN injury entries against BBR rosters.
