@@ -27,24 +27,9 @@ import * as core from '../../src/data/formulaCore.js';
 import { scrapeTeamStats } from './scrapers/bbref.js';
 import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
+import { resolveAbbr } from '../../src/data/abbrAlias.js';
 
 const { computeInjuryScore, normalizeName } = core;
-
-// ── ESPN abbreviation aliasing ────────────────────────────────────────
-// Mirrors src/data/teamStats.js ABBR_ALIAS. BBR uses 3-letter codes
-// (NYK, SAS, GSW); ESPN's scoreboard uses 2-letter codes (NY, SA, GS).
-// We re-key the BBR team stats by ESPN abbreviation before lookup.
-const ABBR_ALIAS = {
-  NYK: 'NY',
-  SAS: 'SA',
-  NOP: 'NO',
-  GSW: 'GS',
-  UTA: 'UTAH',
-  WAS: 'WSH',
-  CON: 'CONN',
-  PHO: 'PHX',
-};
-const resolveAbbr = (a) => ABBR_ALIAS[a] || a;
 
 function normalizeBBRKeys(teams) {
   const out = {};

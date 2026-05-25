@@ -68,14 +68,7 @@ export const TEAM_STATS = {
   },
 };
 
-// Common ESPN-abbreviation aliases so we don't have to enumerate every variant.
-export const ABBR_ALIAS = {
-  NYK: 'NY',
-  SAS: 'SA',
-  NOP: 'NO',
-  GSW: 'GS',
-  UTA: 'UTAH',
-  WAS: 'WSH',
-  CON: 'CONN',
-  PHO: 'PHX',
-};
+// Canonical BBR → ESPN abbreviation map. Re-exported here for back-compat
+// with existing frontend callers (e.g. liveStats.js); single source of
+// truth lives in abbrAlias.js so the worker + scraper share the same map.
+export { ABBR_ALIAS } from './abbrAlias.js';

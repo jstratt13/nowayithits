@@ -44,26 +44,9 @@ const MAX_DROP_PCT    = 0.20;   // > 20% total player loss = fail
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
-// ── BBR_TO_ESPN abbreviation map (mirrors worker/src/scrapers/bbrRoster.js)
-const BBR_TO_ESPN = {
-  // NBA
-  NYK: 'NY',
-  SAS: 'SA',
-  NOP: 'NO',
-  GSW: 'GS',
-  UTA: 'UTAH',
-  WAS: 'WSH',
-  PHO: 'PHX',
-  BRK: 'BKN',
-  CHO: 'CHA',
-  // WNBA
-  NYL: 'NY',
-  LVA: 'LV',
-  LAS: 'LA',
-  GSV: 'GS',
-  CON: 'CONN',
-};
-const toEspnAbbr = (bbr) => BBR_TO_ESPN[bbr] || bbr;
+// Canonical BBR → ESPN abbreviation map — single source of truth shared
+// with the worker (predictions.js) and frontend (liveStats.js).
+import { resolveAbbr as toEspnAbbr } from '../src/data/abbrAlias.js';
 
 const MULTI_TEAM_RE = /^(?:TOT|\d+TM)$/;
 const SLUG_RE = /href=['"]\/(?:wnba\/)?players\/[a-z]\/([a-z]+\d+w?)\.html/;
