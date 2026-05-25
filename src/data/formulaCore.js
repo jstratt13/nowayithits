@@ -51,6 +51,8 @@ export const MODEL_CONFIG = {
     offRtgDefault:  115,
     defRtgDefault:  115,   // league average DRtg ≈ ORtg
     blowoutMargin:   16,
+    // MPF disabled for NBA (Volume Delta passes through Δ_Vol × 1.0).
+    paceMpfBaseline: null,
     zones: [
       { threshold: 25, label: 'Safe Zone',  key: 'safe',  badge: 'badge-zone-safe'  },
       { threshold: 45, label: 'Baseline',   key: 'base',  badge: 'badge-zone-base'  },
@@ -79,6 +81,12 @@ export const MODEL_CONFIG = {
     offRtgDefault:  100,
     defRtgDefault:  100,   // WNBA league average DRtg ≈ ORtg
     blowoutMargin:   14,
+    // Matchup Pace Factor (MPF): scales Volume Delta in True Gap so games
+    // with low possession counts give less weight to TOV/ORB advantages.
+    // MPF = (home_pace + away_pace) / mpfBaseline. For WNBA-typical pace
+    // ~80, MPF ≈ 0.83 → Δ_Vol contribution is dampened by ~17%.
+    // NBA leaves this off (paceMpfBaseline: null) for now.
+    paceMpfBaseline: 192,  // 2 × 96.0 baseline possessions/game
     zones: [
       { threshold: 25, label: 'Safe Zone',  key: 'safe',  badge: 'badge-zone-safe'  },
       { threshold: 45, label: 'Baseline',   key: 'base',  badge: 'badge-zone-base'  },
@@ -418,18 +426,42 @@ function deltaVol(game, view, ctx) {
   return (tog * 1.4) + (org * 0.5);
 }
 
+// Matchup Pace Factor. When the league config enables it, scales Volume
+// Delta in True Gap by the game's expected possession count relative to
+// a baseline. Slow-paced games (WNBA at ~80 pace) get a sub-1 multiplier
+// → Δ_Vol contributes less, because fewer possessions mean fewer chances
+// for TOV/ORB advantages to manifest.
+//
+//   MPF = (home_pace + away_pace) / mpfBaseline
+//
+// WNBA: mpfBaseline = 192 (2 × 96 reference pace), so MPF ≈ 0.83 at
+// league-average pace 80 → Δ_Vol contribution dampened ~17%.
+// NBA: mpfBaseline = null → MPF = 1.0 (no scaling, identical behavior
+// to before this change).
+function matchupPaceFactor(game, ctx) {
+  const c = cfg(game.league);
+  if (!c.paceMpfBaseline) return 1.0;
+  const hStats = stats(ctx, game.league, game.home.abbr);
+  const aStats = stats(ctx, game.league, game.away.abbr);
+  const hPace = get(hStats, 'pace', c.paceDefault);
+  const aPace = get(aStats, 'pace', c.paceDefault);
+  return (hPace + aPace) / c.paceMpfBaseline;
+}
+
 // ── Step C · True_Gap → Z → DBP% ────────────────────────────────────────
 
 export function computeBreakdown(game, ctx) {
   const c = cfg(game.league);
   const view = favoritedView(game, ctx);
   const dvol = deltaVol(game, view, ctx);
-  const trueGap = view.baseANG + dvol;
+  const mpf = matchupPaceFactor(game, ctx);
+  const trueGap = view.baseANG + dvol * mpf;
   const z = c.intercept + c.multiplier * trueGap;
   const dbp = sigmoid(z) * 100;
   return {
     ...view,
     deltaVol: dvol,
+    mpf,
     trueGap,
     z,
     dbp,
@@ -564,6 +596,7 @@ export function predictionInputs(game, ctx) {
     deltaStar: b.deltaStar,
     baseANG: +b.baseANG.toFixed(2),
     deltaVol: +b.deltaVol.toFixed(2),
+    mpf: +b.mpf.toFixed(3),
     trueGap: +b.trueGap.toFixed(2),
     z: +b.z.toFixed(3),
   };
