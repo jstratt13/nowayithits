@@ -367,6 +367,57 @@ main {
   padding: 1rem 0;
 }
 
+/* Blowout-threshold callout — sits between the intro prose and the
+   Key Terms glossary, calls out the per-league margin definition. */
+
+.home-callout {
+  margin: 1.25rem 0;
+  padding: 1rem 1.1rem;
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  border-left: 3px solid var(--accent2);
+  border-radius: 10px;
+}
+
+.home-callout-label {
+  display: block;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 0.55rem;
+}
+
+.home-callout-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem 0.85rem;
+}
+
+.home-callout-tile {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: 'Syne', sans-serif;
+}
+
+.home-callout-league {
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  min-width: 3rem;
+}
+
+.home-callout-value {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--accent2);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Pick of the Day cards */
 
 .pick-grid {

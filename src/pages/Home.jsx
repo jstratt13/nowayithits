@@ -124,27 +124,38 @@ function AboutSection() {
   return (
     <section className="home-section">
       <div className="home-section-head">
-        <span className="home-section-eyebrow">Background</span>
         <h2 className="home-section-title">About No Way It Hits</h2>
       </div>
 
-      <div className="home-subsection">
-        <h3 className="home-subsection-title">What this is</h3>
-        <p className="home-prose">
-          <strong>No Way It Hits</strong> is a daily NBA + WNBA blowout
-          predictor. The name's a tongue-in-cheek nod to lopsided lines —
-          the kind a casual viewer sees and thinks, "no way it hits."
-          Sometimes they're right. Often the model says otherwise.
-        </p>
-        <p className="home-prose">
-          The goal is a <em>persistent, honest record</em> of model
-          performance over time. Every prediction the model makes locks
-          five minutes before tipoff and is never retroactively edited —
-          even if the formula changes later. The tracker grades each
-          locked prediction against the actual outcome so accuracy stats
-          can be trusted to evolve the model with real evidence rather
-          than wishful revision.
-        </p>
+      <p className="home-prose">
+        <strong>No Way It Hits</strong> is a daily professional
+        basketball blowout predictor. The name's a tongue-in-cheek nod
+        to lopsided lines — the kind a casual viewer sees and thinks,
+        "no way it hits." Sometimes they're right. Often the model says
+        otherwise.
+      </p>
+      <p className="home-prose">
+        The goal is a <em>persistent, honest record</em> of model
+        performance over time. Every prediction the model makes locks
+        five minutes before tipoff and is never retroactively edited —
+        even if the formula changes later. The tracker grades each
+        locked prediction against the actual outcome so accuracy stats
+        can be trusted to evolve the model with real evidence rather
+        than wishful revision.
+      </p>
+
+      <div className="home-callout">
+        <span className="home-callout-label">What counts as a blowout?</span>
+        <div className="home-callout-tiles">
+          <div className="home-callout-tile">
+            <span className="home-callout-league">NBA</span>
+            <span className="home-callout-value">final margin ≥ 16</span>
+          </div>
+          <div className="home-callout-tile">
+            <span className="home-callout-league">WNBA</span>
+            <span className="home-callout-value">final margin ≥ 14</span>
+          </div>
+        </div>
       </div>
 
       <div className="home-subsection">
@@ -154,9 +165,9 @@ function AboutSection() {
           <dt>DBP%</dt>
           <dd>
             <strong>Daily Blowout Probability</strong>. The model's
-            estimate of how likely a game ends as a blowout — defined as
-            a final margin ≥ 16 points (NBA) or ≥ 14 (WNBA). A 70%+ DBP
-            is a "Super Lock" zone; anything under 25% is "Safe Zone."
+            estimate of how likely a game ends as a blowout (see the
+            margin thresholds above). A 70%+ DBP is a "Super Lock" zone;
+            anything under 25% is "Safe Zone."
           </dd>
 
           <dt>Inputs to DBP</dt>
@@ -240,22 +251,22 @@ function PickOfTheDay({ picks }) {
           )}
           {nbaTopPick && (
             <PickCard
-              eyebrow="NBA · Top Confidence"
+              eyebrow="Top Confidence"
               league="nba"
               matchup={`${nbaTopPick.game.away.abbr} @ ${nbaTopPick.game.home.abbr}`}
               tipoff={nbaTopPick.game.startTimeLabel}
               primary={nbaTopPick.label}
-              secondary={`${nbaTopPick.edgeLabel} · ${nbaTopPick.type === 'spread' ? 'Spread' : 'O/U'} weighted ${(nbaTopPick.confidence).toFixed(1)}`}
+              secondary={`${nbaTopPick.type === 'spread' ? 'Spread' : 'O/U'} · ${nbaTopPick.edgeLabel}`}
             />
           )}
           {wnbaTopPick && (
             <PickCard
-              eyebrow="WNBA · Top Confidence"
+              eyebrow="Top Confidence"
               league="wnba"
               matchup={`${wnbaTopPick.game.away.abbr} @ ${wnbaTopPick.game.home.abbr}`}
               tipoff={wnbaTopPick.game.startTimeLabel}
               primary={wnbaTopPick.label}
-              secondary={`${wnbaTopPick.edgeLabel} · ${wnbaTopPick.type === 'spread' ? 'Spread' : 'O/U'} weighted ${(wnbaTopPick.confidence).toFixed(1)}`}
+              secondary={`${wnbaTopPick.type === 'spread' ? 'Spread' : 'O/U'} · ${wnbaTopPick.edgeLabel}`}
             />
           )}
         </div>
