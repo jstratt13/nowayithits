@@ -224,7 +224,6 @@ function PickOfTheDay({ picks }) {
   return (
     <section className="home-section">
       <div className="home-section-head">
-        <span className="home-section-eyebrow">Today</span>
         <h2 className="home-section-title">Pick of the Day</h2>
       </div>
 
@@ -234,53 +233,62 @@ function PickOfTheDay({ picks }) {
           <Link to="/predictions">Predictions</Link> for upcoming slates.
         </div>
       ) : (
-        <div className="pick-grid">
+        <>
           {highestBlowout && (
-            <PickCard
-              eyebrow="Highest Blowout Probability"
-              league={highestBlowout.game.league}
-              matchup={`${highestBlowout.game.away.abbr} @ ${highestBlowout.game.home.abbr}`}
-              tipoff={highestBlowout.game.startTimeLabel}
-              primary={`${highestBlowout.dbp.toFixed(1)}% DBP`}
-              secondary={`Model projects ${
-                highestBlowout.pred.projMargin >= 0
-                  ? highestBlowout.game.home.abbr
-                  : highestBlowout.game.away.abbr
-              } by ${Math.abs(highestBlowout.pred.projMargin).toFixed(1)}`}
-            />
+            <div className="home-subsection">
+              <h3 className="home-subsection-title">Highest Blowout Probability</h3>
+              <div className="pick-grid">
+                <PickCard
+                  league={highestBlowout.game.league}
+                  matchup={`${highestBlowout.game.away.abbr} @ ${highestBlowout.game.home.abbr}`}
+                  tipoff={highestBlowout.game.startTimeLabel}
+                  primary={`${highestBlowout.dbp.toFixed(1)}% DBP`}
+                  secondary={`Model projects ${
+                    highestBlowout.pred.projMargin >= 0
+                      ? highestBlowout.game.home.abbr
+                      : highestBlowout.game.away.abbr
+                  } by ${Math.abs(highestBlowout.pred.projMargin).toFixed(1)}`}
+                />
+              </div>
+            </div>
           )}
-          {nbaTopPick && (
-            <PickCard
-              eyebrow="Top Confidence"
-              league="nba"
-              matchup={`${nbaTopPick.game.away.abbr} @ ${nbaTopPick.game.home.abbr}`}
-              tipoff={nbaTopPick.game.startTimeLabel}
-              primary={nbaTopPick.label}
-              secondary={`${nbaTopPick.type === 'spread' ? 'Spread' : 'O/U'} · ${nbaTopPick.edgeLabel}`}
-            />
+
+          {(nbaTopPick || wnbaTopPick) && (
+            <div className="home-subsection">
+              <h3 className="home-subsection-title">Top Confidence</h3>
+              <div className="pick-grid">
+                {nbaTopPick && (
+                  <PickCard
+                    league="nba"
+                    matchup={`${nbaTopPick.game.away.abbr} @ ${nbaTopPick.game.home.abbr}`}
+                    tipoff={nbaTopPick.game.startTimeLabel}
+                    primary={nbaTopPick.label}
+                    secondary={`${nbaTopPick.type === 'spread' ? 'Spread' : 'O/U'} · ${nbaTopPick.edgeLabel}`}
+                  />
+                )}
+                {wnbaTopPick && (
+                  <PickCard
+                    league="wnba"
+                    matchup={`${wnbaTopPick.game.away.abbr} @ ${wnbaTopPick.game.home.abbr}`}
+                    tipoff={wnbaTopPick.game.startTimeLabel}
+                    primary={wnbaTopPick.label}
+                    secondary={`${wnbaTopPick.type === 'spread' ? 'Spread' : 'O/U'} · ${wnbaTopPick.edgeLabel}`}
+                  />
+                )}
+              </div>
+            </div>
           )}
-          {wnbaTopPick && (
-            <PickCard
-              eyebrow="Top Confidence"
-              league="wnba"
-              matchup={`${wnbaTopPick.game.away.abbr} @ ${wnbaTopPick.game.home.abbr}`}
-              tipoff={wnbaTopPick.game.startTimeLabel}
-              primary={wnbaTopPick.label}
-              secondary={`${wnbaTopPick.type === 'spread' ? 'Spread' : 'O/U'} · ${wnbaTopPick.edgeLabel}`}
-            />
-          )}
-        </div>
+        </>
       )}
     </section>
   );
 }
 
-function PickCard({ eyebrow, league, matchup, tipoff, primary, secondary }) {
+function PickCard({ league, matchup, tipoff, primary, secondary }) {
   return (
     <article className="pick-card">
       <span className="pick-eyebrow">
         <span className={'league-pill league-pill-' + (league || 'nba')}>{(league || 'nba').toUpperCase()}</span>
-        {eyebrow}
       </span>
       <div className="pick-matchup">{matchup}</div>
       <div className="pick-time">{tipoff}</div>
@@ -296,7 +304,6 @@ function LiveScoresPanel({ games, loading }) {
   return (
     <div className="live-scores-panel">
       <div className="live-scores-head">
-        <span className="home-section-eyebrow">Live</span>
         <h3 className="live-scores-title">Today's Scores</h3>
       </div>
 
