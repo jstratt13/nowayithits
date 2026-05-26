@@ -540,6 +540,28 @@ function blendedDef(teamStats, league) {
   return full;
 }
 
+// Injury impact on team rating points (Option 1 totals adjustment).
+//
+// Re-uses the team injury score that already feeds Δ_Star — sum of
+// (status_weight × impactFactor) across the team's listed injuries. For
+// totals we apply it twice per team: subtract from their effective
+// offensive rating, add to their effective defensive rating. Net effect
+// on projected total: usually slightly negative (offense effect bigger
+// than defense effect, especially for star scorers being out).
+//
+// Tunable starting points — calibrate against actual outcomes over time:
+//   ALPHA = 1.0  → each unit of injury score drops ORtg by 1.0 point
+//   BETA  = 0.2  → each unit of injury score raises DRtg by 0.2 points
+// For a star-out team (injury score ~5), that's ~5 pts off ORtg and
+// ~1 pt onto DRtg. Net projTotal drop ≈ 2.5–3 pts in a typical matchup.
+export const INJURY_TOTAL_ALPHA = 1.0;
+export const INJURY_TOTAL_BETA  = 0.2;
+
+function teamInjuryScore(game, ctx, teamSide) {
+  const inj = ctx && ctx.getInjuryScore ? ctx.getInjuryScore : () => 0;
+  return inj(game.league, teamSide.id) || 0;
+}
+
 // Matchup-adjusted combined scoring rate.
 //
 // Each team's expected output blends THEIR offense with the OPPONENT's
@@ -548,22 +570,27 @@ function blendedDef(teamStats, league) {
 // OVER because the formula assumes you score your ORtg against everyone
 // (ignoring that strong defenses suppress scoring).
 //
-//   homeExpected  =  (blendedOff(home) + blendedDef(away))  / 2
-//   awayExpected  =  (blendedOff(away) + blendedDef(home))  / 2
+//   homeExpected  =  (effOff(home) + effDef(away))  / 2
+//   awayExpected  =  (effOff(away) + effDef(home))  / 2
 //   combined      =  homeExpected + awayExpected
 //
-// Algebraically equivalent to:
-//   combined = (sumOfBlendedOff + sumOfBlendedDef) / 2
-// — i.e. the simple average of total offense vs total defense, which is
-// the intuition: a high-octane offense playing a top defense settles
-// somewhere in the middle.
+// Where effOff / effDef each have their team's injury impact subtracted
+// from offense / added to defense respectively (see INJURY_TOTAL_ALPHA
+// and INJURY_TOTAL_BETA above).
 function combinedOffRating(game, ctx) {
   const c = cfg(game.league);
   const hStats = stats(ctx, game.league, game.home.abbr);
   const aStats = stats(ctx, game.league, game.away.abbr);
+  const hInj = teamInjuryScore(game, ctx, game.home);
+  const aInj = teamInjuryScore(game, ctx, game.away);
 
-  const homeExpected = (blendedOff(hStats, game.league) + blendedDef(aStats, game.league)) / 2;
-  const awayExpected = (blendedOff(aStats, game.league) + blendedDef(hStats, game.league)) / 2;
+  const effHomeOff = blendedOff(hStats, game.league) - INJURY_TOTAL_ALPHA * hInj;
+  const effAwayOff = blendedOff(aStats, game.league) - INJURY_TOTAL_ALPHA * aInj;
+  const effHomeDef = blendedDef(hStats, game.league) + INJURY_TOTAL_BETA  * hInj;
+  const effAwayDef = blendedDef(aStats, game.league) + INJURY_TOTAL_BETA  * aInj;
+
+  const homeExpected = (effHomeOff + effAwayDef) / 2;
+  const awayExpected = (effAwayOff + effHomeDef) / 2;
   let combined = homeExpected + awayExpected;
 
   if (game.modifiers?.restRust) combined *= c.restRustEff;
