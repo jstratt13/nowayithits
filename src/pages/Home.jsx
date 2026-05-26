@@ -135,6 +135,10 @@ function AboutSection() {
         otherwise.
       </p>
       <p className="home-prose">
+        More personally, "No Way It Hits" is, in my opinion, the most
+        effective reverse jinx to keep your crazy parlays alive!
+      </p>
+      <p className="home-prose">
         The goal is a <em>persistent, honest record</em> of model
         performance over time. Every prediction the model makes locks
         five minutes before tipoff and is never retroactively edited —
