@@ -178,8 +178,9 @@ function AboutSection() {
             <ul className="home-bullets">
               <li>
                 <strong>Team strength</strong> — a 50/50 blend of full-season
-                SRS with recent NetRtg, so a team's playoff form shows up
-                in margin and not just totals.
+                net rating and the net rating from the last 10 games, so a
+                team's recent performance carries significant weight in
+                predicting outcomes of games.
               </li>
               <li>
                 <strong>Home-court advantage</strong> — a league-specific
