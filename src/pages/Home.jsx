@@ -139,13 +139,13 @@ function AboutSection() {
         effective reverse jinx to keep your crazy parlays alive!
       </p>
       <p className="home-prose">
-        The goal is a <em>persistent, honest record</em> of model
-        performance over time. Every prediction the model makes locks
-        five minutes before tipoff and is never retroactively edited —
-        even if the formula changes later. The tracker grades each
-        locked prediction against the actual outcome so accuracy stats
-        can be trusted to evolve the model with real evidence rather
-        than wishful revision.
+        The goal is a persistent, honest record of model performance
+        over time. Every prediction the model makes locks five minutes
+        before tipoff and is never retroactively edited — even if the
+        formula changes later. The tracker grades each locked
+        prediction against the actual outcome so accuracy stats can be
+        trusted to evolve the model with real evidence rather than
+        wishful revision.
       </p>
 
       <div className="home-callout">
