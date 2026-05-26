@@ -406,9 +406,11 @@ function Row({ r }) {
       <td>
         {/* Blowout column is a pure outcome flag now: Yes if final margin
             cleared the league threshold, No otherwise. Same display for
-            graded + ungraded rows. Model prediction accuracy lives at
-            the aggregate Tracker stat-bar level (Avg DBP vs Blowout %). */}
-        <span className={'badge ' + (blowoutYes ? 'badge-hit' : 'badge-miss')}>
+            graded + ungraded rows. Color mirrors the zone palette — Yes
+            uses the Super Lock purple, No uses the Baseline blue —
+            since both colors are model-neutral observations rather than
+            hit/miss judgments. */}
+        <span className={'badge ' + (blowoutYes ? 'badge-zone-super' : 'badge-zone-base')}>
           {blowoutYes ? 'Yes' : 'No'}
         </span>
       </td>
