@@ -128,15 +128,21 @@ export default function Tracker() {
     const n = filtered.length;
     if (!n) return { n: 0 };
 
-    // Hit-rate stats only consider rows where the model actually made a
-    // prediction — ungraded games (no snapshot) are excluded from the
-    // numerator AND denominator to avoid biasing accuracy.
+    // Spread + O/U hit-rates are model-accuracy stats — they only make
+    // sense on rows where the model made a pregame call. Ungraded games
+    // are excluded from numerator + denominator to avoid biasing.
     const graded = filtered.filter(isGraded);
     const gradedN = graded.length;
     const sH = graded.filter((r) => r.spreadResult === 'Hit').length;
     const oH = graded.filter((r) => r.ouResult === 'Hit').length;
-    const bH = graded.filter((r) => (r.blowout || '').startsWith('Hit')).length;
     const ungradedN = n - gradedN;
+
+    // Blowout % is a pure outcome stat now — what fraction of games
+    // actually ended as blowouts. Counted across ALL filtered games
+    // (graded or not) since the actual margin is known regardless.
+    // Paired visually with Avg DBP so the model's predicted blowout
+    // rate sits next to the realized blowout rate.
+    const blowN = filtered.filter(wasBlowout).length;
 
     // 1-decimal precision — e.g. 64.1% instead of 64%
     const pct = (num, den) => den ? Math.round((num / den) * 1000) / 10 : null;
@@ -147,8 +153,8 @@ export default function Tracker() {
       ungradedN,
       spreadPct: pct(sH, gradedN),
       ouPct: pct(oH, gradedN),
-      blowPct: pct(bH, gradedN),
-      sH, oH, bH,
+      blowPct: pct(blowN, n),
+      sH, oH, blowN,
       // Margin + total are always populated, even on ungraded rows.
       avgMargin: (filtered.reduce((s, r) => s + (r.margin || 0), 0) / n).toFixed(1),
       avgTotal: (filtered.reduce((s, r) => s + (r.total || 0), 0) / n).toFixed(1),
@@ -214,15 +220,15 @@ export default function Tracker() {
               sub={stats.gradedN ? `${stats.oH}/${stats.gradedN}` : ''}
               color={stats.ouPct == null ? 'var(--muted)' : stats.ouPct >= 50 ? 'var(--hit)' : 'var(--miss)'}
             />
-            <StatCell
-              l="Blowout hit %"
-              v={stats.blowPct == null ? '—' : `${stats.blowPct.toFixed(1)}%`}
-              sub={stats.gradedN ? `${stats.bH}/${stats.gradedN}` : ''}
-              color={stats.blowPct == null ? 'var(--muted)' : stats.blowPct >= 50 ? 'var(--hit)' : 'var(--miss)'}
-            />
             <StatCell l="Avg margin" v={stats.n ? `+${stats.avgMargin}` : '—'} />
             <StatCell l="Avg total" v={stats.n ? stats.avgTotal : '—'} />
             <StatCell l="Avg DBP" v={stats.avgDBP == null ? '—' : `${stats.avgDBP}%`} color="var(--accent2)" />
+            <StatCell
+              l="Blowout %"
+              v={stats.blowPct == null ? '—' : `${stats.blowPct.toFixed(1)}%`}
+              sub={stats.n ? `${stats.blowN}/${stats.n}` : ''}
+              color="var(--accent2)"
+            />
           </div>
         </div>
       </div>
@@ -275,7 +281,9 @@ export default function Tracker() {
                 const gn = gRows.length;
                 const sH = gRows.filter((r) => r.spreadResult === 'Hit').length;
                 const oH = gRows.filter((r) => r.ouResult === 'Hit').length;
-                const bH = gRows.filter((r) => (r.blowout || '').startsWith('Hit')).length;
+                // Blowout % per date — fraction of games that actually
+                // ended as blowouts, regardless of model prediction.
+                const bN = gRows.filter(wasBlowout).length;
 
                 return (
                   <FragmentRows key={gKey}>
@@ -284,7 +292,7 @@ export default function Tracker() {
                         <td colSpan={13}>
                           ▸ {gKey}
                           <span style={{ marginLeft: 14, color: 'var(--muted2)', letterSpacing: '0.06em' }}>
-                            {gn} games · Sp {Math.round(sH/gn*100)}% · OU {Math.round(oH/gn*100)}% · Blow {Math.round(bH/gn*100)}%
+                            {gn} games · Sp {Math.round(sH/gn*100)}% · OU {Math.round(oH/gn*100)}% · Blow {Math.round(bN/gn*100)}%
                           </span>
                         </td>
                       </tr>
@@ -355,8 +363,11 @@ function timeAgo(iso) {
 
 function Row({ r }) {
   const graded = isGraded(r);
-  const hit = (r.blowout || '').startsWith('Hit');
-  const cls = !graded ? 'ungraded-row' : hit ? 'hit-row' : 'miss-row';
+  // Row tint dropped along with the old Hit/Miss blowout grading — the
+  // green/red left-border was tied to "did the model correctly predict
+  // a blowout," which is no longer a per-row concept. Ungraded rows
+  // still get their muted style so missing-prediction games stand out.
+  const cls = graded ? '' : 'ungraded-row';
   const blowoutYes = wasBlowout(r);
 
   return (
@@ -393,9 +404,13 @@ function Row({ r }) {
           : <Dash />}
       </td>
       <td>
-        {graded
-          ? <span className={'badge ' + (hit ? 'badge-hit' : 'badge-miss')}>{r.blowout}</span>
-          : <span className={'badge ' + (blowoutYes ? 'badge-hit' : 'badge-miss')}>{blowoutYes ? 'Yes' : 'No'}</span>}
+        {/* Blowout column is a pure outcome flag now: Yes if final margin
+            cleared the league threshold, No otherwise. Same display for
+            graded + ungraded rows. Model prediction accuracy lives at
+            the aggregate Tracker stat-bar level (Avg DBP vs Blowout %). */}
+        <span className={'badge ' + (blowoutYes ? 'badge-hit' : 'badge-miss')}>
+          {blowoutYes ? 'Yes' : 'No'}
+        </span>
       </td>
       <td className="right" style={{ fontWeight: 600, color: 'var(--accent)' }}>+{r.margin}</td>
       <td className="right" style={{ color: 'var(--muted)' }}>{r.total}</td>

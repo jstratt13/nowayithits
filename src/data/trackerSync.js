@@ -157,17 +157,14 @@ function gradeOU(ou, away, home) {
   return null;
 }
 
-// Blowout grading
-//   dbp >= 45 = "we projected a blowout"
-//   actual margin >= league threshold = "blowout actually happened"
-function gradeBlowout(dbp, actualMargin, league) {
+// Blowout column: pure outcome flag. "Yes" if the actual final margin
+// hit the league's blowout threshold (NBA ≥ 16, WNBA ≥ 14), "No"
+// otherwise. Independent of whether the model predicted a blowout —
+// model accuracy is now captured by comparing Avg DBP vs Blowout % at
+// the aggregate level (Tracker stat bar) rather than per-row.
+function gradeBlowout(actualMargin, league) {
   const threshold = BLOWOUT_THRESHOLD[league] ?? 15;
-  const predicted = dbp >= 45;
-  const actually  = actualMargin >= threshold;
-  if (predicted && actually)    return 'Hit (Blowout)';
-  if (!predicted && !actually)  return 'Hit (Safe)';
-  if (predicted && !actually)   return 'Miss (No Blowout)';
-  return 'Miss (Variance Blowout)';
+  return actualMargin >= threshold ? 'Yes' : 'No';
 }
 
 // Build an "ungraded" tracker row for a FINAL game we never observed
@@ -192,7 +189,10 @@ function buildUngradedRow(game) {
     hca: null,
     dbp: null,
     zone: null,
-    blowout: null,
+    // Blowout is now a pure outcome — populate for ungraded rows too
+    // since the actual margin is known regardless of whether the model
+    // had a pregame prediction.
+    blowout: gradeBlowout(margin, game.league),
     spreadPick: '',
     ouPick: '',
     spreadResult: '',
@@ -225,7 +225,7 @@ function buildTrackerRow(game, snapshot) {
 
   const spreadResult = gradeSpread(sp, game.away, game.home);
   const ouResult     = gradeOU(ou, game.away, game.home);
-  const blowout      = gradeBlowout(dbp, margin, game.league);
+  const blowout      = gradeBlowout(margin, game.league);
 
   return {
     id: trackerIdFor(game),
@@ -346,15 +346,25 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
         // we never duplicate a seed row that lacks an ESPN id.
         if (existingIds.has(id)) {
           // Already tracked — but backfill any fields the previous version
-          // of the reconciler didn't store. Currently: per-team final
-          // scores (added so the Tracker page can show "AWAY−HOME"). Only
-          // fills MISSING fields; never overwrites existing values to
-          // preserve the integrity rule.
+          // of the reconciler didn't store properly. Two cases handled:
+          //   1. Per-team scores added later: fill if missing.
+          //   2. Blowout field migrated from "Hit (X)"/"Miss (Y)" to
+          //      pure "Yes"/"No": overwrite if it doesn't match the new
+          //      format. The new value is purely an outcome flag — no
+          //      prediction-vs-actual information is lost in either
+          //      direction (model accuracy now lives at the aggregate
+          //      Tracker stat-bar level).
           const existing = existingById.get(id);
-          if (existing && existing.awayScore == null && row.awayScore != null) {
-            existing.awayScore = row.awayScore;
-            existing.homeScore = row.homeScore;
-            backfilled++;
+          if (existing) {
+            if (existing.awayScore == null && row.awayScore != null) {
+              existing.awayScore = row.awayScore;
+              existing.homeScore = row.homeScore;
+              backfilled++;
+            }
+            if (row.blowout && existing.blowout !== row.blowout && (existing.blowout == null || existing.blowout.startsWith('Hit') || existing.blowout.startsWith('Miss'))) {
+              existing.blowout = row.blowout;
+              backfilled++;
+            }
           }
           skipped.alreadyTracked++;
           continue;
