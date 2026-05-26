@@ -402,16 +402,28 @@ function blendVal(teamStats, fullKey, l10Key) {
 }
 
 function matchupTOG(favStats, undStats) {
-  // ((TO%_Fav_Off + TO%_Und_Def) / 2) − ((TO%_Und_Off + TO%_Fav_Def) / 2)
+  // From the favorite's perspective, positive should mean
+  // "TO matchup helps the favorite." Higher TO% is BAD for the team
+  // turning it over (unlike ORB%/DRB% which are control stats). So:
+  //   ((undOff_TO + favDef_TO) / 2)   = und's expected TO% (high = good for fav)
+  // − ((favOff_TO + undDef_TO) / 2)   = fav's expected TO% (high = bad for fav)
+  //
+  // Previously the two halves were swapped, which inverted the sign:
+  // a favorite with the better TO matchup ended up REDUCING their
+  // projected margin via Δ_Vol. Fixed 5/26/26 after a sign-trace on
+  // tomorrow's OKC @ SAS — OKC forces TOs at 14.6%/15.7% (high) and
+  // SAS at 11.5%/11.8% (low), so the TO matchup clearly favors OKC,
+  // and matchupTOG should reflect that with a POSITIVE value.
+  //
   // Each input is the 50/50 blend of full-season + L10. If the data
   // pipeline doesn't provide L10 for this league/season, blendVal
-  // returns the plain full-season value — same behavior as before.
+  // returns the plain full-season value.
   const favOff = blendVal(favStats, 'toOff', 'toOffLast10');
   const undDef = blendVal(undStats, 'toDef', 'toDefLast10');
   const undOff = blendVal(undStats, 'toOff', 'toOffLast10');
   const favDef = blendVal(favStats, 'toDef', 'toDefLast10');
   if ([favOff, undDef, undOff, favDef].some((v) => v == null)) return 0;
-  return ((favOff + undDef) / 2) - ((undOff + favDef) / 2);
+  return ((undOff + favDef) / 2) - ((favOff + undDef) / 2);
 }
 
 function matchupORG(favStats, undStats) {
