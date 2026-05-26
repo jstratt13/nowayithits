@@ -133,15 +133,29 @@ export async function scrapeTeamStats(league, env) {
         const rTbody = rTableM[0].match(/<tbody[\s\S]*?<\/tbody>/);
         if (rTbody) {
           const rRows = rTbody[0].match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+          // Helper: pull a numeric value for a given data-stat name out of
+          // the row, returning null if missing or non-numeric. BBR's
+          // cells embed `data-stat="X"` then the rendered value as text.
+          const cell = (row, statName) => {
+            const m = row.match(new RegExp(`data-stat="${statName}"[^>]*>([0-9.]+)`));
+            return m ? parseFloat(m[1]) : null;
+          };
+
           for (const rRow of rRows) {
             const hM = rRow.match(/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
             if (!hM) continue;
             const abbr = hM[1];
-            const oM = rRow.match(/data-stat="off_rtg"[^>]*>([0-9.]+)/);
-            const dM = rRow.match(/data-stat="def_rtg"[^>]*>([0-9.]+)/);
             if (!teams[abbr]) teams[abbr] = {};
-            teams[abbr].offLast10 = oM ? parseFloat(oM[1]) : null;
-            teams[abbr].defLast10 = dM ? parseFloat(dM[1]) : null;
+            // L10 versions of the four matchup-volume inputs follow the
+            // same data-stat names as the season-page advanced-team
+            // table: tov_pct, opp_tov_pct, orb_pct, drb_pct. Mirrors the
+            // off/def L10 already extracted above.
+            teams[abbr].offLast10    = cell(rRow, 'off_rtg');
+            teams[abbr].defLast10    = cell(rRow, 'def_rtg');
+            teams[abbr].toOffLast10  = cell(rRow, 'tov_pct');
+            teams[abbr].toDefLast10  = cell(rRow, 'opp_tov_pct');
+            teams[abbr].orbOffLast10 = cell(rRow, 'orb_pct');
+            teams[abbr].drbDefLast10 = cell(rRow, 'drb_pct');
           }
         }
       }

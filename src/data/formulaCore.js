@@ -388,14 +388,28 @@ function favoritedView(game, ctx) {
 
 // ── Step B · Volume Delta ───────────────────────────────────────────────
 
+// 50/50 full-season + L10 blend for each volume metric, mirroring the
+// pattern blendedOff / blendedDef / blendedSRS already use for totals
+// and margin. Falls back to plain full-season when L10 isn't available
+// (NBA regular season + WNBA — the scraper only fills L10 fields from
+// BBR's playoff page, which is only meaningful for NBA Apr-Jun).
+function blendVal(teamStats, fullKey, l10Key) {
+  const full = get(teamStats, fullKey, null);
+  const l10  = get(teamStats, l10Key,  null);
+  if (full == null) return null;
+  if (l10 == null)  return full;
+  return full * 0.5 + l10 * 0.5;
+}
+
 function matchupTOG(favStats, undStats) {
   // ((TO%_Fav_Off + TO%_Und_Def) / 2) − ((TO%_Und_Off + TO%_Fav_Def) / 2)
-  // All four fields default to null; if any are missing we return 0 to
-  // avoid contaminating Δ_Vol with partial data.
-  const favOff = get(favStats, 'toOff', null);
-  const undDef = get(undStats, 'toDef', null);
-  const undOff = get(undStats, 'toOff', null);
-  const favDef = get(favStats, 'toDef', null);
+  // Each input is the 50/50 blend of full-season + L10. If the data
+  // pipeline doesn't provide L10 for this league/season, blendVal
+  // returns the plain full-season value — same behavior as before.
+  const favOff = blendVal(favStats, 'toOff', 'toOffLast10');
+  const undDef = blendVal(undStats, 'toDef', 'toDefLast10');
+  const undOff = blendVal(undStats, 'toOff', 'toOffLast10');
+  const favDef = blendVal(favStats, 'toDef', 'toDefLast10');
   if ([favOff, undDef, undOff, favDef].some((v) => v == null)) return 0;
   return ((favOff + undDef) / 2) - ((undOff + favDef) / 2);
 }
@@ -408,10 +422,11 @@ function matchupORG(favStats, undStats) {
   // "allowed" portion is implicit. We approximate the blueprint as:
   //   favBoardEdge = (favOrbOff + undDrbDef) / 2
   //                  − (undOrbOff + favDrbDef) / 2
-  const favOff = get(favStats, 'orbOff', null);
-  const undDef = get(undStats, 'drbDef', null);
-  const undOff = get(undStats, 'orbOff', null);
-  const favDef = get(favStats, 'drbDef', null);
+  // Each input is the 50/50 full-season + L10 blend.
+  const favOff = blendVal(favStats, 'orbOff', 'orbOffLast10');
+  const undDef = blendVal(undStats, 'drbDef', 'drbDefLast10');
+  const undOff = blendVal(undStats, 'orbOff', 'orbOffLast10');
+  const favDef = blendVal(favStats, 'drbDef', 'drbDefLast10');
   if ([favOff, undDef, undOff, favDef].some((v) => v == null)) return 0;
   return ((favOff + undDef) / 2) - ((undOff + favDef) / 2);
 }
