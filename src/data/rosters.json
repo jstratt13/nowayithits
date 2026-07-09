@@ -2,7 +2,7 @@
   "nba": {
     "source": "basketball-reference.com",
     "season": "2026",
-    "fetchedAt": "2026-07-08T11:44:02.513Z",
+    "fetchedAt": "2026-07-09T12:40:39.843Z",
     "teams": {
       "LAL": {
         "bbrCode": "LAL",
@@ -4233,7 +4233,7 @@
   "wnba": {
     "source": "basketball-reference.com",
     "season": "2026",
-    "fetchedAt": "2026-07-08T11:44:02.681Z",
+    "fetchedAt": "2026-07-09T12:40:39.898Z",
     "teams": {
       "PHX": {
         "bbrCode": "PHO",
@@ -4292,7 +4292,7 @@
             "slug": "linskky01w",
             "mpg": 10.4,
             "bpm": null,
-            "per": 12.1
+            "per": 12
           },
           {
             "name": "Natasha Mack",
@@ -4344,7 +4344,7 @@
           {
             "name": "Julie Allemand",
             "slug": "allemju01w",
-            "mpg": 27.4,
+            "mpg": 27.9,
             "bpm": null,
             "per": 14.6
           },
@@ -4358,9 +4358,9 @@
           {
             "name": "Maria Conde",
             "slug": "condema01w",
-            "mpg": 24.9,
+            "mpg": 25.4,
             "bpm": null,
-            "per": 9.1
+            "per": 8.7
           },
           {
             "name": "Temi Fagbenle",
@@ -4379,30 +4379,30 @@
           {
             "name": "Isabelle Harrison",
             "slug": "harriis01w",
-            "mpg": 24.1,
+            "mpg": 24.6,
             "bpm": null,
-            "per": 19.9
+            "per": 20.4
           },
           {
             "name": "Laura Juškaitė",
             "slug": "juskala01w",
-            "mpg": 22.2,
+            "mpg": 22,
             "bpm": null,
-            "per": 13.4
+            "per": 13.2
           },
           {
             "name": "Teonni Key",
             "slug": "keyte01w",
-            "mpg": 9.6,
+            "mpg": 9.7,
             "bpm": null,
-            "per": 8.1
+            "per": 8.2
           },
           {
             "name": "Marina Mabrey",
             "slug": "mabrema01w",
-            "mpg": 28.8,
+            "mpg": 29.1,
             "bpm": null,
-            "per": 22.5
+            "per": 21.6
           },
           {
             "name": "Nikolina Milic",
@@ -4414,30 +4414,30 @@
           {
             "name": "Kia Nurse",
             "slug": "nurseki01w",
-            "mpg": 11.3,
+            "mpg": 11.4,
             "bpm": null,
-            "per": 11.5
+            "per": 12.1
           },
           {
             "name": "Tima Pouye",
             "slug": "pouyeti01w",
-            "mpg": 9.9,
+            "mpg": 10.2,
             "bpm": null,
-            "per": 7.5
+            "per": 6.6
           },
           {
             "name": "Kiki Rice",
             "slug": "riceki01w",
             "mpg": 26.7,
             "bpm": null,
-            "per": 19.6
+            "per": 19.7
           },
           {
             "name": "Nyara Sabally",
             "slug": "sabalny01w",
-            "mpg": 25.1,
+            "mpg": 23.9,
             "bpm": null,
-            "per": 20.5
+            "per": 20.3
           },
           {
             "name": "Brittney Sykes",
@@ -4463,7 +4463,7 @@
             "slug": "astiepa01w",
             "mpg": 24.4,
             "bpm": null,
-            "per": 16.9
+            "per": 16.8
           },
           {
             "name": "Raquel Carrera Quintana",
@@ -4561,7 +4561,7 @@
             "slug": "xuha01w",
             "mpg": 12,
             "bpm": null,
-            "per": 20.1
+            "per": 20
           },
           {
             "name": "Anneli Maley",
@@ -4578,44 +4578,44 @@
           {
             "name": "Laeticia Amihere",
             "slug": "amihela01w",
-            "mpg": 11.6,
+            "mpg": 11.8,
             "bpm": null,
-            "per": 14.9
+            "per": 14.2
           },
           {
             "name": "Veronica Burton",
             "slug": "burtove01w",
-            "mpg": 28.2,
+            "mpg": 27.9,
             "bpm": null,
-            "per": 18.1
+            "per": 18.3
           },
           {
             "name": "Kaila Charles",
             "slug": "charlka01w",
-            "mpg": 19.5,
+            "mpg": 19.7,
             "bpm": null,
-            "per": 11.7
+            "per": 11
           },
           {
             "name": "Kaitlyn Chen",
             "slug": "chenka01w",
-            "mpg": 14.2,
+            "mpg": 14.6,
             "bpm": null,
-            "per": 16.2
+            "per": 17.1
           },
           {
             "name": "Nadia Fingall",
             "slug": "fingana01w",
-            "mpg": 3,
+            "mpg": 2.7,
             "bpm": null,
-            "per": 21.8
+            "per": 16.4
           },
           {
             "name": "Tiffany Hayes",
             "slug": "hayesti01w",
-            "mpg": 15.3,
+            "mpg": 15.5,
             "bpm": null,
-            "per": 16.1
+            "per": 15.7
           },
           {
             "name": "Justė Jocytė",
@@ -4636,14 +4636,14 @@
             "slug": "prechas01w",
             "mpg": 5,
             "bpm": null,
-            "per": 34.9
+            "per": 35
           },
           {
             "name": "Janelle Salaün",
             "slug": "salauja01w",
             "mpg": 22.6,
             "bpm": null,
-            "per": 17.1
+            "per": 18.5
           },
           {
             "name": "Miela Sowah",
@@ -4655,30 +4655,30 @@
           {
             "name": "Kiah Stokes",
             "slug": "stokeki01w",
-            "mpg": 22.5,
+            "mpg": 22.2,
             "bpm": null,
-            "per": 13.3
+            "per": 12.7
           },
           {
             "name": "Kayla Thornton",
             "slug": "thornka01w",
             "mpg": 25.3,
             "bpm": null,
-            "per": 10.5
+            "per": 11.4
           },
           {
             "name": "Gabby Williams",
             "slug": "williga01w",
-            "mpg": 25.9,
+            "mpg": 25.5,
             "bpm": null,
-            "per": 19.7
+            "per": 19.2
           },
           {
             "name": "Cecilia Zandalasini",
             "slug": "zandace01w",
-            "mpg": 17.8,
+            "mpg": 17.6,
             "bpm": null,
-            "per": 13.5
+            "per": 12.8
           }
         ]
       },
@@ -4784,37 +4784,37 @@
           {
             "name": "Nell Angloma",
             "slug": "anglone01w",
-            "mpg": 10.4,
+            "mpg": 10.7,
             "bpm": null,
-            "per": 8.2
+            "per": 9.4
           },
           {
             "name": "Raegan Beers",
             "slug": "beersra01w",
-            "mpg": 10.8,
+            "mpg": 10.9,
             "bpm": null,
-            "per": 13.3
+            "per": 13
           },
           {
             "name": "Kennedy Burke",
             "slug": "burkeke01w",
-            "mpg": 23.9,
+            "mpg": 24,
             "bpm": null,
-            "per": 12.3
+            "per": 11.9
           },
           {
             "name": "Aaliyah Edwards",
             "slug": "edwaraa01w",
-            "mpg": 18.9,
+            "mpg": 18.8,
             "bpm": null,
-            "per": 16.5
+            "per": 15.2
           },
           {
             "name": "Brittney Griner",
             "slug": "grinebr01w",
             "mpg": 25.5,
             "bpm": null,
-            "per": 20.8
+            "per": 20.7
           },
           {
             "name": "Ashlon Jackson",
@@ -4828,56 +4828,56 @@
             "slug": "kneepgi01w",
             "mpg": 8.3,
             "bpm": null,
-            "per": 10.4
+            "per": 11.7
           },
           {
             "name": "Leïla Lacan",
             "slug": "lacanle01w",
             "mpg": 28.7,
             "bpm": null,
-            "per": 14.2
+            "per": 15.1
           },
           {
             "name": "Charlisse Leger-Walker",
             "slug": "legerch01w",
-            "mpg": 21,
+            "mpg": 21.5,
             "bpm": null,
-            "per": 11.2
+            "per": 10.6
           },
           {
             "name": "Diamond Miller",
             "slug": "milledi03w",
-            "mpg": 21.2,
+            "mpg": 21.3,
             "bpm": null,
-            "per": 7.8
+            "per": 8.1
           },
           {
             "name": "Aneesah Morrow",
             "slug": "morroan02w",
             "mpg": 22.7,
             "bpm": null,
-            "per": 16.8
+            "per": 16.7
           },
           {
             "name": "Olivia Nelson-Ododa",
             "slug": "nelsool01w",
-            "mpg": 19.6,
+            "mpg": 20,
             "bpm": null,
             "per": 20.6
           },
           {
             "name": "Saniya Rivers",
             "slug": "riversa01w",
-            "mpg": 23.4,
+            "mpg": 22.7,
             "bpm": null,
-            "per": 8.4
+            "per": 8.6
           },
           {
             "name": "Hailey Van Lith",
             "slug": "vanliha01w",
             "mpg": 16.4,
             "bpm": null,
-            "per": 15.2
+            "per": 15.1
           }
         ]
       },
@@ -4887,7 +4887,7 @@
           {
             "name": "Ariel Atkins",
             "slug": "atkinar01w",
-            "mpg": 25.2,
+            "mpg": 25.6,
             "bpm": null,
             "per": 8.3
           },
@@ -4896,21 +4896,21 @@
             "slug": "brinkca01w",
             "mpg": 17.5,
             "bpm": null,
-            "per": 17.6
+            "per": 17.5
           },
           {
             "name": "Rae Burrell",
             "slug": "burrera01w",
-            "mpg": 26.5,
+            "mpg": 26.9,
             "bpm": null,
-            "per": 11.1
+            "per": 11.7
           },
           {
             "name": "Emma Cannon",
             "slug": "cannoem01w",
-            "mpg": 7.2,
+            "mpg": 6.6,
             "bpm": null,
-            "per": 19.6
+            "per": 20.4
           },
           {
             "name": "Sania Feagin",
@@ -4929,16 +4929,16 @@
           {
             "name": "Dearica Hamby",
             "slug": "hambyde01w",
-            "mpg": 29.1,
+            "mpg": 29.3,
             "bpm": null,
-            "per": 19.9
+            "per": 20.1
           },
           {
             "name": "Ta'Niya Latson",
             "slug": "latsota01w",
             "mpg": 5,
             "bpm": null,
-            "per": 5.9
+            "per": 5.8
           },
           {
             "name": "Kate Martin",
@@ -4952,14 +4952,21 @@
             "slug": "ogwumnn01w",
             "mpg": 31.4,
             "bpm": null,
-            "per": 21.6
+            "per": 21.7
           },
           {
             "name": "Jihyun Park",
             "slug": "parkji02w",
-            "mpg": 9,
+            "mpg": 9.1,
             "bpm": null,
-            "per": 6.2
+            "per": 8.2
+          },
+          {
+            "name": "Alissa Pili",
+            "slug": "pilial01w",
+            "mpg": 12,
+            "bpm": null,
+            "per": 24.6
           },
           {
             "name": "Kelsey Plum",
@@ -4971,23 +4978,23 @@
           {
             "name": "Erica Wheeler",
             "slug": "wheeler01w",
-            "mpg": 27.2,
+            "mpg": 27.3,
             "bpm": null,
-            "per": 7.6
+            "per": 8.1
           },
           {
             "name": "Laura Ziegler",
             "slug": "zieglla01w",
             "mpg": 9.7,
             "bpm": null,
-            "per": 10.7
+            "per": 10.6
           },
           {
             "name": "Kiana Williams",
             "slug": "williki02w",
             "mpg": 14.8,
             "bpm": null,
-            "per": 4.7
+            "per": 6.6
           }
         ]
       },
@@ -5006,7 +5013,7 @@
             "slug": "cardoka01w",
             "mpg": 26.7,
             "bpm": null,
-            "per": 23.4
+            "per": 23.3
           },
           {
             "name": "Natasha Cloud",
@@ -5285,9 +5292,9 @@
           {
             "name": "Monique Billings",
             "slug": "billimo01w",
-            "mpg": 20.1,
+            "mpg": 20,
             "bpm": null,
-            "per": 16.3
+            "per": 16.5
           },
           {
             "name": "Aliyah Boston",
@@ -5299,70 +5306,70 @@
           {
             "name": "Caitlin Clark",
             "slug": "clarkca02w",
-            "mpg": 30.8,
+            "mpg": 29.9,
             "bpm": null,
-            "per": 20.9
+            "per": 20.3
           },
           {
             "name": "Sophie Cunningham",
             "slug": "cunniso01w",
-            "mpg": 22.9,
+            "mpg": 22.4,
             "bpm": null,
-            "per": 13.9
+            "per": 13.5
           },
           {
             "name": "Damiris Dantas",
             "slug": "dantada01w",
-            "mpg": 7.4,
+            "mpg": 8.9,
             "bpm": null,
-            "per": 5
+            "per": 8.3
           },
           {
             "name": "Bree Hall",
             "slug": "hallbr01w",
-            "mpg": 10,
+            "mpg": 5.5,
             "bpm": null,
-            "per": 11.1
+            "per": 10.1
           },
           {
             "name": "Tyasha Harris",
             "slug": "harrity01w",
-            "mpg": 12.9,
+            "mpg": 13.8,
             "bpm": null,
-            "per": 7.3
+            "per": 8.2
           },
           {
             "name": "Myisha Hines-Allen",
             "slug": "hinesmy01w",
-            "mpg": 16,
+            "mpg": 15.8,
             "bpm": null,
-            "per": 10.5
+            "per": 10.3
           },
           {
             "name": "Lexie Hull",
             "slug": "hullle01w",
             "mpg": 20.3,
             "bpm": null,
-            "per": 9.5
+            "per": 10
           },
           {
             "name": "Raven Johnson",
             "slug": "johnsra04w",
-            "mpg": 14.4,
+            "mpg": 14.3,
             "bpm": null,
-            "per": 9.9
+            "per": 9
           },
           {
             "name": "Kelsey Mitchell",
             "slug": "mitchke01w",
             "mpg": 32.4,
             "bpm": null,
-            "per": 19.4
+            "per": 20
           },
           {
             "name": "Makayla Timpson",
             "slug": "timpsma01w",
-            "mpg": 12.7,
+            "mpg": 13.3,
             "bpm": null,
             "per": 14.3
           },
@@ -5371,14 +5378,14 @@
             "slug": "walkesh01w",
             "mpg": 3.5,
             "bpm": null,
-            "per": -13.2
+            "per": -13.1
           },
           {
             "name": "Grace VanSlooten",
             "slug": "vanslgr01w",
-            "mpg": 2.8,
+            "mpg": 3,
             "bpm": null,
-            "per": 13.5
+            "per": 8.9
           }
         ]
       },
@@ -5425,7 +5432,7 @@
             "slug": "konesi01w",
             "mpg": 5.3,
             "bpm": null,
-            "per": 8.5
+            "per": 8.4
           },
           {
             "name": "Indya Nivar",
@@ -5577,7 +5584,7 @@
             "slug": "thierta01w",
             "mpg": 4.2,
             "bpm": null,
-            "per": 4.5
+            "per": 4.4
           }
         ]
       },
@@ -5690,37 +5697,37 @@
           {
             "name": "Maya Caldwell",
             "slug": "caldwma01w",
-            "mpg": 14.6,
+            "mpg": 14.7,
             "bpm": null,
-            "per": 11
+            "per": 11.1
           },
           {
             "name": "Emma Čechová",
             "slug": "cechoem01w",
             "mpg": 17.3,
             "bpm": null,
-            "per": 14.3
+            "per": 14.2
           },
           {
             "name": "Nia Coffey",
             "slug": "coffeni01w",
-            "mpg": 27,
+            "mpg": 26.5,
             "bpm": null,
-            "per": 16.5
+            "per": 15.8
           },
           {
             "name": "Antonia Delaere",
             "slug": "delaean01w",
-            "mpg": 13.4,
+            "mpg": 13.8,
             "bpm": null,
-            "per": 9.6
+            "per": 9.5
           },
           {
             "name": "Eliška Hamzová",
             "slug": "hamzoel01w",
-            "mpg": 6.8,
+            "mpg": 7.4,
             "bpm": null,
-            "per": 11.6
+            "per": 15.2
           },
           {
             "name": "Emese Hof",
@@ -5732,37 +5739,37 @@
           {
             "name": "Natasha Howard",
             "slug": "howarna01w",
-            "mpg": 29.6,
+            "mpg": 29.7,
             "bpm": null,
-            "per": 24.2
+            "per": 23.8
           },
           {
             "name": "Dorka Juhász",
             "slug": "juhasdo01w",
-            "mpg": 25,
+            "mpg": 22,
             "bpm": null,
-            "per": 0.2
+            "per": 11.9
           },
           {
             "name": "Liatu King",
             "slug": "kingli01w",
             "mpg": 10.1,
             "bpm": null,
-            "per": 14.6
+            "per": 14.5
           },
           {
             "name": "Anastasiia Kosu",
             "slug": "kosuan01w",
-            "mpg": 11.4,
+            "mpg": 11.5,
             "bpm": null,
-            "per": 17
+            "per": 17.1
           },
           {
             "name": "Kayla McBride",
             "slug": "mcbrika01w",
-            "mpg": 31.9,
+            "mpg": 32.2,
             "bpm": null,
-            "per": 15.7
+            "per": 16.6
           },
           {
             "name": "Teaira McCowan",
@@ -5783,7 +5790,7 @@
             "slug": "willico01w",
             "mpg": 30.4,
             "bpm": null,
-            "per": 18.7
+            "per": 18.4
           }
         ]
       }
