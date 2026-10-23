@@ -29,7 +29,7 @@ import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
 import { resolveAbbr } from '../../src/data/abbrAlias.js';
 
-const { computeInjuryScore, normalizeName } = core;
+const { computeInjuryScoreDetailed, normalizeName } = core;
 
 function normalizeBBRKeys(teams) {
   const out = {};
@@ -81,27 +81,31 @@ async function fetchSlate(league, etDateStr) {
   return (data.events || []).map((ev) => normalizeEvent(ev, league)).filter(Boolean);
 }
 
-// Fetches the ESPN injuries endpoint and reduces it to a map of
-//   { [teamId: string]: number }   // injury score for Δ_Star
+// Fetches the ESPN injuries endpoint and reduces it to per-team injury
+// data: scalar score (for Δ_Star) + per-player rows (for the breakdown
+// surface). Both come from a single computeInjuryScoreDetailed pass so
+// score and rows can't drift.
 //
-// When `espnAbbrByTeamId` is provided, also joins each ESPN team's injury
-// list against the bundled BBR roster (src/data/rosters.json) so the score
-// is PLAYER-WEIGHTED: a star OUT counts more than a 12th-man OUT (Step B).
+// When `espnAbbrByTeamId` is provided, joins each ESPN team's injury
+// list against the bundled BBR roster (src/data/rosters.json) so the
+// score is PLAYER-WEIGHTED: a star OUT counts more than a 12th-man OUT.
 // Falls through to status-only weights for teams we don't have an abbr
 // mapping for (e.g. team isn't playing today, so it wasn't in the slate).
 //
-// Returns {} on failure so a transient ESPN hiccup doesn't blank
-// predictions — Δ_Star just degrades to 0 for that cron tick.
-async function fetchInjuryScores(league, espnAbbrByTeamId) {
+// Returns { scoresByTeamId: {}, detailByTeamId: {} } on failure so a
+// transient ESPN hiccup doesn't blank predictions — Δ_Star just degrades
+// to 0 for that cron tick.
+async function fetchInjuryData(league, espnAbbrByTeamId) {
   const path = LEAGUE_PATH[league];
-  if (!path) return {};
+  if (!path) return { scoresByTeamId: {}, detailByTeamId: {} };
   try {
     const res = await fetch(`${ESPN_BASE}/${path}/injuries`);
     if (!res.ok) throw new Error(`ESPN ${path} injuries → ${res.status}`);
     const data = await res.json();
     const rosters = getRosters(league).teams || {};
 
-    const scores = {};
+    const scoresByTeamId = {};
+    const detailByTeamId = {};
     for (const team of data.injuries || []) {
       const teamId = String(team.id);
       const players = (team.injuries || []).map((inj) => ({
@@ -110,23 +114,20 @@ async function fetchInjuryScores(league, espnAbbrByTeamId) {
       }));
       if (!players.length) continue;
 
-      // Build the (normalized name) → (roster entry) map for this team
-      // if we know its ESPN abbreviation. If we don't (e.g. not playing
-      // today), computeInjuryScore falls back to status-only weights.
       const espnAbbr = espnAbbrByTeamId?.[teamId];
       const roster = espnAbbr ? rosters[espnAbbr] : null;
       const rosterByName = roster
         ? new Map(roster.players.map((p) => [normalizeName(p.name), p]))
         : null;
 
-      scores[teamId] = computeInjuryScore(players, rosterByName);
+      const detail = computeInjuryScoreDetailed(players, rosterByName);
+      scoresByTeamId[teamId] = detail.score;
+      detailByTeamId[teamId] = detail;
     }
-    return scores;
+    return { scoresByTeamId, detailByTeamId };
   } catch (e) {
-    // Logged but not thrown — Δ_Star = 0 fallback is safer than failing
-    // the whole prediction blob.
     console.warn(`[predictions] ${league} injuries fetch failed:`, e?.message || e);
-    return {};
+    return { scoresByTeamId: {}, detailByTeamId: {} };
   }
 }
 
@@ -203,13 +204,18 @@ function teamFrom(side) {
 
 // ── ctx + snapshot ────────────────────────────────────────────────────
 
-function buildContext(teamsByEspnAbbr, injuryScoresByTeamId) {
+function buildContext(teamsByEspnAbbr, injuryScoresByTeamId, injuryDetailByTeamId) {
   return {
     getTeamStats: (_league, abbr) => teamsByEspnAbbr[resolveAbbr(abbr)] || null,
     // Δ_Star reads ESPN's injury endpoint, keyed by numeric team id —
     // matches the frontend's getInjuryScore() lookup so server and client
     // produce identical predictions.
     getInjuryScore: (_league, teamId) => injuryScoresByTeamId[String(teamId)] || 0,
+    // Per-player rows for the breakdown surface. Same data the scalar
+    // score came from, so the two can't drift. Empty rows + score 0 when
+    // a team isn't in the injuries payload (clean game day).
+    getInjuryDetail: (_league, teamId) =>
+      injuryDetailByTeamId[String(teamId)] || { score: 0, rows: [] },
   };
 }
 
@@ -221,6 +227,7 @@ function snapshotFor(game, ctx) {
     sp:         core.spreadPick(game, ctx),
     ou:         core.ouPick(game, ctx),
     inputs:     core.predictionInputs(game, ctx),
+    breakdown:  core.predictionBreakdown(game, ctx),
     book: {
       favored: game.odds.favored,
       spread:  game.odds.spread,
@@ -285,9 +292,9 @@ export async function refreshPredictions(env, league, etDateStr) {
     if (g.away?.id) espnAbbrByTeamId[String(g.away.id)] = g.away.abbr;
   }
 
-  const injuryScores = await fetchInjuryScores(league, espnAbbrByTeamId);
+  const { scoresByTeamId, detailByTeamId } = await fetchInjuryData(league, espnAbbrByTeamId);
   const teamsByEspnAbbr = normalizeBBRKeys(teamsBlob.teams || {});
-  const ctx = buildContext(teamsByEspnAbbr, injuryScores);
+  const ctx = buildContext(teamsByEspnAbbr, scoresByTeamId, detailByTeamId);
 
   // Load existing snapshots for this league/date so locked games are
   // preserved verbatim.

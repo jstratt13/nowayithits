@@ -260,23 +260,49 @@ function findRosterEntry(injuredName, rosterByNormName) {
   return best;
 }
 
-// computeInjuryScore: sum of (status_weight × player_impact) across the
-// team's injury list. `rosterByNormName` is optional — when provided, the
-// score is player-weighted. When not provided (e.g. frontend without
-// bundled rosters), falls back to status-only (impact = 1.0 for everyone).
-export function computeInjuryScore(players, rosterByNormName) {
-  if (!Array.isArray(players)) return 0;
+// computeInjuryScoreDetailed: sum of (status_weight × player_impact) across
+// the team's injury list, PLUS the per-player rows that produced it. The
+// rows are what the tap-to-expand breakdown surfaces; the score is what
+// formula consumers (Δ_Star, totals injury impact) use. Single loop, single
+// source of truth — if the rows say "LeBron contributed 2.73" the team
+// score will also have 2.73 baked in.
+//
+// rosterByNormName is optional. When provided, contribution is player-
+// weighted via impactFactor(rosterEntry). When not (frontend without
+// bundled rosters), falls back to status-only (impact = 1.0).
+//
+// Rows are returned sorted by contribution desc so the UI shows the
+// heaviest-hitting absences first.
+export function computeInjuryScoreDetailed(players, rosterByNormName) {
+  if (!Array.isArray(players)) return { score: 0, rows: [] };
   let score = 0;
+  const rows = [];
   for (const p of players) {
     const key = String(p?.status || '').toLowerCase().trim();
     const statusWeight = INJURY_STATUS_WEIGHTS[key] || 0;
     if (statusWeight === 0) continue;
-    const impact = rosterByNormName
-      ? impactFactor(findRosterEntry(p?.player, rosterByNormName))
-      : 1.0;
-    score += statusWeight * impact;
+    const entry = rosterByNormName ? findRosterEntry(p?.player, rosterByNormName) : null;
+    const impact = rosterByNormName ? impactFactor(entry) : 1.0;
+    const contribution = statusWeight * impact;
+    score += contribution;
+    rows.push({
+      player: p?.player || '',
+      status: p?.status || '',
+      statusWeight,
+      mpg: entry?.mpg ?? null,
+      bpm: entry?.bpm ?? null,
+      per: entry?.per ?? null,
+      impact,
+      contribution,
+    });
   }
-  return score;
+  rows.sort((a, b) => b.contribution - a.contribution);
+  return { score, rows };
+}
+
+// Back-compat wrapper. Most callers just want the scalar score.
+export function computeInjuryScore(players, rosterByNormName) {
+  return computeInjuryScoreDetailed(players, rosterByNormName).score;
 }
 
 // ── Team stats accessor (resolved via ctx) ─────────────────────────────
@@ -325,6 +351,10 @@ function hcaDynamic(game, ctx) {
 // Lookups are keyed by ESPN numeric team id, not abbreviation, because the
 // ESPN injuries endpoint doesn't ship abbreviations and chasing a separate
 // /teams call just to bridge the gap is wasted work.
+//
+// Returns a structured detail object — `.value` is what existing scalar
+// callers consume; the rest powers the breakdown surface (Step 1 of the
+// tap-to-expand work).
 function deltaStar(ctx, league, favId, undId) {
   const inj = ctx && ctx.getInjuryScore ? ctx.getInjuryScore : () => 0;
   const favScore = inj(league, favId);
@@ -332,7 +362,8 @@ function deltaStar(ctx, league, favId, undId) {
   const iaf = 1.0 + (undScore - favScore) * 0.05;
   const raw = (iaf - 1.0) * 20;
   const { min, max } = cfg(league).starCap;
-  return Math.max(min, Math.min(max, raw));
+  const value = Math.max(min, Math.min(max, raw));
+  return { value, favScore, undScore, iaf, raw, clamped: raw !== value };
 }
 
 // SRS blended with a recent-form proxy. Mirrors how blendedOff/blendedDef
@@ -379,11 +410,19 @@ function favoritedView(game, ctx) {
   const undSRS = favoredIsHome ? awaySRS : homeSRS;
   const favId  = favoredIsHome ? game.home.id : game.away.id;
   const undId  = favoredIsHome ? game.away.id : game.home.id;
-  const star = deltaStar(ctx, game.league, favId, undId);
+  const starDetail = deltaStar(ctx, game.league, favId, undId);
 
   const hcaSigned = favoredIsHome ? +hca : -hca;
-  const baseANG = (favSRS - undSRS) + hcaSigned + star;
-  return { favoredIsHome, favSRS, undSRS, hca, deltaStar: star, baseANG };
+  const baseANG = (favSRS - undSRS) + hcaSigned + starDetail.value;
+  return {
+    favoredIsHome,
+    favSRS,
+    undSRS,
+    hca,
+    deltaStar: starDetail.value,
+    deltaStarDetail: starDetail,
+    baseANG,
+  };
 }
 
 // ── Step B · Volume Delta ───────────────────────────────────────────────
@@ -401,6 +440,8 @@ function blendVal(teamStats, fullKey, l10Key) {
   return full * 0.5 + l10 * 0.5;
 }
 
+// Returns a detail object — `.value` is what existing scalar callers
+// consume; the per-team blended inputs power the breakdown surface.
 function matchupTOG(favStats, undStats) {
   // From the favorite's perspective, positive should mean
   // "TO matchup helps the favorite." Higher TO% is BAD for the team
@@ -422,8 +463,11 @@ function matchupTOG(favStats, undStats) {
   const undDef = blendVal(undStats, 'toDef', 'toDefLast10');
   const undOff = blendVal(undStats, 'toOff', 'toOffLast10');
   const favDef = blendVal(favStats, 'toDef', 'toDefLast10');
-  if ([favOff, undDef, undOff, favDef].some((v) => v == null)) return 0;
-  return ((undOff + favDef) / 2) - ((favOff + undDef) / 2);
+  if ([favOff, undDef, undOff, favDef].some((v) => v == null)) {
+    return { value: 0, favOff_TO: null, undDef_TO: null, undOff_TO: null, favDef_TO: null };
+  }
+  const value = ((undOff + favDef) / 2) - ((favOff + undDef) / 2);
+  return { value, favOff_TO: favOff, undDef_TO: undDef, undOff_TO: undOff, favDef_TO: favDef };
 }
 
 function matchupORG(favStats, undStats) {
@@ -439,8 +483,11 @@ function matchupORG(favStats, undStats) {
   const undDef = blendVal(undStats, 'drbDef', 'drbDefLast10');
   const undOff = blendVal(undStats, 'orbOff', 'orbOffLast10');
   const favDef = blendVal(favStats, 'drbDef', 'drbDefLast10');
-  if ([favOff, undDef, undOff, favDef].some((v) => v == null)) return 0;
-  return ((favOff + undDef) / 2) - ((undOff + favDef) / 2);
+  if ([favOff, undDef, undOff, favDef].some((v) => v == null)) {
+    return { value: 0, favOff_ORB: null, undDef_ORB: null, undOff_ORB: null, favDef_ORB: null };
+  }
+  const value = ((favOff + undDef) / 2) - ((undOff + favDef) / 2);
+  return { value, favOff_ORB: favOff, undDef_ORB: undDef, undOff_ORB: undOff, favDef_ORB: favDef };
 }
 
 function deltaVol(game, view, ctx) {
@@ -450,7 +497,8 @@ function deltaVol(game, view, ctx) {
   const undStats = stats(ctx, game.league, undAbbr);
   const tog = matchupTOG(favStats, undStats);
   const org = matchupORG(favStats, undStats);
-  return (tog * 1.4) + (org * 0.5);
+  const value = (tog.value * 1.4) + (org.value * 0.5);
+  return { value, tog, org };
 }
 
 // Matchup Pace Factor. When the league config enables it, scales Volume
@@ -480,14 +528,15 @@ function matchupPaceFactor(game, ctx) {
 export function computeBreakdown(game, ctx) {
   const c = cfg(game.league);
   const view = favoritedView(game, ctx);
-  const dvol = deltaVol(game, view, ctx);
+  const dvolDetail = deltaVol(game, view, ctx);
   const mpf = matchupPaceFactor(game, ctx);
-  const trueGap = view.baseANG + dvol * mpf;
+  const trueGap = view.baseANG + dvolDetail.value * mpf;
   const z = c.intercept + c.multiplier * trueGap;
   const dbp = sigmoid(z) * 100;
   return {
     ...view,
-    deltaVol: dvol,
+    deltaVol: dvolDetail.value,
+    deltaVolDetail: dvolDetail,
     mpf,
     trueGap,
     z,
@@ -637,6 +686,82 @@ export function fmtLine(n) {
   if (n == null || Number.isNaN(n)) return '—';
   const sign = n > 0 ? '+' : n < 0 ? '-' : '';
   return `${sign}${Math.abs(n).toFixed(1)}`;
+}
+
+// Structured breakdown surface — powers the tap-to-expand UI. Every number
+// here is derived from the same code path as computeDBP / projectedMargin /
+// predictionInputs, so the breakdown can't drift from the scalar display.
+//
+// Per-player Δ_Star rows come from an optional ctx.getInjuryDetail(league,
+// teamId) → { score, rows }. When the ctx doesn't expose it (early-callers,
+// frontend without the bundled rosters), players[] falls back to []; the
+// scalar team scores still match exactly because they come from the same
+// ctx.getInjuryScore path everything else uses.
+export function predictionBreakdown(game, ctx) {
+  const c = cfg(game.league);
+  const b = computeBreakdown(game, ctx);
+
+  const favAbbr = b.favoredIsHome ? game.home.abbr : game.away.abbr;
+  const undAbbr = b.favoredIsHome ? game.away.abbr : game.home.abbr;
+  const favId   = b.favoredIsHome ? game.home.id   : game.away.id;
+  const undId   = b.favoredIsHome ? game.away.id   : game.home.id;
+
+  const getDetail = ctx && ctx.getInjuryDetail
+    ? ctx.getInjuryDetail
+    : () => ({ score: 0, rows: [] });
+  const favDetail = getDetail(game.league, favId);
+  const undDetail = getDetail(game.league, undId);
+
+  const tog = b.deltaVolDetail.tog;
+  const org = b.deltaVolDetail.org;
+  const star = b.deltaStarDetail;
+
+  return {
+    favoredIsHome: b.favoredIsHome,
+    favAbbr,
+    undAbbr,
+    baseANG: {
+      favSRS: b.favSRS,
+      undSRS: b.undSRS,
+      srsDelta: b.favSRS - b.undSRS,
+      hca: b.hca,
+      hcaSigned: b.favoredIsHome ? +b.hca : -b.hca,
+      deltaStar: b.deltaStar,
+      total: b.baseANG,
+    },
+    deltaVol: {
+      matchupTOG: tog,
+      matchupORG: org,
+      togWeighted: tog.value * 1.4,
+      orgWeighted: org.value * 0.5,
+      sum: b.deltaVolDetail.value,
+      mpf: b.mpf,
+      total: b.deltaVolDetail.value * b.mpf,
+    },
+    deltaStar: {
+      favTeam: {
+        abbr: favAbbr,
+        score: star.favScore,
+        players: favDetail.rows || [],
+      },
+      undTeam: {
+        abbr: undAbbr,
+        score: star.undScore,
+        players: undDetail.rows || [],
+      },
+      iaf: star.iaf,
+      raw: star.raw,
+      clamped: star.clamped,
+      value: star.value,
+    },
+    dbp: {
+      intercept: c.intercept,
+      multiplier: c.multiplier,
+      trueGap: b.trueGap,
+      z: b.z,
+      dbp: b.dbp,
+    },
+  };
 }
 
 // Inputs surface used in card footer / debugging

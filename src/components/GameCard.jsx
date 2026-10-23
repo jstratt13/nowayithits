@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { getZone, fmtLine } from '../data/formulaCore.js';
 import { getTeamInjuries } from '../data/liveStats.js';
+import Breakdown from './Breakdown.jsx';
 
 function statusLabel(game) {
   if (game.state === 'in')   return { text: game.statusLabel || 'LIVE', cls: 'live' };
@@ -29,6 +31,7 @@ function resolveDisplay(serverPrediction) {
 
 export default function GameCard({ game, serverPrediction = null }) {
   const { source, view } = resolveDisplay(serverPrediction);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   // No localStorage mirror — the Tracker reconciler now reads locked
   // snapshots directly from the worker (Step 4). Legacy `dbp-locked-preds-v1`
@@ -149,12 +152,48 @@ export default function GameCard({ game, serverPrediction = null }) {
 
       <InjurySection game={game} />
 
-      <div className="input-row">
-        <span className="input-stat"><span className="k">Base ANG</span><span className="v">{fmtLine(inputs.baseANG)}</span></span>
-        <span className="input-stat"><span className="k">Δ Vol</span><span className="v">{fmtLine(inputs.deltaVol)}</span></span>
-        <span className="input-stat"><span className="k">True Gap</span><span className="v">{fmtLine(inputs.trueGap)}</span></span>
-      </div>
+      <InputRow
+        inputs={inputs}
+        breakdown={view.breakdown}
+        open={breakdownOpen}
+        onToggle={() => setBreakdownOpen((v) => !v)}
+      />
+
+      {view.breakdown && breakdownOpen && (
+        <Breakdown breakdown={view.breakdown} />
+      )}
     </article>
+  );
+}
+
+// Compact summary row at the bottom of the card. When the server snapshot
+// carries a `breakdown` (Step 2+ lock blobs), the row becomes a tap target
+// that toggles the detail panel below; older blobs fall back to a static
+// row with no chevron and no click affordance.
+function InputRow({ inputs, breakdown, open, onToggle }) {
+  const content = (
+    <>
+      <span className="input-stat"><span className="k">Base ANG</span><span className="v">{fmtLine(inputs.baseANG)}</span></span>
+      <span className="input-stat"><span className="k">Δ Vol</span><span className="v">{fmtLine(inputs.deltaVol)}</span></span>
+      <span className="input-stat"><span className="k">True Gap</span><span className="v">{fmtLine(inputs.trueGap)}</span></span>
+    </>
+  );
+
+  if (!breakdown) {
+    return <div className="input-row">{content}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      className={'input-row input-row-button' + (open ? ' is-open' : '')}
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-label={open ? 'Hide calculation breakdown' : 'Show calculation breakdown'}
+    >
+      {content}
+      <span className="input-row-chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
+    </button>
   );
 }
 
