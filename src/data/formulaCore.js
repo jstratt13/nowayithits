@@ -148,22 +148,32 @@ export const INJURY_STATUS_WEIGHTS = {
 //     matching the model spec target of "few points but not more than 6"
 //   - bpm_trust factor stops a 6-mpg-with-hot-BPM player from inflating
 //     (BPM is statistically noisy for small samples)
+//   - MPG_FLOOR (added 6/3/26) anchors the mpgFactor at 4 mpg rather
+//     than 0. A player who only sees garbage time shouldn't move the
+//     team's injury score when they sit — their absence doesn't change
+//     the rotation. Above 4 mpg the factor climbs linearly to 1.0 at
+//     MPG_FULL=36. Stars are barely affected (~−4%); deep bench drops
+//     from 0.11 to 0; sub-rotation players drop ~60%.
 //   - Per-league Δ_Star caps (NBA ±5/+5.5, WNBA ±8) still bound the
 //     extreme top end if a team has multiple stars OUT
 //
-// Calibrated impact magnitudes:
-//   Luka  (35.8 mpg / 9.3 BPM)     →  5.01
-//   LeBron (33.2 / 3.5)            →  2.73
-//   Avg starter (28 / 1.0)         →  1.61
-//   12-mpg bench (12 / 0)          →  0.57
-//   DJ Garcia rookie (6.2 / 6.4)   →  0.35   (was 0.84 under old linear)
-//   Deep bench (4 / −2)            →  0.11
-//   A'ja Wilson (28.8 / PER 32.5)  →  4.08
+// Calibrated impact magnitudes (post MPG_FLOOR change):
+//   Luka  (35.8 mpg / 9.3 BPM)     →  4.99   (was 5.01)
+//   LeBron (33.2 / 3.5)            →  2.64   (was 2.73)
+//   Avg starter (28 / 1.0)         →  1.55   (was 1.61)
+//   12-mpg bench (12 / 0)          →  0.43   (was 0.57)
+//   DJ Garcia rookie (6.2 / 6.4)   →  0.14   (was 0.35) — garbage time fix
+//   Deep bench (4 / −2)            →  0      (was 0.11)
+//   A'ja Wilson (28.8 / PER 32.5)  →  3.92   (was 4.08)
 //
 // Unmatched names fall back to impact = 1.0 (status-only behavior) so
 // name-matching gaps don't silently zero out an injury entry.
 
 export const MPG_FULL = 36;
+// Below this many minutes per game, a player is essentially garbage-
+// time only — their absence doesn't materially change the rotation.
+// mpgFactor goes to zero at MPG_FLOOR and climbs linearly from there.
+export const MPG_FLOOR = 4;
 
 // NBA — BPM as advanced metric
 export const BPM_REPLACEMENT  = -2;
@@ -180,7 +190,13 @@ export const NAME_MATCH_THRESHOLD = 0.75;
 export function impactFactor(rosterEntry) {
   if (!rosterEntry) return 1.0; // unmatched → status-only fallback
   const mpg = rosterEntry.mpg ?? 0;
-  const mpgFactor = Math.min(mpg / MPG_FULL, 1.0);
+  // Anchored at MPG_FLOOR: a 4-mpg player contributes 0, a 36-mpg
+  // player contributes 1.0, linear in between. See the calibration
+  // table in the comment block above.
+  const mpgFactor = Math.max(
+    0,
+    Math.min((mpg - MPG_FLOOR) / (MPG_FULL - MPG_FLOOR), 1.0)
+  );
 
   let advMultiplier = 1.0;
   if (rosterEntry.bpm != null) {
