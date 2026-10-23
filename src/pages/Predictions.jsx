@@ -49,7 +49,7 @@ function relativeDateLabel(d) {
 export default function Predictions() {
   const [league, setLeague] = useState('nba');
   const [date, setDate] = useState(() => startOfDay(new Date()));
-  useLiveStats([league], { withInjuries: true });
+  useLiveStats([league]);
 
   const isToday = useMemo(() => sameDay(date, new Date()), [date]);
 

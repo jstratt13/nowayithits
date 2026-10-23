@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SEED_TRACKER } from '../data/seedTracker.js';
 import AccuracyPanel from '../components/AccuracyPanel.jsx';
-import { useLiveStats } from '../hooks/useLiveStats.js';
 import { useSyncStatus } from '../hooks/useTrackerSync.js';
 import { BLOWOUT_THRESHOLD, zoneLabels } from '../data/formulaCore.js';
 import NewsPanel from '../components/NewsPanel.jsx';
@@ -25,7 +24,8 @@ const ZONE_BADGE = {
   'High Alert':   'badge-zone-alert',
   'Lock':         'badge-zone-lock',
   'Super Lock':   'badge-zone-super',
-  // Quiet back-compat for any rows persisted under the old NBA label.
+  // Back-compat for the retired NBA label — migrateRows() rewrites these
+  // on load, this is the belt-and-suspenders renderer side.
   'Max Expulsion':'badge-zone-super',
 };
 
@@ -33,8 +33,9 @@ const RESULTS = ['All', 'Hit', 'Miss'];
 const BLOWOUT_FILTER_VALUES = ['All', 'Yes', 'No'];
 const LEAGUES = ['nba', 'wnba'];
 
-// Zone filter chips switch per league — NBA tops out at "Max Expulsion",
-// WNBA at "Super Lock". Always prefixed with "All".
+// Zones are identical across leagues today — Safe / Baseline / High Alert /
+// Lock / Super Lock — but zoneLabels(league) is still used so the per-league
+// zones[] array in MODEL_CONFIG can diverge again without touching callers.
 function zonesForLeague(league) {
   return ['All', ...zoneLabels(league)];
 }
@@ -48,8 +49,9 @@ function loadRows() {
 }
 
 // One-time data migration for label changes that don't affect the
-// underlying prediction — currently just retiring "Max Expulsion" in
-// favor of the unified Lock 55–75% / Super Lock >75% NBA boundaries.
+// underlying prediction — currently just retiring the old "Max Expulsion"
+// NBA label in favor of the unified Lock (55-70%) / Super Lock (>70%)
+// boundaries shared by both leagues.
 function migrateRows(rows) {
   return rows.map((r) => {
     if (r.zone === 'Max Expulsion') {
@@ -73,7 +75,6 @@ function dbpColor(v) {
 }
 
 export default function Tracker() {
-  useLiveStats(['nba', 'wnba'], { withInjuries: false });
   const sync = useSyncStatus();
   const [rows, setRows] = useState(loadRows);
 
@@ -85,9 +86,8 @@ export default function Tracker() {
   const [league, setLeague] = useState('nba');
   const [zone, setZone] = useState('All');
 
-  // The zone chip set depends on which league is active — NBA shows
-  // "Max Expulsion", WNBA shows "Super Lock". Memoize so switching leagues
-  // also resets a stale zone filter that no longer exists in the new set.
+  // Memoize so switching leagues also resets a stale zone filter that no
+  // longer exists in the new set (if the per-league zones diverge again).
   const zoneChoices = useMemo(() => zonesForLeague(league), [league]);
   useEffect(() => {
     if (zone !== 'All' && !zoneChoices.includes(zone)) setZone('All');
