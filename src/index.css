@@ -107,6 +107,10 @@ input, select {
      on .brand-name signals it's clickable without being loud. */
   text-decoration: none;
   color: inherit;
+  /* Don't let the brand collapse when other nav elements pile in (auth
+     adds nav-auth + logout). Without this, the brand-name's "NO WAY"
+     can wrap mid-pair to "NO / WAY" on narrow phones. */
+  flex-shrink: 0;
 }
 
 .brand:hover .brand-name {
@@ -165,6 +169,191 @@ input, select {
   font-size: 0.7rem;
   letter-spacing: 0.06em;
   color: var(--muted);
+}
+
+/* ── Auth area in nav (logged-in identity + logout) ──────────────── */
+
+.nav-auth {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  margin-right: 1.1rem;
+  font-family: 'Syne', sans-serif;
+}
+
+.nav-auth-who {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-auth-logout {
+  font-family: inherit;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: transparent;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 0.28rem 0.6rem;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  /* Prevent "LOG OUT" from wrapping to two lines on narrow nav widths. */
+  white-space: nowrap;
+}
+
+.nav-auth-logout:hover {
+  background: var(--surface2);
+  border-color: var(--border3);
+}
+
+/* ── Auth pages (login / signup / verify) ─────────────────────────── */
+
+.auth-page {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2.5rem 1rem 3rem;
+}
+
+.auth-form {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2rem 1.75rem;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.auth-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.auth-prose {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+.auth-prose strong { color: var(--accent); }
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.auth-field > span:first-child {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.auth-field input {
+  font-family: inherit;
+  /* 16px minimum is intentional — iOS Safari auto-zooms when focusing
+     any input with font-size < 16px, and the zoom level persists after
+     submit so the user lands on the home page zoomed in. Keeping the
+     input at exactly 16px (= 1rem at the default root) suppresses that
+     behavior without affecting the field's visual weight. */
+  font-size: 16px;
+  padding: 0.6rem 0.7rem;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface3);
+  color: var(--text);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.auth-field input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-hint {
+  font-size: 0.65rem;
+  color: var(--muted2);
+}
+
+.auth-error {
+  font-size: 0.78rem;
+  color: var(--miss);
+  background: var(--missbg);
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius);
+  line-height: 1.4;
+}
+
+.auth-submit {
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.75rem 1rem;
+  background: var(--accent);
+  color: var(--surface);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 700;
+  transition: opacity 120ms ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.auth-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-alt {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.25rem;
+}
+
+.auth-alt a {
+  color: var(--accent);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .auth-page { padding: 1.5rem 0.75rem 2.5rem; }
+  .auth-form { padding: 1.5rem 1.4rem 1.25rem; }
+  .auth-title { font-size: 1.15rem; }
+  .nav-auth { margin-right: 0.5rem; }
+  .nav-auth-who { display: none; }
+  /* When authed on a phone, the nav-date is redundant clutter — the OS
+     status bar shows today's date anyway. The sibling selector triggers
+     only when nav-auth is present (i.e. only when logged in). */
+  .nav-auth ~ .nav-date { display: none; }
 }
 
 main {
@@ -884,6 +1073,12 @@ main {
 }
 
 .game-card {
+  /* Opt into container queries so the breakdown's player table can
+     adapt to the card's own width, not just the viewport's. Lets us
+     collapse columns when desktop two-column card layouts make each
+     card narrow even on wide screens. */
+  container-type: inline-size;
+
   background: var(--surface);
   border: 0.5px solid var(--border);
   border-radius: var(--radius-lg);
@@ -1054,6 +1249,37 @@ main {
   border-top: 0.5px dashed var(--border2);
 }
 
+/* Tap-to-expand variant: rendered when the snapshot carries a `breakdown`
+   object. Reset native button styling, keep the same flex layout, append
+   a chevron, add a subtle hover affordance. */
+button.input-row {
+  background: none;
+  border: none;
+  border-top: 0.5px dashed var(--border2);
+  border-radius: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+  align-items: baseline;
+  transition: color 120ms ease;
+}
+
+button.input-row:hover .input-row-chevron,
+button.input-row.is-open .input-row-chevron {
+  color: var(--accent);
+}
+
+.input-row-chevron {
+  margin-left: auto;
+  color: var(--muted2);
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: color 120ms ease;
+}
+
 .input-stat {
   display: flex;
   align-items: baseline;
@@ -1170,6 +1396,250 @@ main {
   color: var(--muted);
   background: var(--surface3);
   text-align: center;
+}
+
+/* ── Breakdown (tap-to-expand calculation detail) ─────────────────── */
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 0.5px dashed var(--border2);
+}
+
+.breakdown-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.breakdown-section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  color: var(--muted);
+  /* Keep the underline tight to the text rather than spanning the row */
+  align-self: flex-start;
+}
+
+.breakdown-section-toggle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.breakdown-section-toggle:hover {
+  color: var(--accent);
+}
+
+.breakdown-section-meta {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown-chevron {
+  color: var(--muted2);
+  font-size: 0.7rem;
+}
+
+.breakdown-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.breakdown-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.68rem;
+}
+
+.breakdown-row-label {
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.breakdown-row-value {
+  color: var(--accent);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.breakdown-row-bold .breakdown-row-label,
+.breakdown-row-bold .breakdown-row-value {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.breakdown-row-muted .breakdown-row-label,
+.breakdown-row-muted .breakdown-row-value {
+  color: var(--muted2);
+  font-weight: 400;
+}
+
+/* Inline-expand row (Δ Star inside Base ANG). Native button reset, same
+   row layout as a plain breakdown-row, with a small chevron tucked next
+   to the label. Font is set explicitly (rather than `font: inherit`)
+   because `font:` is a shorthand at higher specificity that otherwise
+   clobbers `.breakdown-row`'s font-size on the same element. */
+button.breakdown-row-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.68rem;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+button.breakdown-row-toggle:hover .breakdown-row-chevron,
+button.breakdown-row-toggle.is-open .breakdown-row-chevron {
+  color: var(--accent);
+}
+
+.breakdown-row-chevron {
+  margin-left: 0.4rem;
+  color: var(--muted2);
+  font-size: 0.7rem;
+  transition: color 120ms ease;
+}
+
+/* Nested detail under an inline-expand row. Slight left indent + dashed
+   left rule so the substack reads as "child of the row above" without
+   stealing visual weight from the parent section. */
+.breakdown-substack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  margin: 0.25rem 0 0.35rem 0.7rem;
+  padding-left: 0.6rem;
+  border-left: 0.5px dashed var(--border2);
+}
+
+.breakdown-empty {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.65rem;
+  color: var(--muted2);
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0;
+}
+
+.breakdown-player-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  margin-top: 0.35rem;
+}
+
+.breakdown-player-team {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.breakdown-player-header,
+.breakdown-player-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 2.2rem 2.6rem 2.6rem 2.6rem;
+  gap: 0.4rem;
+  align-items: baseline;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown-player-header {
+  color: var(--muted2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.breakdown-player-header > span:not(:first-child),
+.breakdown-player-row > span:not(:first-child) {
+  text-align: right;
+}
+
+.breakdown-player-row {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.breakdown-player-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakdown-player-status {
+  color: var(--muted);
+  text-transform: lowercase;
+  font-size: 0.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakdown-player-contrib {
+  color: var(--accent2);
+  font-weight: 600;
+}
+
+/* Collapse player table to 3 cols when the CARD itself is narrow — not
+   the viewport. Catches both phone widths and the tight desktop two-
+   column card grid where each card is ~380px wide. */
+@container (max-width: 380px) {
+  .breakdown-player-header,
+  .breakdown-player-row {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 2.4rem;
+    font-size: 0.6rem;
+  }
+  .breakdown-player-header > span:nth-child(3),
+  .breakdown-player-header > span:nth-child(4),
+  .breakdown-player-header > span:nth-child(5),
+  .breakdown-player-row > span:nth-child(3),
+  .breakdown-player-row > span:nth-child(4),
+  .breakdown-player-row > span:nth-child(5) {
+    display: none;
+  }
+  .breakdown-player-header > span:nth-child(6),
+  .breakdown-player-row > span:nth-child(6) {
+    grid-column: 3;
+  }
 }
 
 /* ── Badges ───────────────────────────────────────────────────────────── */
@@ -1885,6 +2355,28 @@ footer {
     padding-top: 0.55rem;
   }
 
+  /* Breakdown: drop the MPG / BPM-PER / Impact columns on phone widths
+     and keep Player | Status | Contrib. The full table stays available
+     on tablet+, where horizontal space is comfortable. */
+  .breakdown-player-header,
+  .breakdown-player-row {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 2.4rem;
+    font-size: 0.6rem;
+  }
+  .breakdown-player-header > span:nth-child(3),
+  .breakdown-player-header > span:nth-child(4),
+  .breakdown-player-header > span:nth-child(5),
+  .breakdown-player-row > span:nth-child(3),
+  .breakdown-player-row > span:nth-child(4),
+  .breakdown-player-row > span:nth-child(5) {
+    display: none;
+  }
+  /* Re-show contrib (originally the 6th column) as the 3rd visible cell */
+  .breakdown-player-header > span:nth-child(6),
+  .breakdown-player-row > span:nth-child(6) {
+    grid-column: 3;
+  }
+
   /* Tracker top: panels already stack at 980px breakpoint */
   .panel {
     padding: 0.85rem 0.9rem;
@@ -1924,6 +2416,10 @@ footer {
     width: 100%;
     min-width: 0;
     order: 99;
+    /* Match the auth inputs: 16px prevents iOS Safari's auto-zoom on
+       focus, which otherwise leaves the page zoomed-in after the user
+       tabs out. */
+    font-size: 16px;
   }
 
   /* Sync badge condense */
@@ -1967,7 +2463,20 @@ footer {
 
 @media (max-width: 340px) {
   .nav-links { gap: 0.1rem; }
-  .nav-link { padding: 0.28rem 0.5rem; }
+  .nav-link {
+    padding: 0.22rem 0.42rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
+  }
+  .nav-inner { padding: 0.5rem 0.55rem; gap: 0.35rem; }
+  .nav-links { margin-left: 0.25rem; }
+  .nav-auth { margin-right: 0.25rem; }
+  .nav-auth-logout {
+    padding: 0.22rem 0.45rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+  }
+  .brand-name { font-size: 0.85rem; }
 
   /* Single-column stat bar for tiny screens */
   .stat-bar { grid-template-columns: 1fr; }
