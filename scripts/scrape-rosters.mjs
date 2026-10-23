@@ -38,11 +38,45 @@ const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:128.0) Gecko
 // Sanity-guard thresholds — keep them on the loose side so legitimate
 // roster shrinkage (offseason cuts, expansion year, etc.) doesn't trip
 // the alarm, but parser-bug-level data loss does.
+//
+// Season opening week caveat: BBR's per_game table only has players who
+// have logged actual game minutes, so a team that's played 1-2 games
+// may legitimately show < 10 entries. Pass --min-players=N (e.g. 8)
+// during the first ~2 weeks of each season.
 const MIN_TEAMS       = { nba: 28, wnba: 11 };
 const MIN_PLAYERS     = { nba: 10, wnba: 8 };
 const MAX_DROP_PCT    = 0.20;   // > 20% total player loss = fail
 
 const DRY_RUN = process.argv.includes('--dry-run');
+
+// --min-players=N overrides MIN_PLAYERS for both leagues.
+const minPlayersArg = process.argv.find((a) => a.startsWith('--min-players='));
+if (minPlayersArg) {
+  const n = parseInt(minPlayersArg.split('=')[1], 10);
+  if (Number.isInteger(n) && n >= 1 && n <= 20) {
+    MIN_PLAYERS.nba = n;
+    MIN_PLAYERS.wnba = n;
+    console.log(`[config] MIN_PLAYERS override: ${n}`);
+  } else {
+    console.error(`invalid --min-players=${n}; must be 1-20`);
+    process.exit(1);
+  }
+}
+
+// --max-drop=0.N overrides MAX_DROP_PCT. Use e.g. --max-drop=0.5 during
+// season opening week when BBR's per_game table is sparse.
+let maxDropOverride = null;
+const maxDropArg = process.argv.find((a) => a.startsWith('--max-drop='));
+if (maxDropArg) {
+  const n = parseFloat(maxDropArg.split('=')[1]);
+  if (Number.isFinite(n) && n > 0 && n <= 1) {
+    maxDropOverride = n;
+    console.log(`[config] MAX_DROP_PCT override: ${n}`);
+  } else {
+    console.error(`invalid --max-drop=${n}; must be in (0, 1]`);
+    process.exit(1);
+  }
+}
 
 // Canonical BBR → ESPN abbreviation map — single source of truth shared
 // with the worker (predictions.js) and frontend (liveStats.js).
@@ -218,8 +252,9 @@ function validate(league, data, previous) {
   const newPlayerCount = Object.values(data.teams).reduce((s, t) => s + t.players.length, 0);
   if (oldPlayerCount > 0) {
     const dropPct = (oldPlayerCount - newPlayerCount) / oldPlayerCount;
-    if (dropPct > MAX_DROP_PCT) {
-      throw new Error(`[${league}] player count dropped ${oldPlayerCount} → ${newPlayerCount} (${(dropPct * 100).toFixed(1)}% loss, threshold ${MAX_DROP_PCT * 100}%)`);
+    const dropLimit = maxDropOverride ?? MAX_DROP_PCT;
+    if (dropPct > dropLimit) {
+      throw new Error(`[${league}] player count dropped ${oldPlayerCount} → ${newPlayerCount} (${(dropPct * 100).toFixed(1)}% loss, threshold ${dropLimit * 100}%)`);
     }
     console.log(`[${league}] ✓ players ${oldPlayerCount} → ${newPlayerCount}`);
   } else {
