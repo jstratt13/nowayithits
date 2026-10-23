@@ -170,57 +170,6 @@ export async function scrapeTeamStats(league, env) {
   };
 }
 
-export async function scrapeRecentFormORtg(league, year, env) {
-  const isNBAPlayoffSeason = league === 'nba' && (() => {
-    const m = new Date().getUTCMonth() + 1;
-    return m >= 4 && m <= 6;
-  })();
-
-  const url = isNBAPlayoffSeason
-    ? `https://www.basketball-reference.com/playoffs/NBA_${year}.html`
-    : league === 'nba'
-      ? `https://www.basketball-reference.com/leagues/NBA_${year}.html`
-      : `https://www.basketball-reference.com/wnba/years/${year}.html`;
-
-  const res = await fetch(url, {
-    headers: {
-      'user-agent': env.USER_AGENT,
-      'accept': 'text/html,application/xhtml+xml',
-      // Force a fresh fetch — this data changes every game so stale edge
-      // caches produce nulls when the table structure shifts.
-      'cache-control': 'no-cache',
-    },
-    cf: { cacheTtl: -1 }, // bypass Cloudflare edge cache
-  });
-  if (!res.ok) throw new Error(`Recent form fetch failed: ${res.status}`);
-
-  let html = await res.text();
-  html = html.replace(/<!--/g, '').replace(/-->/g, '');
-
-  // Direct parse: find the advanced-team tbody, then per-row extract
-  // team href + off_rtg. Bypasses the full extractTable/parseTable chain
-  // which has trouble with the numeric cell format in the playoffs table.
-  const tableM = html.match(/<table[^>]*id="advanced-team"[\s\S]*?<\/table>/);
-  if (!tableM) return {};
-  const tbody = tableM[0].match(/<tbody[\s\S]*?<\/tbody>/);
-  if (!tbody) return {};
-  const rows = tbody[0].match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
-
-  const out = {};
-  for (const row of rows) {
-    const hrefM = row.match(/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
-    if (!hrefM) continue;
-    const abbr = hrefM[1];
-    const offM = row.match(/data-stat="off_rtg"[^>]*>([0-9.]+)/);
-    const defM = row.match(/data-stat="def_rtg"[^>]*>([0-9.]+)/);
-    out[abbr] = {
-      off: offM ? parseFloat(offM[1]) : null,
-      def: defM ? parseFloat(defM[1]) : null,
-    };
-  }
-  return out;
-}
-
 // ─────────────────────────────────────────────────────────────────────────
 //  Internal table parser
 // ─────────────────────────────────────────────────────────────────────────

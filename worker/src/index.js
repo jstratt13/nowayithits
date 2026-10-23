@@ -1,21 +1,29 @@
 // dbp-tracker-worker
 //
-// Routes:
-//   GET /health                  → {ok:true}
-//   GET /teams/:league           → team stats per team (BBR-scraped)
-//   GET /injuries/:league        → rolled-up injury list (Rotowire-scraped)
-//   GET /line-movement/:league   → opening vs current line per game (TODO)
-//   GET /nba-injury-report       → official NBA injury report (TODO, PDF)
+// Routes (all except /health and /auth/* require a Bearer JWT; /admin/*
+// requires an admin claim):
+//
+//   Public:
+//     GET  /health                              — liveness
+//     POST /auth/signup                         — public user signup + email verify
+//     GET  /auth/verify?token=...               — consume verification link
+//     POST /auth/login                          — user or admin login
+//     GET  /auth/me                             — introspect current JWT
+//
+//   Authenticated:
+//     GET  /teams/:league                       — BBR team stats (6h KV cache)
+//     GET  /rosters/:league                     — bundled per-player data
+//     GET  /predictions/:league?date=YYYYMMDD   — single-day blob
+//     GET  /predictions/:league?from=&to=       — range (max 60 days)
+//
+//   Admin:
+//     GET  /admin/refresh                       — manually drive the cron pipeline
 //
 // All responses are JSON. CORS is wide-open so a GitHub-Pages-hosted
-// frontend can fetch directly. Each scraper caches its result for a
-// scraper-specific TTL via Cloudflare KV.
+// frontend can fetch directly. Scraper caching lives in cache.js /
+// predictions.js.
 
 import { scrapeTeamStats } from './scrapers/bbref.js';
-import { scrapeInjuries } from './scrapers/rotowire.js';
-import { scrapeLineMovement } from './scrapers/vegasinsider.js';
-import { scrapeOfficialInjuries } from './scrapers/nbaOfficial.js';
-import { scrapeUnderdogWire } from './scrapers/underdog.js';
 import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
 import {
@@ -59,7 +67,7 @@ function leagueFromPath(seg) {
 }
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env /* ctx */) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS });
     }
@@ -76,159 +84,15 @@ export default {
       // Everything else is GET-only.
       if (request.method !== 'GET') return err('method not allowed', 405);
 
+      // ── Public ──
       if (parts.length === 0 || parts[0] === 'health') {
         return json({ ok: true, name: 'dbp-tracker-worker', time: new Date().toISOString() });
       }
 
-      // Diagnostic endpoints leak raw scraped data — admin-only.
-      if (parts[0] === 'debug') {
-        const a = await requireAdmin(request, env, CORS);
-        if (!a.ok) return a.response;
-      }
-
-      // Diagnostic v2: probe the structure of the advanced-team table.
-      if (parts[0] === 'debug' && parts[1] === 'parse' && parts[2]) {
-        const l = leagueFromPath(parts[2]);
-        if (!l) return err('unknown league', 400);
-        const year = l === 'nba' ? 2026 : 2026;
-        const url = l === 'nba'
-          ? `https://www.basketball-reference.com/leagues/NBA_${year}.html`
-          : `https://www.basketball-reference.com/wnba/years/${year}.html`;
-        const res = await fetch(url, {
-          headers: { 'user-agent': env.USER_AGENT, 'accept': 'text/html' },
-        });
-        let html = await res.text();
-        html = html.replace(/<!--/g, '').replace(/-->/g, '');
-
-        // Try each candidate table id and report length + first 800 chars
-        const findings = {};
-        for (const id of ['advanced-team', 'advanced_stats', 'advanced', 'team-stats-misc', 'misc_stats', 'misc', 'per_game-team', 'team-stats-per_game']) {
-          const m = html.match(new RegExp(`<table[^>]*id="${id}"[\\s\\S]*?</table>`));
-          findings[id] = m ? { found: true, length: m[0].length, head: m[0].slice(0, 600) } : { found: false };
-        }
-        // Also extract all table ids
-        const allIds = [...html.matchAll(/<table[^>]*id="([^"]+)"/g)].map(x => x[1]);
-        return json({ ok: true, url, allTableIds: allIds.slice(0, 50), totalTables: allIds.length, findings });
-      }
-
-      // Diagnostic: see what BBR actually returns to the worker.
-      if (parts[0] === 'debug' && parts[1] === 'bbref' && parts[2]) {
-        const l = leagueFromPath(parts[2]);
-        if (!l) return err('unknown league', 400);
-        const year = (() => {
-          const d = new Date();
-          return l === 'nba'
-            ? (d.getUTCMonth() + 1 >= 10 ? d.getUTCFullYear() + 1 : d.getUTCFullYear())
-            : d.getUTCFullYear();
-        })();
-        const url = l === 'nba'
-          ? `https://www.basketball-reference.com/leagues/NBA_${year}.html`
-          : `https://www.basketball-reference.com/wnba/years/${year}.html`;
-        const res = await fetch(url, {
-          headers: {
-            'user-agent': env.USER_AGENT,
-            'accept': 'text/html,application/xhtml+xml',
-            'accept-language': 'en-US,en;q=0.9',
-          },
-          redirect: 'follow',
-        });
-        const text = await res.text();
-        return json({
-          ok: true,
-          url,
-          status: res.status,
-          contentType: res.headers.get('content-type'),
-          length: text.length,
-          excerpt: text.slice(0, 1200),
-          hasAdvancedTable: /id="advanced-team"|id="advanced_stats"/.test(text),
-          hasMiscTable:     /id="team-stats-misc"|id="misc_stats"/.test(text),
-          firstTableId:     (text.match(/<table[^>]*id="([^"]+)"/) || [])[1] || null,
-        });
-      }
-
-      if (parts[0] === 'debug' && parts[1] === 'recentform') {
-        const { scrapeRecentFormORtg } = await import('./scrapers/bbref.js');
-        const result = await scrapeRecentFormORtg('nba', 2026, env);
-        const keys = Object.keys(result);
-        const sample = Object.fromEntries(Object.entries(result).slice(0, 5));
-        return json({ teams: keys.length, sample });
-      }
-
-      if (parts[0] === 'debug' && parts[1] === 'fullscrape') {
-        // Run scrapeTeamStats inline and return its result so we can verify
-        // offLast10 is being populated correctly end-to-end.
-        const { scrapeTeamStats } = await import('./scrapers/bbref.js');
-        const result = await scrapeTeamStats('nba', env);
-        const t = result.teams || {};
-        const sample = {};
-        for (const k of ['OKC','SAS','NYK','BOS']) {
-          if (t[k]) sample[k] = { off: t[k].off, offLast10: t[k].offLast10 };
-        }
-        return json({ total: Object.keys(t).length, sample });
-      }
-
-      if (parts[0] === 'debug' && parts[1] === 'l10direct') {
-        // Call the internal playoff ORtg scraper directly and surface its output
-        const { scrapeTeamStats } = await import('./scrapers/bbref.js');
-        // Import the internal function by re-building the URL + table parse inline
-        const pRes = await fetch('https://www.basketball-reference.com/playoffs/NBA_2026.html', {
-          headers: { 'user-agent': env.USER_AGENT, 'accept': 'text/html' },
-        });
-        let pHtml = await pRes.text();
-        pHtml = pHtml.replace(/<!--/g, '').replace(/-->/g, '');
-        const tableM = pHtml.match(/<table[^>]*id="advanced-team"[\s\S]*?<\/table>/);
-        if (!tableM) return json({ error: 'no table' });
-        const tbody = tableM[0].match(/<tbody[\s\S]*?<\/tbody>/);
-        if (!tbody) return json({ error: 'no tbody' });
-        const rows = tbody[0].match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
-        const results = {};
-        for (const row of rows) {
-          const hrefM = row.match(/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
-          if (!hrefM) continue;
-          const abbr = hrefM[1];
-          const offM = row.match(/data-stat="off_rtg"[^>]*>([^<]*)</);
-          results[abbr] = offM ? offM[1].trim() : 'MISSING';
-        }
-        return json({ rowsFound: rows.length, teams: Object.keys(results).length, sample: Object.entries(results).slice(0,5) });
-      }
-
-      if (parts[0] === 'debug' && parts[1] === 'l10') {
-        const res2 = await fetch('https://www.basketball-reference.com/playoffs/NBA_2026.html', {
-          headers: { 'user-agent': env.USER_AGENT, 'accept': 'text/html' },
-        });
-        let html = await res2.text();
-        html = html.replace(/<!--/g, '').replace(/-->/g, '');
-
-        // Find the advanced-team table and extract first data row
-        const tblM = html.match(/<table[^>]*id="advanced-team"[\s\S]*?<\/table>/);
-        if (!tblM) return json({ error: 'No advanced-team table found', status: res2.status });
-        const tbl = tblM[0];
-        const rows = tbl.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
-        // Find first data row (has a team href)
-        let sampleRow = null;
-        for (const r of rows) {
-          if (/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//.test(r)) { sampleRow = r; break; }
-        }
-        // Extract all data-stat values from that row
-        const cells = {};
-        const cellRegex = /<(?:td|th)\b[^>]*\bdata-stat="([^"]+)"[^>]*>([\s\S]*?)<\/(?:td|th)>/g;
-        let cm;
-        while (sampleRow && (cm = cellRegex.exec(sampleRow)) !== null) {
-          const val = cm[2].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-          if (val) cells[cm[1]] = val;
-        }
-        return json({ rowCount: rows.length, sampleCells: cells });
-      }
-
-      // Data routes — any authenticated user. Auth check is shared
-      // across all of them, so do it once at the top of the block.
+      // ── Authenticated data routes — single gate for all of them ──
       if (
         parts[0] === 'teams' ||
-        parts[0] === 'injuries' ||
-        parts[0] === 'nba-injury-report' ||
-        parts[0] === 'underdog' ||
         parts[0] === 'rosters' ||
-        parts[0] === 'line-movement' ||
         parts[0] === 'predictions'
       ) {
         const a = await requireAuth(request, env, CORS);
@@ -248,32 +112,9 @@ export default {
         return json({ ok: true, league, ...data });
       }
 
-      if (parts[0] === 'injuries' && parts[1]) {
-        const league = leagueFromPath(parts[1]);
-        if (!league) return err('unknown league', 400);
-        const data = await cached(env, `injuries:${league}`, 60 * 15, () =>
-          scrapeInjuries(league, env)
-        );
-        return json({ ok: true, league, ...data });
-      }
-
-      if (parts[0] === 'nba-injury-report') {
-        const data = await cached(env, 'nba-injury-report', 60 * 30, () =>
-          scrapeOfficialInjuries(env)
-        );
-        return json({ ok: true, ...data });
-      }
-
-      if (parts[0] === 'underdog') {
-        const data = await cached(env, 'underdog-wire', 60 * 5, () =>
-          scrapeUnderdogWire(env)
-        );
-        return json({ ok: true, ...data });
-      }
-
       // GET /rosters/:league
-      // Per-team roster with MPG + BPM + PER per player. Now served from
-      // the bundled src/data/rosters.json snapshot (refreshed daily by the
+      // Per-team roster with MPG + BPM + PER per player. Served from the
+      // bundled src/data/rosters.json snapshot (refreshed daily by the
       // GitHub Actions workflow .github/workflows/refresh-rosters.yml).
       // No runtime BBR fetch — that lived here previously and got rate-
       // limited hard by Cloudflare worker IPs.
@@ -281,15 +122,6 @@ export default {
         const league = leagueFromPath(parts[1]);
         if (!league) return err('unknown league', 400);
         return json({ ok: true, league, ...getRosters(league) });
-      }
-
-      if (parts[0] === 'line-movement' && parts[1]) {
-        const league = leagueFromPath(parts[1]);
-        if (!league) return err('unknown league', 400);
-        const data = await cached(env, `line-movement:${league}`, 60 * 5, () =>
-          scrapeLineMovement(league, env)
-        );
-        return json({ ok: true, league, ...data });
       }
 
       // GET /predictions/:league?date=YYYYMMDD
@@ -324,11 +156,12 @@ export default {
         return json({ ok: true, ...blob });
       }
 
-      // GET /admin/refresh — manually drives the cron pipeline so we
-      // can verify it end-to-end without waiting for the next scheduled
-      // run. Accepts ?league=nba|wnba (default both) and ?date=YYYYMMDD
-      // (default today + tomorrow). Admin-only since it triggers writes
-      // to the predictions blobs (still idempotent under lock rules).
+      // ── Admin: GET /admin/refresh ──
+      // Manually drives the cron pipeline so we can verify it end-to-end
+      // without waiting for the next scheduled run. Accepts
+      // ?league=nba|wnba (default both) and ?date=YYYYMMDD (default today
+      // + tomorrow). Admin-only since it triggers writes to the
+      // predictions blobs (still idempotent under lock rules).
       if (parts[0] === 'admin' && parts[1] === 'refresh') {
         const a = await requireAdmin(request, env, CORS);
         if (!a.ok) return a.response;
