@@ -34,7 +34,7 @@
 
 // ── Per-league configuration ───────────────────────────────────────────
 
-export const MODEL_CONFIG = {
+const MODEL_CONFIG = {
   nba: {
     intercept: -2.095,
     multiplier: 0.185,
@@ -45,8 +45,6 @@ export const MODEL_CONFIG = {
       lowPace:  2.75, // Low-Possession / Slow team
     },
     paceDeflate:     3.5,  // NBA playoff half-court tightening
-    otHangover:      1.75,
-    restRustEff:     0.985,
     paceDefault:     99,
     offRtgDefault:  115,
     defRtgDefault:  115,   // league average DRtg ≈ ORtg
@@ -75,8 +73,6 @@ export const MODEL_CONFIG = {
       standard:  3.00,  // fallback when tier hasn't been determined
     },
     paceDeflate:     0,    // no penalty — currently regular season
-    otHangover:      1.50,
-    restRustEff:     0.985,
     paceDefault:     80,
     offRtgDefault:  100,
     defRtgDefault:  100,   // WNBA league average DRtg ≈ ORtg
@@ -113,7 +109,7 @@ const cfg = (league) => MODEL_CONFIG[league] || MODEL_CONFIG.nba;
 // ("Day-To-Day", "Day-to-Day", "GTD", "Game Time Decision", etc.) all map
 // to the same bucket. Unknown statuses contribute 0.
 
-export const INJURY_STATUS_WEIGHTS = {
+const INJURY_STATUS_WEIGHTS = {
   out:                    1.0,
   suspended:              1.0,
   doubtful:               0.75,
@@ -169,25 +165,25 @@ export const INJURY_STATUS_WEIGHTS = {
 // Unmatched names fall back to impact = 1.0 (status-only behavior) so
 // name-matching gaps don't silently zero out an injury entry.
 
-export const MPG_FULL = 36;
+const MPG_FULL = 36;
 // Below this many minutes per game, a player is essentially garbage-
 // time only — their absence doesn't materially change the rotation.
 // mpgFactor goes to zero at MPG_FLOOR and climbs linearly from there.
-export const MPG_FLOOR = 4;
+const MPG_FLOOR = 4;
 
 // NBA — BPM as advanced metric
-export const BPM_REPLACEMENT  = -2;
-export const BPM_SCALE        = 2.8;
-export const BPM_TRUST_MIN    = 18;
+const BPM_REPLACEMENT  = -2;
+const BPM_SCALE        = 2.8;
+const BPM_TRUST_MIN    = 18;
 
 // WNBA — PER as advanced metric (BBR doesn't compute BPM for WNBA)
-export const PER_BASE         = 12;
-export const PER_SCALE        = 5;
-export const PER_TRUST_MIN    = 12;
+const PER_BASE         = 12;
+const PER_SCALE        = 5;
+const PER_TRUST_MIN    = 12;
 
-export const NAME_MATCH_THRESHOLD = 0.75;
+const NAME_MATCH_THRESHOLD = 0.75;
 
-export function impactFactor(rosterEntry) {
+function impactFactor(rosterEntry) {
   if (!rosterEntry) return 1.0; // unmatched → status-only fallback
   const mpg = rosterEntry.mpg ?? 0;
   // Anchored at MPG_FLOOR: a 4-mpg player contributes 0, a 36-mpg
@@ -316,11 +312,6 @@ export function computeInjuryScoreDetailed(players, rosterByNormName) {
   return { score, rows };
 }
 
-// Back-compat wrapper. Most callers just want the scalar score.
-export function computeInjuryScore(players, rosterByNormName) {
-  return computeInjuryScoreDetailed(players, rosterByNormName).score;
-}
-
 // ── Team stats accessor (resolved via ctx) ─────────────────────────────
 
 function stats(ctx, league, abbr) {
@@ -335,8 +326,10 @@ function sigmoid(z) {
   return 1 / (1 + Math.exp(-z));
 }
 
-// getZone is league-aware. NBA tops out at "Max Expulsion" above 65%;
-// WNBA tops out at "Super Lock" above 75% per the WNBA blueprint.
+// getZone is league-aware. Both leagues currently share the same thresholds
+// (Safe <25, Baseline 25-45, High Alert 45-55, Lock 55-70, Super Lock >70);
+// `league` is still a parameter so the per-league zones[] can diverge again
+// without touching callers.
 export function getZone(pct, league = 'nba') {
   const zones = cfg(league).zones;
   for (const z of zones) {
@@ -541,7 +534,7 @@ function matchupPaceFactor(game, ctx) {
 
 // ── Step C · True_Gap → Z → DBP% ────────────────────────────────────────
 
-export function computeBreakdown(game, ctx) {
+function computeBreakdown(game, ctx) {
   const c = cfg(game.league);
   const view = favoritedView(game, ctx);
   const dvolDetail = deltaVol(game, view, ctx);
@@ -619,8 +612,8 @@ function blendedDef(teamStats, league) {
 //   BETA  = 0.2  → each unit of injury score raises DRtg by 0.2 points
 // For a star-out team (injury score ~5), that's ~5 pts off ORtg and
 // ~1 pt onto DRtg. Net projTotal drop ≈ 2.5–3 pts in a typical matchup.
-export const INJURY_TOTAL_ALPHA = 1.0;
-export const INJURY_TOTAL_BETA  = 0.2;
+const INJURY_TOTAL_ALPHA = 1.0;
+const INJURY_TOTAL_BETA  = 0.2;
 
 function teamInjuryScore(game, ctx, teamSide) {
   const inj = ctx && ctx.getInjuryScore ? ctx.getInjuryScore : () => 0;
@@ -643,7 +636,6 @@ function teamInjuryScore(game, ctx, teamSide) {
 // from offense / added to defense respectively (see INJURY_TOTAL_ALPHA
 // and INJURY_TOTAL_BETA above).
 function combinedOffRating(game, ctx) {
-  const c = cfg(game.league);
   const hStats = stats(ctx, game.league, game.home.abbr);
   const aStats = stats(ctx, game.league, game.away.abbr);
   const hInj = teamInjuryScore(game, ctx, game.home);
@@ -656,19 +648,13 @@ function combinedOffRating(game, ctx) {
 
   const homeExpected = (effHomeOff + effAwayDef) / 2;
   const awayExpected = (effAwayOff + effHomeDef) / 2;
-  let combined = homeExpected + awayExpected;
-
-  if (game.modifiers?.restRust) combined *= c.restRustEff;
-  return combined;
+  return homeExpected + awayExpected;
 }
 
 export function projectedTotal(game, ctx) {
-  const c = cfg(game.league);
   const poss = projectedPossessions(game, ctx);
   const combined = combinedOffRating(game, ctx);
-  let total = (poss * combined) / 100;
-  if (game.modifiers?.otHangover) total += c.otHangover;
-  return total;
+  return (poss * combined) / 100;
 }
 
 // ── Derived picks ───────────────────────────────────────────────────────
