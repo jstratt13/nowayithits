@@ -2,6 +2,9 @@ name = "dbp-tracker-worker"
 main = "src/index.js"
 compatibility_date = "2026-05-01"
 workers_dev = true
+# Pinned so wrangler can skip the account-enumeration lookup, which our
+# OAuth token currently lacks permission for.
+account_id = "526863428ea38db129dcdf2d229adafa"
 
 # KV cache so we don't hammer Basketball-Reference / NBA.com / Rotowire.
 # Each scraper has its own TTL; see src/cache.js.

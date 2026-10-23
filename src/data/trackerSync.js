@@ -57,13 +57,18 @@ function addDays(date, n) {
 //
 // Throws on transport / parse failure so the caller can fall back to
 // localStorage-only for that sync tick.
-async function fetchServerLocks(league, fromYmd, toYmd) {
+async function fetchServerLocks(league, fromYmd, toYmd, authFetch) {
   if (!WORKER_URL) return new Map();
   // Per-hour cache-buster matches the pattern used elsewhere — keeps
   // Cloudflare's edge cache from serving stale responses.
   const hourSlot = Math.floor(Date.now() / 3_600_000);
   const url = `${WORKER_URL}/predictions/${league}?from=${fromYmd}&to=${toYmd}&_h=${hourSlot}`;
-  const res = await fetch(url, { mode: 'cors' });
+  // Prefer the auth-aware fetch when supplied (from useFetchWithAuth in
+  // the ticker hook). Falls back to plain CORS fetch — which will 401
+  // against the gated worker, throw, and degrade to localStorage-only
+  // sync for this tick. That's acceptable behavior pre-login.
+  const doFetch = authFetch || ((u) => fetch(u, { mode: 'cors' }));
+  const res = await doFetch(url);
   if (!res.ok) throw new Error(`worker → ${res.status}`);
   const body = await res.json();
   if (!body.ok) throw new Error(body.error || 'worker error');
@@ -280,7 +285,7 @@ function dedupKey(row) {
   return `${row.date}|${row.league || 'nba'}|${row.matchup}`;
 }
 
-export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
+export async function reconcileTracker({ days = SYNC_WINDOW_DAYS, authFetch } = {}) {
   const existingRows = readRows();
   const existingById = new Map(existingRows.map((r) => [r.id, r]));
   const existingIds = new Set(existingRows.map((r) => r.id));
@@ -304,7 +309,7 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS } = {}) {
   const serverErrors = {};
   await Promise.all(LEAGUES.map(async (lg) => {
     try {
-      serverLocks[lg] = await fetchServerLocks(lg, fromYmd, toYmd);
+      serverLocks[lg] = await fetchServerLocks(lg, fromYmd, toYmd, authFetch);
     } catch (e) {
       serverErrors[lg] = e.message || String(e);
       if (typeof console !== 'undefined') {

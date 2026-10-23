@@ -20,6 +20,8 @@
 // per-device divergence we're trying to eliminate.
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '../auth/AuthContext.jsx';
+import { useFetchWithAuth } from '../auth/useFetchWithAuth.js';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 const POLL_MS = 10 * 60 * 1000; // 10 minutes
@@ -35,6 +37,9 @@ function ymd(date) {
 }
 
 export function useSharedPredictions(league, date) {
+  const { token, status: authStatus } = useAuth();
+  const fetchAuth = useFetchWithAuth();
+
   const [byGameId, setByGameId] = useState({});
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
@@ -50,6 +55,10 @@ export function useSharedPredictions(league, date) {
     }
     if (!league || !dateStr) return;
 
+    // Wait for auth context to settle. Once unauthenticated, the route
+    // guard will redirect away; once authenticated, kick off the fetch.
+    if (authStatus !== 'authenticated' || !token) return;
+
     let cancelled = false;
 
     async function fetchOnce() {
@@ -59,7 +68,7 @@ export function useSharedPredictions(league, date) {
         // own freshness is independent of HTTP cache.
         const hourSlot = Math.floor(Date.now() / 3_600_000);
         const url = `${WORKER_URL}/predictions/${league}?date=${dateStr}&_h=${hourSlot}`;
-        const res = await fetch(url, { mode: 'cors' });
+        const res = await fetchAuth(url);
         if (!res.ok) throw new Error(`worker → ${res.status}`);
         const body = await res.json();
         if (cancelled) return;
@@ -89,7 +98,7 @@ export function useSharedPredictions(league, date) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [league, dateStr]);
+  }, [league, dateStr, token, authStatus, fetchAuth]);
 
   return { byGameId, status, error, meta };
 }

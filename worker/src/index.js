@@ -25,11 +25,13 @@ import {
   refreshAllForCron,
   etYmd,
 } from './predictions.js';
+import { handleAuthRoute } from './auth/handlers.js';
+import { requireAuth, requireAdmin } from './auth/middleware.js';
 
 const CORS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, OPTIONS',
-  'access-control-allow-headers': 'content-type',
+  'access-control-allow-methods': 'GET, POST, OPTIONS',
+  'access-control-allow-headers': 'content-type, authorization',
   'access-control-max-age': '86400',
 };
 
@@ -61,14 +63,27 @@ export default {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS });
     }
-    if (request.method !== 'GET') return err('method not allowed', 405);
 
     const url = new URL(request.url);
     const parts = url.pathname.split('/').filter(Boolean);
 
     try {
+      // Auth routes accept POST (signup, login) so they need to be
+      // dispatched before the GET-only guard below.
+      const authResp = await handleAuthRoute(request, env, url, parts, CORS);
+      if (authResp) return authResp;
+
+      // Everything else is GET-only.
+      if (request.method !== 'GET') return err('method not allowed', 405);
+
       if (parts.length === 0 || parts[0] === 'health') {
         return json({ ok: true, name: 'dbp-tracker-worker', time: new Date().toISOString() });
+      }
+
+      // Diagnostic endpoints leak raw scraped data — admin-only.
+      if (parts[0] === 'debug') {
+        const a = await requireAdmin(request, env, CORS);
+        if (!a.ok) return a.response;
       }
 
       // Diagnostic v2: probe the structure of the advanced-team table.
@@ -205,6 +220,21 @@ export default {
         return json({ rowCount: rows.length, sampleCells: cells });
       }
 
+      // Data routes — any authenticated user. Auth check is shared
+      // across all of them, so do it once at the top of the block.
+      if (
+        parts[0] === 'teams' ||
+        parts[0] === 'injuries' ||
+        parts[0] === 'nba-injury-report' ||
+        parts[0] === 'underdog' ||
+        parts[0] === 'rosters' ||
+        parts[0] === 'line-movement' ||
+        parts[0] === 'predictions'
+      ) {
+        const a = await requireAuth(request, env, CORS);
+        if (!a.ok) return a.response;
+      }
+
       if (parts[0] === 'teams' && parts[1]) {
         const league = leagueFromPath(parts[1]);
         if (!league) return err('unknown league', 400);
@@ -294,12 +324,14 @@ export default {
         return json({ ok: true, ...blob });
       }
 
-      // POST/GET /admin/refresh — manually drives the cron pipeline so we
+      // GET /admin/refresh — manually drives the cron pipeline so we
       // can verify it end-to-end without waiting for the next scheduled
       // run. Accepts ?league=nba|wnba (default both) and ?date=YYYYMMDD
-      // (default today + tomorrow). No auth — the worker is open and the
-      // operation is idempotent (KV writes are bounded by lock rules).
+      // (default today + tomorrow). Admin-only since it triggers writes
+      // to the predictions blobs (still idempotent under lock rules).
       if (parts[0] === 'admin' && parts[1] === 'refresh') {
+        const a = await requireAdmin(request, env, CORS);
+        if (!a.ok) return a.response;
         const leagueQ = (url.searchParams.get('league') || '').toLowerCase();
         const dateQ   = url.searchParams.get('date');
         if (leagueQ && dateQ) {
