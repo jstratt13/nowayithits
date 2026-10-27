@@ -375,6 +375,29 @@ function deltaStar(ctx, league, favId, undId) {
   return { value, favScore, undScore, iaf, raw, clamped: raw !== value };
 }
 
+// Early-season SRS shrinkage. BBR's SRS after 2–3 games is wildly noisy
+// (e.g. +22 for a team that won two games by 25), which pushes DBP to
+// 95%+ on half the slate in opening week. Shrink the SRS toward 0 with
+// a weight that ramps from 0 → 1 over the team's first SRS_SHRINK_GAMES
+// games played, then locks at full SRS. Both teams in a matchup are
+// shrunk independently, so (favSRS − undSRS) collapses toward 0 when
+// either side has little data.
+//
+// Curve shape: weight = (gp / SRS_SHRINK_GAMES)². Quadratic (convex up)
+// so the adjustment stays strong through roughly games 1–8 (weight ≤
+// 0.28, so ≥72% shrink), then drops off sharply as gp approaches 15.
+// A linear ramp lets SRS reach ~50% of full force by game 8, which is
+// too much weight on 8 games of noise.
+const SRS_SHRINK_GAMES = 15;
+
+function srsShrinkWeight(teamStats) {
+  const gp = get(teamStats, 'wins', 0) + get(teamStats, 'losses', 0);
+  if (gp <= 0) return 0;
+  if (gp >= SRS_SHRINK_GAMES) return 1;
+  const r = gp / SRS_SHRINK_GAMES;
+  return r * r;
+}
+
 // SRS blended with a recent-form proxy. Mirrors how blendedOff/blendedDef
 // inject L10 data into the total projection — same 50/50 weight, same
 // "fall back to full-season when L10 isn't available" semantics.
@@ -393,7 +416,8 @@ function deltaStar(ctx, league, favId, undId) {
 // (Adding regular-season L10 scraping is on the future-work list.)
 function blendedSRS(teamStats, league) {
   const c = cfg(league);
-  const srs = get(teamStats, 'srs', 0);
+  const rawSrs = get(teamStats, 'srs', 0);
+  const srs = rawSrs * srsShrinkWeight(teamStats);
   const offL10 = get(teamStats, 'offLast10', null);
   const defL10 = get(teamStats, 'defLast10', null);
   if (offL10 == null || defL10 == null) return srs;
@@ -566,13 +590,24 @@ export function projectedMargin(game, ctx) {
 
 // ── Over/Under Projection Engine ────────────────────────────────────────
 
+// Gate on NBA playoff months (April–June) — mirrors the same month check
+// in worker/src/scrapers/bbref.js for the L10 scrape. paceDeflate is a
+// half-court tightening correction that only applies in the playoffs;
+// leaving it on in the regular season deflates projected totals by ~4pts.
+function isNbaPlayoffs(league) {
+  if (league !== 'nba') return false;
+  const m = new Date().getUTCMonth() + 1;
+  return m >= 4 && m <= 6;
+}
+
 function projectedPossessions(game, ctx) {
   const c = cfg(game.league);
   const hStats = stats(ctx, game.league, game.home.abbr);
   const aStats = stats(ctx, game.league, game.away.abbr);
   const hPace = get(hStats, 'pace', c.paceDefault);
   const aPace = get(aStats, 'pace', c.paceDefault);
-  return ((hPace + aPace) / 2) - c.paceDeflate;
+  const paceDeflate = isNbaPlayoffs(game.league) ? c.paceDeflate : 0;
+  return ((hPace + aPace) / 2) - paceDeflate;
 }
 
 // Blend full-season and last-10-games offensive rating.
