@@ -44,8 +44,12 @@ const MODEL_CONFIG = {
       highTier: 4.00, // High-tier / Extreme urgency
       lowPace:  2.75, // Low-Possession / Slow team
     },
-    paceDeflate:     3.5,  // NBA playoff half-court tightening
-    paceDefault:     99,
+    paceDeflate:     3.5,  // NBA playoff half-court tightening (gated to Apr–Jun)
+    // paceDefault = 100 as of 10/27/26 (was 99). Early 2026-27 league pace
+    // is ~101.3; set to 100 as a reasonable mid-point. Revisit once more
+    // data accumulates — may need another nudge up, or a per-game dynamic
+    // using current BBR team pace instead of a static league default.
+    paceDefault:     100,
     offRtgDefault:  115,
     defRtgDefault:  115,   // league average DRtg ≈ ORtg
     blowoutMargin:   16,
@@ -610,13 +614,24 @@ function projectedPossessions(game, ctx) {
   return ((hPace + aPace) / 2) - paceDeflate;
 }
 
+// Shrink a full-season rating toward the league-average default using the
+// same (gp/15)² weight as SRS. Early-season ORtg/DRtg has 2-3× the stdev of
+// mature-season values; a team showing DRtg=99 after 3 games (because their
+// opponents happened to shoot poorly) was dragging projected totals down
+// ~9pts. L10 is NOT shrunk — it's recent-form data and inherently fresher.
+function shrinkTowardDefault(raw, leagueDefault, teamStats) {
+  const w = srsShrinkWeight(teamStats);
+  return leagueDefault + (raw - leagueDefault) * w;
+}
+
 // Blend full-season and last-10-games offensive rating.
 // Per spec: each carries equal 50% weight when L10 data is available.
 // If L10 is missing (early season or fetch failed), falls back to full
 // season only — no silent weighting artifact.
 function blendedOff(teamStats, league) {
   const c = cfg(league);
-  const full = get(teamStats, 'off', c.offRtgDefault);
+  const rawFull = get(teamStats, 'off', c.offRtgDefault);
+  const full = shrinkTowardDefault(rawFull, c.offRtgDefault, teamStats);
   const l10  = get(teamStats, 'offLast10', null);
   if (l10 != null) return full * 0.5 + l10 * 0.5;
   return full;
@@ -627,7 +642,8 @@ function blendedOff(teamStats, league) {
 // opponent's offense in combinedOffRating below.
 function blendedDef(teamStats, league) {
   const c = cfg(league);
-  const full = get(teamStats, 'def', c.defRtgDefault);
+  const rawFull = get(teamStats, 'def', c.defRtgDefault);
+  const full = shrinkTowardDefault(rawFull, c.defRtgDefault, teamStats);
   const l10  = get(teamStats, 'defLast10', null);
   if (l10 != null) return full * 0.5 + l10 * 0.5;
   return full;
