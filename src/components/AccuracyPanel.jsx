@@ -1,52 +1,6 @@
 import { useMemo, useState } from 'react';
 import Sparkline from './Sparkline.jsx';
-
-// Each window returns a date-range filter (start/end timestamps). "Yesterday"
-// snaps to the calendar day before today; the rolling windows include today.
-function startOfDay(d) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x.getTime();
-}
-
-// `lookback` is the rolling-average window (in days) applied to each point
-// on the chart. `null` means cumulative — every game from the start of
-// recorded history through that day.
-const WINDOWS = [
-  {
-    key: 'y',
-    label: 'Yesterday',
-    lookback: 1,
-    range: () => {
-      const today = startOfDay(new Date());
-      return { start: today - 86_400_000, end: today };
-    },
-  },
-  {
-    key: '10d',
-    label: 'Last 10 days',
-    lookback: 10,
-    range: () => ({ start: startOfDay(new Date()) - 9 * 86_400_000, end: Date.now() }),
-  },
-  {
-    key: 'm',
-    label: 'Last month',
-    lookback: 30,
-    range: () => ({ start: startOfDay(new Date()) - 29 * 86_400_000, end: Date.now() }),
-  },
-  {
-    key: '3m',
-    label: 'Last 3 months',
-    lookback: 90,
-    range: () => ({ start: startOfDay(new Date()) - 89 * 86_400_000, end: Date.now() }),
-  },
-  {
-    key: 'all',
-    label: 'All time',
-    lookback: null,
-    range: () => ({ start: null, end: null }),
-  },
-];
+import { STATIC_WINDOWS, allWindowsFromRows, filterRowsByWindow } from '../data/timeWindows.js';
 
 // League-specific blowout thresholds (margin >= threshold counts as a blowout).
 const BLOWOUT_MARGIN = { nba: 16, wnba: 14 };
@@ -54,19 +8,14 @@ const blowoutThreshold = (league) => BLOWOUT_MARGIN[league] ?? 15;
 
 export default function AccuracyPanel({ rows }) {
   const [windowKey, setWindowKey] = useState('m');
-  const win = WINDOWS.find((w) => w.key === windowKey) || WINDOWS[0];
 
-  const inWindow = useMemo(() => {
-    const { start, end } = win.range();
-    if (start == null && end == null) return rows;
-    return rows.filter((r) => {
-      const t = new Date(r.date).getTime();
-      if (!Number.isFinite(t)) return false;
-      if (start != null && t < start) return false;
-      if (end != null && t >= end) return false;
-      return true;
-    });
-  }, [rows, win]);
+  // Window set = static rolling windows + per-league seasons derived from
+  // the rows present. Re-memo'd when rows change so a newly-synced game
+  // from a brand-new season adds its season option without a reload.
+  const windows = useMemo(() => allWindowsFromRows(rows), [rows]);
+  const win = windows.find((w) => w.key === windowKey) || windows[0] || STATIC_WINDOWS[0];
+
+  const inWindow = useMemo(() => filterRowsByWindow(rows, win), [rows, win]);
 
   return (
     <div className="panel accuracy-panel">
@@ -81,19 +30,35 @@ export default function AccuracyPanel({ rows }) {
           onChange={(e) => setWindowKey(e.target.value)}
           aria-label="Time window"
         >
-          {WINDOWS.map((w) => (
-            <option key={w.key} value={w.key}>{w.label}</option>
-          ))}
+          <optgroup label="Rolling">
+            {windows.filter((w) => !w.key.startsWith('season:')).map((w) => (
+              <option key={w.key} value={w.key}>{w.label}</option>
+            ))}
+          </optgroup>
+          {windows.some((w) => w.key.startsWith('season:nba:')) && (
+            <optgroup label="NBA seasons">
+              {windows.filter((w) => w.key.startsWith('season:nba:')).map((w) => (
+                <option key={w.key} value={w.key}>{w.label}</option>
+              ))}
+            </optgroup>
+          )}
+          {windows.some((w) => w.key.startsWith('season:wnba:')) && (
+            <optgroup label="WNBA seasons">
+              {windows.filter((w) => w.key.startsWith('season:wnba:')).map((w) => (
+                <option key={w.key} value={w.key}>{w.label}</option>
+              ))}
+            </optgroup>
+          )}
         </select>
       </div>
 
-      <LeagueChart league="nba"  rows={inWindow} allRows={rows} windowKey={windowKey} />
-      <LeagueChart league="wnba" rows={inWindow} allRows={rows} windowKey={windowKey} />
+      <LeagueChart league="nba"  rows={inWindow} allRows={rows} win={win} />
+      <LeagueChart league="wnba" rows={inWindow} allRows={rows} win={win} />
     </div>
   );
 }
 
-function LeagueChart({ league, rows, allRows, windowKey }) {
+function LeagueChart({ league, rows, allRows, win }) {
   const threshold = blowoutThreshold(league);
 
   // Window-scoped sets — used for the metric cards (avg DBP, actual blowout %)
@@ -113,15 +78,10 @@ function LeagueChart({ league, rows, allRows, windowKey }) {
   // Uses the ENTIRE league dataset (not just the window) for the rolling
   // lookback population. The X-axis still covers the window's days; each
   // point shows the rolling avg ending on that day. Lookback duration
-  // matches the selected window:
-  //   Yesterday    → 1-day rolling   (essentially the day itself)
-  //   Last 10 days → 10-day rolling
-  //   Last month   → 30-day rolling
-  //   Last 3 months → 90-day rolling
-  //   All time     → cumulative running average (no lower bound)
+  // matches the selected window (null = cumulative, used by All-time and
+  // season windows).
   const leagueAllRows = allRows.filter((r) => (r.league || 'nba') === league);
-  const winCfg = WINDOWS.find((w) => w.key === windowKey) || WINDOWS[0];
-  const lookbackDays = winCfg.lookback;
+  const lookbackDays = win.lookback;
 
   const series = useMemo(
     () => buildRollingSeries({
@@ -164,7 +124,7 @@ function LeagueChart({ league, rows, allRows, windowKey }) {
         <>
           <Sparkline
             ariaLabel={`${league.toUpperCase()} predicted vs actual blowout rate`}
-            yMax={windowKey === 'y' ? 100 : 70}
+            yMax={win.key === 'y' ? 100 : 70}
             series={[
               { label: 'Avg DBP%',     color: 'var(--base)',  points: series.dbp },
               { label: 'Blowout rate', color: 'var(--alert)', points: series.actual, dashed: true },

@@ -4,6 +4,11 @@ import AccuracyPanel from '../components/AccuracyPanel.jsx';
 import { useSyncStatus } from '../hooks/useTrackerSync.js';
 import { BLOWOUT_THRESHOLD, zoneLabels } from '../data/formulaCore.js';
 import NewsPanel from '../components/NewsPanel.jsx';
+import {
+  STATIC_WINDOWS,
+  seasonWindowsFromRows,
+  filterRowsByWindow,
+} from '../data/timeWindows.js';
 
 const STORAGE_KEY = 'dbp-tracker-v1';
 
@@ -85,6 +90,7 @@ export default function Tracker() {
   }, [sync.lastSyncAt]);
   const [league, setLeague] = useState('nba');
   const [zone, setZone] = useState('All');
+  const [rangeKey, setRangeKey] = useState('all');
 
   // Memoize so switching leagues also resets a stale zone filter that no
   // longer exists in the new set (if the per-league zones diverge again).
@@ -102,8 +108,25 @@ export default function Tracker() {
 
   useEffect(() => { saveRows(rows); }, [rows]);
 
+  // Range filter options: static (rolling) windows + per-league seasons
+  // derived from the rows the user has. Grouped so the dropdown reads
+  // cleanly as "quick ranges" then "seasons."
+  const rangeWindows = useMemo(() => {
+    const seasonWindows = seasonWindowsFromRows(rows, league);
+    return [...STATIC_WINDOWS, ...seasonWindows];
+  }, [rows, league]);
+
+  // If the user was on a season-key that doesn't exist in the current
+  // league (e.g. switched from NBA to WNBA), fall back to "all time".
+  useEffect(() => {
+    if (!rangeWindows.find((w) => w.key === rangeKey)) setRangeKey('all');
+  }, [rangeWindows, rangeKey]);
+
+  const activeWindow = rangeWindows.find((w) => w.key === rangeKey) || STATIC_WINDOWS.find((w) => w.key === 'all');
+
   const filtered = useMemo(() => {
     let d = rows.filter((r) => (r.league || 'nba') === league);
+    d = filterRowsByWindow(d, activeWindow);
     if (zone !== 'All') d = d.filter((r) => r.zone === zone);
     if (spreadF !== 'All') d = d.filter((r) => r.spreadResult === spreadF);
     if (ouF !== 'All') d = d.filter((r) => r.ouResult === ouF);
@@ -122,7 +145,7 @@ export default function Tracker() {
       return av < bv ? -sortDir : av > bv ? sortDir : 0;
     });
     return d;
-  }, [rows, league, zone, spreadF, ouF, blowoutF, search, sortKey, sortDir]);
+  }, [rows, league, zone, spreadF, ouF, blowoutF, search, sortKey, sortDir, activeWindow]);
 
   const stats = useMemo(() => {
     const n = filtered.length;
@@ -235,6 +258,12 @@ export default function Tracker() {
 
       <div className="filter-bar">
         <FilterGroup label="League" values={LEAGUES} active={league} onClick={setLeague} labelFor={(v) => v.toUpperCase()} />
+        <RangeSelect
+          label="Range"
+          windows={rangeWindows}
+          value={rangeKey}
+          onChange={setRangeKey}
+        />
         <FilterGroup label="Zone"   values={zoneChoices}   active={zone}   onClick={setZone} />
         <FilterGroup label="Spread" values={RESULTS} active={spreadF} onClick={setSpreadF} />
         <FilterGroup label="O/U"    values={RESULTS} active={ouF}     onClick={setOuF} />
@@ -479,6 +508,38 @@ function StatCell({ l, v, sub, color }) {
       <span className="v" style={color ? { color } : undefined}>{v}</span>
       <span className="l">{l}</span>
       {sub && <span className="sub">{sub}</span>}
+    </div>
+  );
+}
+
+// Range dropdown — static rolling windows come first, then the season
+// windows for the currently-selected league (one <optgroup> per section
+// so the two aren't visually mashed together).
+function RangeSelect({ label, windows, value, onChange }) {
+  const staticOpts = windows.filter((w) => !w.key.startsWith('season:'));
+  const seasonOpts = windows.filter((w) => w.key.startsWith('season:'));
+  return (
+    <div className="filter-group">
+      <span className="filter-label">{label}</span>
+      <select
+        className="window-select tracker-range-select"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Date range"
+      >
+        <optgroup label="Rolling">
+          {staticOpts.map((w) => (
+            <option key={w.key} value={w.key}>{w.label}</option>
+          ))}
+        </optgroup>
+        {seasonOpts.length > 0 && (
+          <optgroup label="Seasons">
+            {seasonOpts.map((w) => (
+              <option key={w.key} value={w.key}>{w.label}</option>
+            ))}
+          </optgroup>
+        )}
+      </select>
     </div>
   );
 }
