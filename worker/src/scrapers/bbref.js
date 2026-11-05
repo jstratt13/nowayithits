@@ -183,11 +183,14 @@ function extractTable(html, candidateIds) {
 }
 
 function parseTable(tableHtml) {
-  const tbodyMatch = tableHtml.match(/<tbody[\s\S]*?<\/tbody>/);
-  if (!tbodyMatch) return {};
+  // Strip <thead> so we only look at data rows. BBR's standings tables
+  // open <tbody> but omit the closing </tbody>, so we can't scope to a
+  // tbody match. Dropping thead + parsing all remaining <tr> gets both
+  // layouts (advanced-team with a proper tbody, standings without).
+  const bodyHtml = tableHtml.replace(/<thead[\s\S]*?<\/thead>/g, '');
 
   const out = {};
-  const rows = tbodyMatch[0].match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  const rows = bodyHtml.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
   for (const row of rows) {
     if (/class="[^"]*thead/.test(row) || /class="[^"]*partial_table/.test(row)) continue;
 
