@@ -52,6 +52,11 @@ const MODEL_CONFIG = {
     paceDefault:     100,
     offRtgDefault:  115,
     defRtgDefault:  115,   // league average DRtg ≈ ORtg
+    // Totals matchup inputs — recent NBA league averages.
+    // leagueAvgTO  = team turnover rate (TOV%)
+    // leagueAvgORB = team offensive rebound rate (ORB%)
+    leagueAvgTO:    13.5,
+    leagueAvgORB:   27.0,
     blowoutMargin:   16,
     // MPF disabled for NBA (Volume Delta passes through Δ_Vol × 1.0).
     paceMpfBaseline: null,
@@ -80,6 +85,9 @@ const MODEL_CONFIG = {
     paceDefault:     80,
     offRtgDefault:  100,
     defRtgDefault:  100,   // WNBA league average DRtg ≈ ORtg
+    // Totals matchup inputs — recent WNBA league averages.
+    leagueAvgTO:    14.5,
+    leagueAvgORB:   26.0,
     blowoutMargin:   14,
     // Matchup Pace Factor (MPF): scales Volume Delta in True Gap so games
     // with low possession counts give less weight to TOV/ORB advantages.
@@ -702,10 +710,137 @@ function combinedOffRating(game, ctx) {
   return homeExpected + awayExpected;
 }
 
+// ── Totals matchup adjustment (TO% + ORB%) ──────────────────────────────
+//
+// Raw ORtg/DRtg already encode each team's SEASON-LONG turnover and
+// offensive rebound rates. What they don't capture is the MATCHUP
+// interaction — if a high-TO offense plays a defense that forces lots of
+// turnovers, actual game TOs will exceed either team's season baseline.
+// Same for a strong ORB team facing a weak defensive-rebounding opponent.
+//
+// Model:
+//   gameTO%  = avg( (homeTO_off + awayTO_def)/2 , (awayTO_off + homeTO_def)/2 )
+//   gameORB% = avg( (homeORB + (100 − awayDRB))/2 , (awayORB + (100 − homeDRB))/2 )
+//   toExcess  = gameTO%  − leagueAvgTO
+//   orbExcess = gameORB% − leagueAvgORB
+//   multiplier = 1 + (orbExcess × ORB_COEF − toExcess × TO_COEF) / 100
+//
+// Coefficients are starting values — calibrate against real outcomes:
+//   TO_COEF  = 0.7  → each %pt excess TO drops projected total ~0.7%
+//   ORB_COEF = 0.5  → each %pt excess ORB raises projected total ~0.5%
+// Asymmetric because a TO = 0 points (full possession lost), while an
+// extra ORB only buys a second shot attempt at ~1pt avg value.
+//
+// TO%/ORB% inputs use the SAME small-sample shrinkage as SRS and the
+// ratings — raw rates are wildly volatile after 2–3 games. Weight ramps
+// via srsShrinkWeight (quadratic over 15 games). opp_tov_pct and drb_pct
+// come from the same BBR advanced-team scrape that fills off/def rtg.
+const MATCHUP_TO_COEF  = 0.7;
+const MATCHUP_ORB_COEF = 0.5;
+
+function shrinkRate(raw, leagueAvg, teamStats) {
+  const w = srsShrinkWeight(teamStats);
+  return leagueAvg + (raw - leagueAvg) * w;
+}
+
+function totalMatchupDetail(game, ctx) {
+  const c = cfg(game.league);
+  const hStats = stats(ctx, game.league, game.home.abbr);
+  const aStats = stats(ctx, game.league, game.away.abbr);
+
+  // Defaults: TO% and ORB% default to league average when BBR hasn't
+  // filled the field; opponent DRB% defaults to (100 − leagueAvgORB).
+  const defOrbDef = 100 - c.leagueAvgORB;
+
+  const hToOff = shrinkRate(get(hStats, 'toOff',  c.leagueAvgTO),  c.leagueAvgTO,  hStats);
+  const aToOff = shrinkRate(get(aStats, 'toOff',  c.leagueAvgTO),  c.leagueAvgTO,  aStats);
+  const hToDef = shrinkRate(get(hStats, 'toDef',  c.leagueAvgTO),  c.leagueAvgTO,  hStats);
+  const aToDef = shrinkRate(get(aStats, 'toDef',  c.leagueAvgTO),  c.leagueAvgTO,  aStats);
+  const hOrb   = shrinkRate(get(hStats, 'orbOff', c.leagueAvgORB), c.leagueAvgORB, hStats);
+  const aOrb   = shrinkRate(get(aStats, 'orbOff', c.leagueAvgORB), c.leagueAvgORB, aStats);
+  const hDrb   = shrinkRate(get(hStats, 'drbDef', defOrbDef),      defOrbDef,      hStats);
+  const aDrb   = shrinkRate(get(aStats, 'drbDef', defOrbDef),      defOrbDef,      aStats);
+
+  const gameToRate  = ((hToOff + aToDef) / 2 + (aToOff + hToDef) / 2) / 2;
+  const gameOrbRate = ((hOrb + (100 - aDrb)) / 2 + (aOrb + (100 - hDrb)) / 2) / 2;
+
+  const toExcess  = gameToRate  - c.leagueAvgTO;
+  const orbExcess = gameOrbRate - c.leagueAvgORB;
+
+  const toImpactPct  = -toExcess  * MATCHUP_TO_COEF;   // negative = drops total
+  const orbImpactPct = +orbExcess * MATCHUP_ORB_COEF;  // positive = raises total
+  const multiplier   = 1 + (toImpactPct + orbImpactPct) / 100;
+
+  return {
+    gameToRate, leagueAvgTO: c.leagueAvgTO, toExcess, toImpactPct, toCoef: MATCHUP_TO_COEF,
+    gameOrbRate, leagueAvgORB: c.leagueAvgORB, orbExcess, orbImpactPct, orbCoef: MATCHUP_ORB_COEF,
+    multiplier,
+  };
+}
+
 export function projectedTotal(game, ctx) {
   const poss = projectedPossessions(game, ctx);
   const combined = combinedOffRating(game, ctx);
-  return (poss * combined) / 100;
+  const matchup = totalMatchupDetail(game, ctx);
+  return (poss * combined / 100) * matchup.multiplier;
+}
+
+// Structured breakdown of the totals projection — mirrors predictionBreakdown
+// in format so the UI can render it the same way. Called once; its output
+// is frozen into the snapshot alongside the DBP breakdown.
+export function totalBreakdown(game, ctx) {
+  const c = cfg(game.league);
+  const hStats = stats(ctx, game.league, game.home.abbr);
+  const aStats = stats(ctx, game.league, game.away.abbr);
+  const hInj = teamInjuryScore(game, ctx, game.home);
+  const aInj = teamInjuryScore(game, ctx, game.away);
+
+  const effHomeOff = blendedOff(hStats, game.league) - INJURY_TOTAL_ALPHA * hInj;
+  const effAwayOff = blendedOff(aStats, game.league) - INJURY_TOTAL_ALPHA * aInj;
+  const effHomeDef = blendedDef(hStats, game.league) + INJURY_TOTAL_BETA  * hInj;
+  const effAwayDef = blendedDef(aStats, game.league) + INJURY_TOTAL_BETA  * aInj;
+
+  const homeExpected = (effHomeOff + effAwayDef) / 2;
+  const awayExpected = (effAwayOff + effHomeDef) / 2;
+  const combined = homeExpected + awayExpected;
+
+  const hPace = get(hStats, 'pace', c.paceDefault);
+  const aPace = get(aStats, 'pace', c.paceDefault);
+  const paceDeflate = isNbaPlayoffs(game.league) ? c.paceDeflate : 0;
+  const possessions = (hPace + aPace) / 2 - paceDeflate;
+
+  const matchup = totalMatchupDetail(game, ctx);
+  const baseTotal = (possessions * combined) / 100;
+  const total = baseTotal * matchup.multiplier;
+
+  return {
+    possessions: {
+      homePace: hPace,
+      awayPace: aPace,
+      paceDeflate,
+      value: possessions,
+    },
+    ratings: {
+      home: {
+        abbr: game.home.abbr,
+        ratingOff: effHomeOff,
+        ratingDef: effHomeDef,
+        injuryScore: hInj,
+        expected: homeExpected,
+      },
+      away: {
+        abbr: game.away.abbr,
+        ratingOff: effAwayOff,
+        ratingDef: effAwayDef,
+        injuryScore: aInj,
+        expected: awayExpected,
+      },
+      combined,
+      baseTotal,
+    },
+    matchup,
+    total,
+  };
 }
 
 // ── Derived picks ───────────────────────────────────────────────────────
@@ -814,6 +949,7 @@ export function predictionBreakdown(game, ctx) {
       z: b.z,
       dbp: b.dbp,
     },
+    total: totalBreakdown(game, ctx),
   };
 }
 

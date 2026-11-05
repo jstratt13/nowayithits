@@ -8,7 +8,7 @@ import { fmtLine } from '../data/formulaCore.js';
 // are bit-identical to what was frozen at tipoff.
 export default function Breakdown({ breakdown }) {
   if (!breakdown) return null;
-  const { baseANG, deltaVol, deltaStar, dbp, favAbbr, undAbbr } = breakdown;
+  const { baseANG, deltaVol, deltaStar, dbp, total, favAbbr, undAbbr } = breakdown;
 
   return (
     <div className="breakdown">
@@ -44,7 +44,118 @@ export default function Breakdown({ breakdown }) {
         <Row label="Z" value={dbp.z} formatter={(v) => (v >= 0 ? `+${v.toFixed(3)}` : v.toFixed(3))} />
         <Row label="DBP%" value={dbp.dbp} formatter={(v) => `${v.toFixed(1)}%`} bold />
       </Section>
+
+      {total && <TotalSection total={total} />}
     </div>
+  );
+}
+
+// Projected total — three expandable rows (possessions, combined rating,
+// matchup adjustment) then the final number. Each sub-row expands to
+// show the inputs it was built from so the arithmetic can be traced.
+function TotalSection({ total }) {
+  const { possessions, ratings, matchup, total: projTotal } = total;
+  return (
+    <Section title="Projected Total">
+      <ExpandRow
+        label="Possessions"
+        value={possessions.value}
+        formatter={(v) => v.toFixed(1)}
+      >
+        <Row label="Home pace" value={possessions.homePace} formatter={(v) => v.toFixed(1)} muted />
+        <Row label="Away pace" value={possessions.awayPace} formatter={(v) => v.toFixed(1)} muted />
+        {possessions.paceDeflate !== 0 && (
+          <Row label="Playoff pace deflate" value={-possessions.paceDeflate} signed muted />
+        )}
+      </ExpandRow>
+
+      <ExpandRow
+        label="Combined rating"
+        value={ratings.combined}
+        formatter={(v) => v.toFixed(1)}
+      >
+        <Row
+          label={`${ratings.home.abbr} off / ${ratings.away.abbr} def → home exp`}
+          value={ratings.home.expected}
+          formatter={(v) => v.toFixed(1)}
+          muted
+        />
+        <Row label={`${ratings.home.abbr} effective ORtg`} value={ratings.home.ratingOff} formatter={(v) => v.toFixed(1)} muted />
+        <Row label={`${ratings.away.abbr} effective DRtg`} value={ratings.away.ratingDef} formatter={(v) => v.toFixed(1)} muted />
+        <Row
+          label={`${ratings.away.abbr} off / ${ratings.home.abbr} def → away exp`}
+          value={ratings.away.expected}
+          formatter={(v) => v.toFixed(1)}
+          muted
+        />
+        <Row label={`${ratings.away.abbr} effective ORtg`} value={ratings.away.ratingOff} formatter={(v) => v.toFixed(1)} muted />
+        <Row label={`${ratings.home.abbr} effective DRtg`} value={ratings.home.ratingDef} formatter={(v) => v.toFixed(1)} muted />
+        {(ratings.home.injuryScore > 0 || ratings.away.injuryScore > 0) && (
+          <Row
+            label={`Injury adj (${ratings.home.abbr} ${ratings.home.injuryScore.toFixed(1)} · ${ratings.away.abbr} ${ratings.away.injuryScore.toFixed(1)})`}
+            value={null}
+            formatter={() => 'applied to effOff/effDef'}
+            muted
+          />
+        )}
+        <Row label="Base total (poss × combined ÷ 100)" value={ratings.baseTotal} formatter={(v) => v.toFixed(1)} muted />
+      </ExpandRow>
+
+      <ExpandRow
+        label={`Matchup adj (×${matchup.multiplier.toFixed(3)})`}
+        value={(matchup.multiplier - 1) * 100}
+        formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+      >
+        <Row
+          label={`Game TO% (${matchup.gameToRate.toFixed(1)}) vs league ${matchup.leagueAvgTO.toFixed(1)}`}
+          value={matchup.toExcess}
+          signed
+          muted
+        />
+        <Row
+          label={`TO impact (× ${matchup.toCoef.toFixed(1)})`}
+          value={matchup.toImpactPct}
+          formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+          muted
+        />
+        <Row
+          label={`Game ORB% (${matchup.gameOrbRate.toFixed(1)}) vs league ${matchup.leagueAvgORB.toFixed(1)}`}
+          value={matchup.orbExcess}
+          signed
+          muted
+        />
+        <Row
+          label={`ORB impact (× ${matchup.orbCoef.toFixed(1)})`}
+          value={matchup.orbImpactPct}
+          formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+          muted
+        />
+      </ExpandRow>
+
+      <Row label="Projected Total" value={projTotal} formatter={(v) => v.toFixed(1)} bold />
+    </Section>
+  );
+}
+
+function ExpandRow({ label, value, formatter, children }) {
+  const [open, setOpen] = useState(false);
+  const fmt = formatter ? formatter(value) : (value == null ? '—' : Number(value).toFixed(2));
+  return (
+    <>
+      <button
+        type="button"
+        className={'breakdown-row breakdown-row-toggle' + (open ? ' is-open' : '')}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span className="breakdown-row-label">
+          {label}
+          <span className="breakdown-row-chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
+        </span>
+        <span className="breakdown-row-value">{fmt}</span>
+      </button>
+      {open && <div className="breakdown-substack">{children}</div>}
+    </>
   );
 }
 
