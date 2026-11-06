@@ -45,18 +45,22 @@ const MODEL_CONFIG = {
       lowPace:  2.75, // Low-Possession / Slow team
     },
     paceDeflate:     3.5,  // NBA playoff half-court tightening (gated to Apr–Jun)
-    // paceDefault = 100 as of 10/27/26 (was 99). Early 2026-27 league pace
-    // is ~101.3; set to 100 as a reasonable mid-point. Revisit once more
-    // data accumulates — may need another nudge up, or a per-game dynamic
-    // using current BBR team pace instead of a static league default.
     paceDefault:     100,
-    offRtgDefault:  115,
-    defRtgDefault:  115,   // league average DRtg ≈ ORtg
-    // Totals matchup inputs — recent NBA league averages.
-    // leagueAvgTO  = team turnover rate (TOV%)
-    // leagueAvgORB = team offensive rebound rate (ORB%)
-    leagueAvgTO:    13.5,
-    leagueAvgORB:   27.0,
+    // All defaults below are re-anchored to live BBR 2026-27 league
+    // averages (sampled 11/5/26 after the <tbody> scraper fix). Defaults
+    // serve two purposes: (1) shrinkage anchor — early-season team ratings
+    // are pulled toward this value via (gp/15)², so a bad anchor pulls
+    // teams toward the wrong "center"; (2) fallback when BBR is missing
+    // a team. ORtg and DRtg must be identical league-wide by definition
+    // (what one team scores, another allows); the small gap in the live
+    // scrape is just per-team rounding noise.
+    //
+    // Live NBA 2026-27 averages for reference:
+    //   ORtg 113.24 · DRtg 113.38 · TO% 13.81 · ORB% 27.36 · Pace 99.47
+    offRtgDefault:  113,
+    defRtgDefault:  113,
+    leagueAvgTO:    13.8,  // team TOV% (and matching opp TOV%) league-wide
+    leagueAvgORB:   27.4,  // team ORB% league-wide
     blowoutMargin:   16,
     // MPF disabled for NBA (Volume Delta passes through Δ_Vol × 1.0).
     paceMpfBaseline: null,
@@ -83,11 +87,17 @@ const MODEL_CONFIG = {
     },
     paceDeflate:     0,    // no penalty — currently regular season
     paceDefault:     80,
-    offRtgDefault:  100,
-    defRtgDefault:  100,   // WNBA league average DRtg ≈ ORtg
-    // Totals matchup inputs — recent WNBA league averages.
-    leagueAvgTO:    14.5,
-    leagueAvgORB:   26.0,
+    // Re-anchored to live BBR WNBA 2026 completed-season averages (sampled
+    // 11/5/26). Previous defaults (100 / 100 / 14.5 / 26.0) were a
+    // historical placeholder from before BBR's WNBA scrape was wired up;
+    // actual league averages diverge meaningfully, especially ORtg/DRtg.
+    //
+    // Live WNBA 2026 averages for reference:
+    //   ORtg 109.13 · DRtg 109.09 · TO% 14.39 · ORB% 25.45 · Pace 79.31
+    offRtgDefault:  109,
+    defRtgDefault:  109,
+    leagueAvgTO:    14.4,
+    leagueAvgORB:   25.5,
     blowoutMargin:   14,
     // Matchup Pace Factor (MPF): scales Volume Delta in True Gap so games
     // with low possession counts give less weight to TOV/ORB advantages.
@@ -666,12 +676,16 @@ function blendedDef(teamStats, league) {
 // on projected total: usually slightly negative (offense effect bigger
 // than defense effect, especially for star scorers being out).
 //
-// Tunable starting points — calibrate against actual outcomes over time:
-//   ALPHA = 1.0  → each unit of injury score drops ORtg by 1.0 point
-//   BETA  = 0.2  → each unit of injury score raises DRtg by 0.2 points
-// For a star-out team (injury score ~5), that's ~5 pts off ORtg and
-// ~1 pt onto DRtg. Net projTotal drop ≈ 2.5–3 pts in a typical matchup.
-const INJURY_TOTAL_ALPHA = 1.0;
+// Tunable — calibrate against actual outcomes over time:
+//   ALPHA = 0.7  → each unit of injury score drops ORtg by 0.7 pts
+//   BETA  = 0.2  → each unit of injury score raises DRtg by 0.2 pts
+// Previously ALPHA was 1.0 but even non-star players tend to be good
+// offensive players at the NBA level — replacement-level scoring isn't
+// zero, so a straight 1.0 ratio was over-penalizing. Dropped to 0.7 on
+// 11/5/26. For a star-out team (injury score ~5), that's ~3.5 pts off
+// ORtg and ~1 pt onto DRtg. Net projTotal drop ≈ 1.5–2 pts in a
+// typical matchup.
+const INJURY_TOTAL_ALPHA = 0.7;
 const INJURY_TOTAL_BETA  = 0.2;
 
 function teamInjuryScore(game, ctx, teamSide) {
