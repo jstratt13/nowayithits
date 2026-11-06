@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────────────────
+#  Daily L10 refresh — scrapes BBR per-team advanced gamelog pages from a
+#  GitHub-hosted runner (different IP pool from Cloudflare's workers),
+#  extracts exact per-game Off/Def Rtg and Pace for each team's last 10
+#  games, and commits src/data/l10Cache.json. If the JSON actually changed,
+#  also redeploys the worker so the new bundle goes live in production.
+#
+#  Timing: 10:00 UTC = 6 AM ET (5 AM EDT). Captures all previous-day games
+#  (even late PT games ending ~1 AM ET), well before any team's next
+#  tipoff — so B2B teams playing again that night have yesterday's data
+#  available. Max data age at any evening tipoff ~ 13-16 hours, under
+#  Jordan's 18-hour bar.
+#
+#  Setup: same CLOUDFLARE_API_TOKEN secret as the roster workflow (see
+#  refresh-rosters.yml header for details).
+#
+#  Manual trigger: Actions tab → "Refresh BBR L10" → "Run workflow".
+#
+#  Failure mode: scraper sanity guards (≥ 28 teams, ≤ 30% game-count
+#  drop vs prior) fail → script exits non-zero, workflow goes red, JSON
+#  stays untouched. The worker's inline approximation keeps serving until
+#  the next successful scrape.
+# ─────────────────────────────────────────────────────────────────────────
+
+name: Refresh BBR L10
+
+on:
+  schedule:
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-l10
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install worker deps
+        working-directory: worker
+        run: npm ci || npm install
+
+      - name: Scrape BBR L10
+        run: node scripts/scrape-l10.mjs
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet src/data/l10Cache.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "l10Cache.json unchanged — nothing to deploy"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "l10Cache.json changed:"
+            git diff --stat src/data/l10Cache.json
+          fi
+
+      - name: Commit + push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data/l10Cache.json
+          git commit -m "Refresh BBR L10 [skip ci]"
+          git push
+
+      - name: Deploy worker (bundled JSON change)
+        if: steps.diff.outputs.changed == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: worker
+          command: deploy
+          wranglerVersion: '4.94.0'

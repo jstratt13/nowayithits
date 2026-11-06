@@ -37,6 +37,8 @@
 //      Delta_Star beyond the Rotowire-only rollup. Outside the BBR
 //      scraper's scope, lives in its own scraper file (TODO).
 
+import { getL10 } from './bbrL10.js';
+
 const BBR = {
   nba: (year) => `https://www.basketball-reference.com/leagues/NBA_${year}.html`,
   wnba: (year) => `https://www.basketball-reference.com/wnba/years/${year}.html`,
@@ -113,25 +115,49 @@ export async function scrapeTeamStats(league, env) {
     teams[abbr].losses = num(row.losses);
   }
 
-  // L10 recent-form: three distinct paths based on league/month.
-  //   NBA Apr–Jun  → scrape BBR's playoff page advanced-team table (same
-  //                  layout as season page, L10 ratings ARE the playoff
-  //                  ratings since playoffs = small sample).
-  //   NBA Oct–Mar  → compute L10 Off/Def Rtg from BBR's monthly game log
-  //                  pages (approximate, see fetchL10FromGameLog below).
-  //   WNBA         → not implemented yet (offseason anyway).
-  {
-    const m = new Date().getUTCMonth() + 1;
-    const isPlayoffs = league === 'nba' && m >= 4 && m <= 6;
-
-    if (isPlayoffs) {
-      await fillL10FromPlayoffPage(league, year, teams, env);
-    } else if (league === 'nba') {
-      await fetchL10FromGameLog(league, year, teams, env);
+  // L10 recent-form — three sources, in preference order:
+  //   1. Bundled l10Cache.json from the daily GH Actions scrape
+  //      (scripts/scrape-l10.mjs). Exact per-game ORtg/DRtg/Pace from BBR's
+  //      advanced-gamelog pages. This is the ONLY path giving precise values.
+  //   2. NBA Apr–Jun playoffs: scrape BBR's playoff advanced-team table
+  //      directly (small-sample seasons, L10 ≈ playoff totals).
+  //   3. NBA Oct–Mar regular season fallback: approximate from monthly
+  //      game-log pages (fetchL10FromGameLog). Used when the bundled
+  //      cache is missing a team (shouldn't happen under normal
+  //      operation, but preserves data flow if the workflow hasn't run).
+  //
+  // The playoff path still overrides when in Apr–Jun since the bundled
+  // cache is NBA regular-season focused (playoff gamelog pages have a
+  // different URL structure). WNBA regular season still has no L10 wired.
+  const bundledUsed = new Set();
+  for (const [abbr, team] of Object.entries(teams)) {
+    const l10 = getL10(league, abbr);
+    if (l10 && l10.offRtg != null && l10.defRtg != null) {
+      team.offLast10    = l10.offRtg;
+      team.defLast10    = l10.defRtg;
+      team.paceLast10   = l10.pace;
+      team.toOffLast10  = l10.tovPct;
+      team.toDefLast10  = l10.oppTovPct;
+      team.orbOffLast10 = l10.orbPct;
+      team.drbDefLast10 = l10.oppOrbPct != null ? 100 - l10.oppOrbPct : null;
+      team.l10GameCount = l10.gameCount;
+      team.l10Source    = 'bundled';
+      bundledUsed.add(abbr);
     }
-    // WNBA regular season: offLast10/defLast10 stay null, blendedOff/Def
-    // falls back to full-season only. Separate TODO (see WNBA notes above).
   }
+
+  const monthNum = new Date().getUTCMonth() + 1;
+  const isPlayoffs = league === 'nba' && monthNum >= 4 && monthNum <= 6;
+
+  if (isPlayoffs) {
+    await fillL10FromPlayoffPage(league, year, teams, env);
+  } else if (league === 'nba' && bundledUsed.size < Object.keys(teams).length) {
+    // Only run the inline approximation fallback if some teams didn't
+    // get bundled L10 — keeps fetch count to zero when the cache is
+    // complete, which is the steady-state case.
+    await fetchL10FromGameLog(league, year, teams, env);
+  }
+  // WNBA regular season: still no L10 path (offseason + separate scraper TODO).
 
   return {
     source: 'basketball-reference.com',
@@ -283,10 +309,14 @@ async function fetchL10FromGameLog(league, year, teams, env) {
     const avgAllowed = last10.reduce((s, g) => s + g.allowed, 0) / last10.length;
 
     const target = teams[abbr] = teams[abbr] || {};
+    // Don't overwrite bundled-cache values — those are exact per-game
+    // readings; this approximation is a fallback only.
+    if (target.l10Source === 'bundled') continue;
     target.offLast10   = (avgScored  * 100) / l10Pace;
     target.defLast10   = (avgAllowed * 100) / l10Pace;
     target.paceLast10  = l10Pace;
     target.l10GameCount = last10.length;
+    target.l10Source   = 'approximation';
     // TO%/ORB%/DRB% L10 fields deliberately NOT set — the monthly games
     // page doesn't carry that detail. blendVal falls back to full-season
     // when an L10 field is null.
