@@ -131,6 +131,22 @@ function TotalSection({ total }) {
           formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
           muted
         />
+        {matchup.game3PArRate != null && (
+          <>
+            <Row
+              label={`Game 3PAr (${matchup.game3PArRate.toFixed(1)}) vs league ${matchup.leagueAvg3PAr.toFixed(1)}`}
+              value={matchup.threePArExcess}
+              signed
+              muted
+            />
+            <Row
+              label={`3PAr impact (× ${matchup.threePArCoef.toFixed(2)})`}
+              value={matchup.threePArImpactPct}
+              formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+              muted
+            />
+          </>
+        )}
       </ExpandRow>
 
       {rest && (

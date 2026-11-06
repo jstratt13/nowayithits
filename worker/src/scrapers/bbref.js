@@ -102,6 +102,7 @@ export async function scrapeTeamStats(league, env) {
       orbOff:  num(row.orb_pct),
       toDef:   num(row.opp_tov_pct),
       drbDef:  num(row.drb_pct),
+      threePAr: num(row.fg3a_per_fga_pct),
     };
   }
   // Standings tables fill in W/L (and SRS fallback for the WNBA layout).

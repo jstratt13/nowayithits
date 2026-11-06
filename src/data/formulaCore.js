@@ -62,10 +62,12 @@ const MODEL_CONFIG = {
     //
     // Live NBA 2026-27 averages for reference:
     //   ORtg 113.24 · DRtg 113.38 · TO% 13.81 · ORB% 27.36 · Pace 99.47
+    //   3PAr 0.429 (stable ~0.42 across 2024-25 + 2025-26)
     offRtgDefault:  113,
     defRtgDefault:  113,
-    leagueAvgTO:    13.8,  // team TOV% (and matching opp TOV%) league-wide
-    leagueAvgORB:   27.4,  // team ORB% league-wide
+    leagueAvgTO:    13.8,   // team TOV% (and matching opp TOV%) league-wide
+    leagueAvgORB:   27.4,   // team ORB% league-wide
+    leagueAvg3PAr:  0.42,   // team FG3A / FGA (3-point attempt rate) league-wide
     blowoutMargin:   16,
     // MPF disabled for NBA (Volume Delta passes through Δ_Vol × 1.0).
     paceMpfBaseline: null,
@@ -99,10 +101,12 @@ const MODEL_CONFIG = {
     //
     // Live WNBA 2026 averages for reference:
     //   ORtg 109.13 · DRtg 109.09 · TO% 14.39 · ORB% 25.45 · Pace 79.31
+    //   3PAr 0.372 (2026) — WNBA shoots fewer 3s than NBA
     offRtgDefault:  109,
     defRtgDefault:  109,
     leagueAvgTO:    14.4,
     leagueAvgORB:   25.5,
+    leagueAvg3PAr:  0.37,
     blowoutMargin:   14,
     // Matchup Pace Factor (MPF): scales Volume Delta in True Gap so games
     // with low possession counts give less weight to TOV/ORB advantages.
@@ -809,8 +813,16 @@ function combinedOffRating(game, ctx) {
 // ratings — raw rates are wildly volatile after 2–3 games. Weight ramps
 // via srsShrinkWeight (quadratic over 15 games). opp_tov_pct and drb_pct
 // come from the same BBR advanced-team scrape that fills off/def rtg.
-const MATCHUP_TO_COEF  = 0.7;
-const MATCHUP_ORB_COEF = 0.5;
+const MATCHUP_TO_COEF   = 0.7;
+const MATCHUP_ORB_COEF  = 0.5;
+// 3PAr coefficient: each 1 percentage point of game-expected 3PAr above
+// league average → that pct drop in total. Data-derived from 3 seasons
+// of incremental correlation analysis (r ≈ −0.22 for 3PAr against
+// per-team pts residualized on ORtg), translated to game-total impact.
+// Sign is baked into totalMatchupDetail (high 3PAr → negative total adj).
+// Teams that shoot more 3s forego foul-drawing opportunities (FTs), so
+// per-game output drops slightly even when per-possession ORtg is equal.
+const MATCHUP_3PAR_COEF = 0.15;
 
 function shrinkRate(raw, leagueAvg, teamStats) {
   const w = srsShrinkWeight(teamStats);
@@ -838,16 +850,31 @@ function totalMatchupDetail(game, ctx) {
   const gameToRate  = ((hToOff + aToDef) / 2 + (aToOff + hToDef) / 2) / 2;
   const gameOrbRate = ((hOrb + (100 - aDrb)) / 2 + (aOrb + (100 - hDrb)) / 2) / 2;
 
-  const toExcess  = gameToRate  - c.leagueAvgTO;
-  const orbExcess = gameOrbRate - c.leagueAvgORB;
+  // 3PAr matchup — each team contributes their own 3PAr; no defensive
+  // mirror because teams can't really dictate opponent shot selection the
+  // way they dictate TO%/ORB% outcomes. Game-expected 3PAr = simple avg
+  // of both teams' shrunk rates. Working in percentage-point space (pp)
+  // for consistency with the TO%/ORB% coefficients: multiply decimal by
+  // 100 so leagueAvg 0.42 reads as 42.0 and a 5pp-above-avg team reads
+  // as 47.0.
+  const h3PAr = shrinkRate(get(hStats, 'threePAr', c.leagueAvg3PAr), c.leagueAvg3PAr, hStats) * 100;
+  const a3PAr = shrinkRate(get(aStats, 'threePAr', c.leagueAvg3PAr), c.leagueAvg3PAr, aStats) * 100;
+  const game3PArRate = (h3PAr + a3PAr) / 2;
+  const leagueAvg3PArPp = c.leagueAvg3PAr * 100;
 
-  const toImpactPct  = -toExcess  * MATCHUP_TO_COEF;   // negative = drops total
-  const orbImpactPct = +orbExcess * MATCHUP_ORB_COEF;  // positive = raises total
-  const multiplier   = 1 + (toImpactPct + orbImpactPct) / 100;
+  const toExcess    = gameToRate    - c.leagueAvgTO;
+  const orbExcess   = gameOrbRate   - c.leagueAvgORB;
+  const threePArExcess = game3PArRate - leagueAvg3PArPp;
+
+  const toImpactPct     = -toExcess        * MATCHUP_TO_COEF;    // negative = drops total
+  const orbImpactPct    = +orbExcess       * MATCHUP_ORB_COEF;   // positive = raises total
+  const threePArImpactPct = -threePArExcess * MATCHUP_3PAR_COEF; // more 3s = fewer game pts
+  const multiplier = 1 + (toImpactPct + orbImpactPct + threePArImpactPct) / 100;
 
   return {
     gameToRate, leagueAvgTO: c.leagueAvgTO, toExcess, toImpactPct, toCoef: MATCHUP_TO_COEF,
     gameOrbRate, leagueAvgORB: c.leagueAvgORB, orbExcess, orbImpactPct, orbCoef: MATCHUP_ORB_COEF,
+    game3PArRate, leagueAvg3PAr: leagueAvg3PArPp, threePArExcess, threePArImpactPct, threePArCoef: MATCHUP_3PAR_COEF,
     multiplier,
   };
 }
