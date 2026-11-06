@@ -193,8 +193,15 @@ const INJURY_STATUS_WEIGHTS = {
 //   Deep bench (4 / −2)            →  0      (was 0.11)
 //   A'ja Wilson (28.8 / PER 32.5)  →  3.92   (was 4.08)
 //
-// Unmatched names fall back to impact = 1.0 (status-only behavior) so
-// name-matching gaps don't silently zero out an injury entry.
+// Unmatched names fall back to impact = 0 (11/6/26). Rationale: the
+// team's season-to-date ORtg/DRtg already reflects play WITHOUT the
+// unmatched player — they haven't been on the court while we've been
+// collecting efficiency numbers. Penalizing their absence further would
+// double-count what the efficiency numbers already encode. This applies
+// to stars who've been out all season, benchwarmers, new signings, and
+// players whose name didn't survive BBR↔ESPN matching. If a player has
+// actually played for this team and shown up in the efficiency sample,
+// they'll be in the BBR roster with positive mpg and get a real impact.
 
 const MPG_FULL = 36;
 // Below this many minutes per game, a player is essentially garbage-
@@ -215,7 +222,7 @@ const PER_TRUST_MIN    = 12;
 const NAME_MATCH_THRESHOLD = 0.75;
 
 function impactFactor(rosterEntry) {
-  if (!rosterEntry) return 1.0; // unmatched → status-only fallback
+  if (!rosterEntry) return 0; // unmatched or no roster data → zero (see comment above)
   const mpg = rosterEntry.mpg ?? 0;
   // Anchored at MPG_FLOOR: a 4-mpg player contributes 0, a 36-mpg
   // player contributes 1.0, linear in between. See the calibration
@@ -311,8 +318,10 @@ function findRosterEntry(injuredName, rosterByNormName) {
 // score will also have 2.73 baked in.
 //
 // rosterByNormName is optional. When provided, contribution is player-
-// weighted via impactFactor(rosterEntry). When not (frontend without
-// bundled rosters), falls back to status-only (impact = 1.0).
+// weighted via impactFactor(rosterEntry). When not (no roster data at
+// all), impact = 0 — see the comment above impactFactor() for the
+// rationale: the team's efficiency stats already reflect play without
+// these players.
 //
 // Rows are returned sorted by contribution desc so the UI shows the
 // heaviest-hitting absences first.
@@ -325,7 +334,7 @@ export function computeInjuryScoreDetailed(players, rosterByNormName) {
     const statusWeight = INJURY_STATUS_WEIGHTS[key] || 0;
     if (statusWeight === 0) continue;
     const entry = rosterByNormName ? findRosterEntry(p?.player, rosterByNormName) : null;
-    const impact = rosterByNormName ? impactFactor(entry) : 1.0;
+    const impact = rosterByNormName ? impactFactor(entry) : 0;
     const contribution = statusWeight * impact;
     score += contribution;
     rows.push({
