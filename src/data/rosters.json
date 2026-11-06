@@ -2,7 +2,7 @@
   "nba": {
     "source": "basketball-reference.com",
     "season": "2027",
-    "fetchedAt": "2026-11-05T17:48:53.621Z",
+    "fetchedAt": "2026-11-06T17:06:25.296Z",
     "teams": {
       "LAL": {
         "bbrCode": "LAL",
@@ -11,7 +11,7 @@
             "name": "Luka Dončić",
             "slug": "doncilu01",
             "mpg": 35.6,
-            "bpm": 11.6,
+            "bpm": 11.7,
             "per": 34.2
           },
           {
@@ -32,28 +32,28 @@
             "name": "Ziaire Williams",
             "slug": "willizi02",
             "mpg": 25.3,
-            "bpm": 2.3,
+            "bpm": 2.4,
             "per": 16.7
           },
           {
             "name": "Collin Sexton",
             "slug": "sextoco01",
             "mpg": 17.3,
-            "bpm": -4,
+            "bpm": -3.9,
             "per": 14
           },
           {
             "name": "Sandro Mamukelashvili",
             "slug": "mamuksa01",
             "mpg": 23.4,
-            "bpm": -0.4,
+            "bpm": -0.3,
             "per": 14.1
           },
           {
             "name": "Quentin Grimes",
             "slug": "grimequ01",
             "mpg": 26.1,
-            "bpm": -2.4,
+            "bpm": -2.3,
             "per": 10.4
           },
           {
@@ -67,42 +67,42 @@
             "name": "Jake LaRavia",
             "slug": "laravja01",
             "mpg": 23.4,
-            "bpm": 1.5,
+            "bpm": 1.6,
             "per": 12.1
           },
           {
             "name": "Kevon Looney",
             "slug": "looneke01",
             "mpg": 5.8,
-            "bpm": -5.7,
+            "bpm": -5.5,
             "per": 10.9
           },
           {
             "name": "Jaden Hardy",
             "slug": "hardyja02",
             "mpg": 3.5,
-            "bpm": -8.8,
+            "bpm": -8.7,
             "per": 6.1
           },
           {
             "name": "Jarred Vanderbilt",
             "slug": "vandeja01",
             "mpg": 11.8,
-            "bpm": -3.4,
+            "bpm": -3.3,
             "per": 7.8
           },
           {
             "name": "Chris Mañon",
             "slug": "manonch01",
             "mpg": 3.5,
-            "bpm": -14.6,
+            "bpm": -14.4,
             "per": 3.3
           },
           {
             "name": "Bronny James",
             "slug": "jamesbr02",
             "mpg": 2.4,
-            "bpm": -12.6,
+            "bpm": -12.5,
             "per": -0.8
           },
           {
@@ -116,7 +116,7 @@
             "name": "Lawson Lovering",
             "slug": "loverla01",
             "mpg": 1.5,
-            "bpm": 10,
+            "bpm": 10.1,
             "per": 16.2
           }
         ]
@@ -142,7 +142,7 @@
             "name": "Jaden McDaniels",
             "slug": "mcdanja02",
             "mpg": 33.2,
-            "bpm": 1.1,
+            "bpm": 1.2,
             "per": 15.9
           },
           {
@@ -185,7 +185,7 @@
             "slug": "berinjo01",
             "mpg": 17.6,
             "bpm": 0.9,
-            "per": 19.1
+            "per": 19.2
           },
           {
             "name": "Trey Lyles",
@@ -198,7 +198,7 @@
             "name": "Jaylen Clark",
             "slug": "clarkja02",
             "mpg": 12.8,
-            "bpm": 1.3,
+            "bpm": 1.4,
             "per": 12.8
           },
           {
@@ -206,13 +206,13 @@
             "slug": "pullizy01",
             "mpg": 3,
             "bpm": 7.4,
-            "per": 27.6
+            "per": 27.7
           },
           {
             "name": "Isaiah Evans",
             "slug": "evansis01",
             "mpg": 2.5,
-            "bpm": -19.5,
+            "bpm": -19.6,
             "per": -9.7
           },
           {
@@ -231,21 +231,21 @@
             "name": "Shai Gilgeous-Alexander",
             "slug": "gilgesh01",
             "mpg": 33.8,
-            "bpm": 7.2,
-            "per": 25.4
+            "bpm": 7.3,
+            "per": 25.5
           },
           {
             "name": "Ajay Mitchell",
             "slug": "mitchaj01",
             "mpg": 27.5,
-            "bpm": 3.5,
+            "bpm": 3.6,
             "per": 21.5
           },
           {
             "name": "Jalen Williams",
             "slug": "willija06",
             "mpg": 31.7,
-            "bpm": -1.7,
+            "bpm": -1.6,
             "per": 11.2
           },
           {
@@ -266,7 +266,7 @@
             "name": "Alex Caruso",
             "slug": "carusal01",
             "mpg": 19.2,
-            "bpm": 10.5,
+            "bpm": 10.6,
             "per": 24.8
           },
           {
@@ -280,8 +280,8 @@
             "name": "Kenrich Williams",
             "slug": "willike04",
             "mpg": 17.8,
-            "bpm": -0.2,
-            "per": 13.4
+            "bpm": -0.1,
+            "per": 13.5
           },
           {
             "name": "Aday Mara",
@@ -294,7 +294,7 @@
             "name": "Bennett Stirtz",
             "slug": "stirtbe01",
             "mpg": 15.9,
-            "bpm": -1,
+            "bpm": -0.9,
             "per": 12.7
           },
           {
@@ -322,14 +322,14 @@
             "name": "Josh Dix",
             "slug": "dixjo01",
             "mpg": 13.4,
-            "bpm": -9.4,
+            "bpm": -9.3,
             "per": -0.1
           },
           {
             "name": "Brooks Barnhizer",
             "slug": "barnhbr01",
             "mpg": 5,
-            "bpm": -0.6,
+            "bpm": -0.5,
             "per": 13.3
           }
         ]
@@ -340,107 +340,107 @@
           {
             "name": "Stephen Curry",
             "slug": "curryst01",
-            "mpg": 28.8,
-            "bpm": 14.7,
-            "per": 33.5
+            "mpg": 28.7,
+            "bpm": 14.3,
+            "per": 33.1
           },
           {
             "name": "Yaxel Lendeborg",
             "slug": "lendeya01",
-            "mpg": 31.9,
-            "bpm": 1.9,
-            "per": 21.1
+            "mpg": 31.8,
+            "bpm": 2.1,
+            "per": 20.9
           },
           {
             "name": "Brandin Podziemski",
             "slug": "podzibr01",
-            "mpg": 33.5,
-            "bpm": 1.5,
-            "per": 16.9
+            "mpg": 33.3,
+            "bpm": 1.2,
+            "per": 15.7
           },
           {
             "name": "Brandon Williams",
             "slug": "willibr03",
-            "mpg": 17.3,
-            "bpm": -0.4,
-            "per": 18.9
+            "mpg": 17.8,
+            "bpm": 0.1,
+            "per": 18.4
           },
           {
             "name": "De'Anthony Melton",
             "slug": "meltode01",
-            "mpg": 23,
-            "bpm": 2.7,
-            "per": 17
+            "mpg": 22.3,
+            "bpm": 2.3,
+            "per": 16.3
           },
           {
             "name": "Georges Niang",
             "slug": "niangge01",
-            "mpg": 19.9,
-            "bpm": -4.3,
-            "per": 9.7
+            "mpg": 20.1,
+            "bpm": -3.1,
+            "per": 10.9
           },
           {
             "name": "Gui Santos",
             "slug": "santogu01",
             "mpg": 20.2,
-            "bpm": -2.7,
-            "per": 12.7
+            "bpm": -2.4,
+            "per": 12.5
           },
           {
             "name": "Charles Bassey",
             "slug": "bassech01",
-            "mpg": 11.5,
-            "bpm": 2.8,
-            "per": 26.2
-          },
-          {
-            "name": "Graham Ike",
-            "slug": "ikegr01",
-            "mpg": 11.2,
-            "bpm": 1.9,
-            "per": 20.9
+            "mpg": 11.9,
+            "bpm": 1.6,
+            "per": 25.2
           },
           {
             "name": "Al Horford",
             "slug": "horfoal01",
-            "mpg": 18.7,
-            "bpm": -2.5,
-            "per": 9
-          },
-          {
-            "name": "Gary Payton II",
-            "slug": "paytoga02",
-            "mpg": 13.9,
-            "bpm": -7.4,
-            "per": 7.6
+            "mpg": 18.6,
+            "bpm": -1.3,
+            "per": 10.5
           },
           {
             "name": "Will Richard",
             "slug": "richawi02",
-            "mpg": 18,
-            "bpm": -3.2,
-            "per": 8.7
+            "mpg": 17.8,
+            "bpm": -2.1,
+            "per": 9.9
+          },
+          {
+            "name": "Gary Payton II",
+            "slug": "paytoga02",
+            "mpg": 13.4,
+            "bpm": -5.6,
+            "per": 9.5
+          },
+          {
+            "name": "Graham Ike",
+            "slug": "ikegr01",
+            "mpg": 9.7,
+            "bpm": 2.1,
+            "per": 20.6
           },
           {
             "name": "Draymond Green",
             "slug": "greendr01",
-            "mpg": 26.5,
-            "bpm": -0.8,
-            "per": 7.7
+            "mpg": 26.7,
+            "bpm": 0,
+            "per": 8.3
           },
           {
             "name": "LJ Cryer",
             "slug": "cryerlj01",
-            "mpg": 4.8,
-            "bpm": -1.6,
-            "per": 15.6
+            "mpg": 4.3,
+            "bpm": -1.5,
+            "per": 14.9
           },
           {
             "name": "Malevy Leons",
             "slug": "leonsma01",
-            "mpg": 4,
-            "bpm": -12.4,
-            "per": -0.7
+            "mpg": 3.6,
+            "bpm": -11.7,
+            "per": -0.6
           }
         ]
       },
@@ -452,7 +452,7 @@
             "slug": "wembavi01",
             "mpg": 31.6,
             "bpm": 12.8,
-            "per": 33.8
+            "per": 33.9
           },
           {
             "name": "Dylan Harper",
@@ -465,7 +465,7 @@
             "name": "De'Aaron Fox",
             "slug": "foxde01",
             "mpg": 30.9,
-            "bpm": 2.8,
+            "bpm": 2.9,
             "per": 18.1
           },
           {
@@ -507,14 +507,14 @@
             "name": "Luke Kornet",
             "slug": "kornelu01",
             "mpg": 14.8,
-            "bpm": -1.4,
+            "bpm": -1.3,
             "per": 11.4
           },
           {
             "name": "Ja'Kobi Gillespie",
             "slug": "gilleja02",
             "mpg": 2,
-            "bpm": 7.6,
+            "bpm": 7.7,
             "per": 29.6
           },
           {
@@ -535,8 +535,8 @@
             "name": "David Jones García",
             "slug": "jonesda06",
             "mpg": 1,
-            "bpm": 6.7,
-            "per": 44
+            "bpm": 6.8,
+            "per": 44.1
           },
           {
             "name": "Maliq Brown",
@@ -549,111 +549,8 @@
             "name": "Jordan McLaughlin",
             "slug": "mclaujo01",
             "mpg": 6,
-            "bpm": -11,
-            "per": -0.9
-          }
-        ]
-      },
-      "MIA": {
-        "bbrCode": "MIA",
-        "players": [
-          {
-            "name": "Giannis Antetokounmpo",
-            "slug": "antetgi01",
-            "mpg": 32.9,
-            "bpm": 6.5,
-            "per": 28.9
-          },
-          {
-            "name": "Bam Adebayo",
-            "slug": "adebaba01",
-            "mpg": 32.5,
-            "bpm": 1.9,
-            "per": 21.2
-          },
-          {
-            "name": "Davion Mitchell",
-            "slug": "mitchda01",
-            "mpg": 34.8,
-            "bpm": -0.7,
-            "per": 15.4
-          },
-          {
-            "name": "Klay Thompson",
-            "slug": "thompkl01",
-            "mpg": 23.5,
-            "bpm": -1.4,
-            "per": 13.4
-          },
-          {
-            "name": "Pelle Larsson",
-            "slug": "larsspe01",
-            "mpg": 30.3,
-            "bpm": -3,
-            "per": 12.5
-          },
-          {
-            "name": "Andrew Wiggins",
-            "slug": "wiggian01",
-            "mpg": 26.4,
-            "bpm": -4.9,
-            "per": 9
-          },
-          {
-            "name": "Bobby Portis",
-            "slug": "portibo01",
-            "mpg": 21.6,
-            "bpm": -1.2,
-            "per": 13.2
-          },
-          {
-            "name": "Tim Hardaway Jr.",
-            "slug": "hardati02",
-            "mpg": 16.9,
-            "bpm": -8,
-            "per": 5.1
-          },
-          {
-            "name": "Dru Smith",
-            "slug": "smithdr01",
-            "mpg": 9.8,
-            "bpm": -3.1,
-            "per": 10.3
-          },
-          {
-            "name": "Nikola Jović",
-            "slug": "jovicni01",
-            "mpg": 12.2,
-            "bpm": -5.7,
-            "per": 8.1
-          },
-          {
-            "name": "Ryan Conwell",
-            "slug": "conwery01",
-            "mpg": 7,
-            "bpm": -6.3,
-            "per": 8.3
-          },
-          {
-            "name": "Nick Richards",
-            "slug": "richani01",
-            "mpg": 2.3,
-            "bpm": 12.6,
-            "per": 28.6
-          },
-          {
-            "name": "Myron Gardner",
-            "slug": "gardnmy01",
-            "mpg": 2.3,
-            "bpm": 0.1,
-            "per": 16.2
-          },
-          {
-            "name": "Simone Fontecchio",
-            "slug": "fontesi01",
-            "mpg": 3,
-            "bpm": -17,
-            "per": -4
+            "bpm": -10.9,
+            "per": -1
           }
         ]
       },
@@ -664,42 +561,42 @@
             "name": "Tyrese Maxey",
             "slug": "maxeyty01",
             "mpg": 37,
-            "bpm": 5.1,
+            "bpm": 5,
             "per": 22.6
           },
           {
             "name": "Jaylen Brown",
             "slug": "brownja02",
             "mpg": 36.1,
-            "bpm": 1.1,
+            "bpm": 1,
             "per": 18.1
           },
           {
             "name": "Joel Embiid",
             "slug": "embiijo01",
             "mpg": 33.4,
-            "bpm": -1.3,
+            "bpm": -1.4,
             "per": 16.7
           },
           {
             "name": "LeBron James",
             "slug": "jamesle01",
             "mpg": 33.1,
-            "bpm": 3.7,
+            "bpm": 3.6,
             "per": 17.4
           },
           {
             "name": "VJ Edgecombe",
             "slug": "edgecvj01",
             "mpg": 33.6,
-            "bpm": -2.3,
+            "bpm": -2.4,
             "per": 12
           },
           {
             "name": "Anfernee Simons",
             "slug": "simonan01",
             "mpg": 22.9,
-            "bpm": -2.4,
+            "bpm": -2.5,
             "per": 10.5
           },
           {
@@ -720,14 +617,14 @@
             "name": "Jabari Walker",
             "slug": "walkeja01",
             "mpg": 8,
-            "bpm": -0.9,
+            "bpm": -1,
             "per": 19.6
           },
           {
             "name": "Labaron Philon Jr.",
             "slug": "philola01",
             "mpg": 6.8,
-            "bpm": -12.6,
+            "bpm": -12.7,
             "per": 3.4
           },
           {
@@ -742,7 +639,7 @@
             "slug": "ruperra01",
             "mpg": 2,
             "bpm": 27.5,
-            "per": 71.2
+            "per": 71.3
           },
           {
             "name": "Justin Edwards",
@@ -767,14 +664,14 @@
             "name": "Ty Jerome",
             "slug": "jeromty01",
             "mpg": 30.7,
-            "bpm": 7.4,
+            "bpm": 7.5,
             "per": 26.5
           },
           {
             "name": "Cameron Boozer",
             "slug": "boozeca02",
             "mpg": 32.3,
-            "bpm": 0.9,
+            "bpm": 1,
             "per": 15.3
           },
           {
@@ -788,21 +685,21 @@
             "name": "Isaiah Stewart",
             "slug": "stewais01",
             "mpg": 18.3,
-            "bpm": 2.6,
+            "bpm": 2.7,
             "per": 21.6
           },
           {
             "name": "Jaylen Wells",
             "slug": "wellsja01",
             "mpg": 27.3,
-            "bpm": 0.5,
-            "per": 13.5
+            "bpm": 0.6,
+            "per": 13.6
           },
           {
             "name": "Jerami Grant",
             "slug": "grantje01",
             "mpg": 24.4,
-            "bpm": -2,
+            "bpm": -1.9,
             "per": 9.9
           },
           {
@@ -810,42 +707,42 @@
             "slug": "spencca01",
             "mpg": 19.8,
             "bpm": 7.1,
-            "per": 22
+            "per": 22.1
           },
           {
             "name": "Zach Edey",
             "slug": "edeyza01",
             "mpg": 20.7,
-            "bpm": -0.8,
-            "per": 16
+            "bpm": -0.7,
+            "per": 16.1
           },
           {
             "name": "GG Jackson II",
             "slug": "jacksgg01",
             "mpg": 15.6,
-            "bpm": -6.1,
+            "bpm": -6,
             "per": 9
           },
           {
             "name": "Javon Small",
             "slug": "smallja01",
             "mpg": 20,
-            "bpm": -6.5,
+            "bpm": -6.4,
             "per": 7.3
           },
           {
             "name": "Quinten Post",
             "slug": "postqu01",
             "mpg": 14.5,
-            "bpm": -0.6,
-            "per": 13.5
+            "bpm": -0.5,
+            "per": 13.6
           },
           {
             "name": "Scotty Pippen Jr.",
             "slug": "pippesc02",
             "mpg": 16,
             "bpm": -1.8,
-            "per": 11.5
+            "per": 11.6
           },
           {
             "name": "Olivier-Maxence Prosper",
@@ -858,7 +755,7 @@
             "name": "Taylor Hendricks",
             "slug": "hendrta01",
             "mpg": 4.7,
-            "bpm": -3.4,
+            "bpm": -3.3,
             "per": 9.8
           },
           {
@@ -872,7 +769,7 @@
             "name": "Carson Cooper",
             "slug": "coopeca02",
             "mpg": 3,
-            "bpm": -6.4,
+            "bpm": -6.3,
             "per": 4.8
           },
           {
@@ -887,7 +784,110 @@
             "slug": "mashaja01",
             "mpg": 2,
             "bpm": 23.3,
-            "per": 37.5
+            "per": 37.6
+          }
+        ]
+      },
+      "MIA": {
+        "bbrCode": "MIA",
+        "players": [
+          {
+            "name": "Giannis Antetokounmpo",
+            "slug": "antetgi01",
+            "mpg": 32.7,
+            "bpm": 6,
+            "per": 27.8
+          },
+          {
+            "name": "Bam Adebayo",
+            "slug": "adebaba01",
+            "mpg": 32.7,
+            "bpm": 1.8,
+            "per": 21
+          },
+          {
+            "name": "Davion Mitchell",
+            "slug": "mitchda01",
+            "mpg": 35.1,
+            "bpm": -0.9,
+            "per": 15.1
+          },
+          {
+            "name": "Klay Thompson",
+            "slug": "thompkl01",
+            "mpg": 23.4,
+            "bpm": -1.7,
+            "per": 12.5
+          },
+          {
+            "name": "Pelle Larsson",
+            "slug": "larsspe01",
+            "mpg": 30.1,
+            "bpm": -3,
+            "per": 12.2
+          },
+          {
+            "name": "Andrew Wiggins",
+            "slug": "wiggian01",
+            "mpg": 25.9,
+            "bpm": -5.2,
+            "per": 8.2
+          },
+          {
+            "name": "Bobby Portis",
+            "slug": "portibo01",
+            "mpg": 20.8,
+            "bpm": -2.2,
+            "per": 11.9
+          },
+          {
+            "name": "Tim Hardaway Jr.",
+            "slug": "hardati02",
+            "mpg": 15.4,
+            "bpm": -8.6,
+            "per": 4.4
+          },
+          {
+            "name": "Ryan Conwell",
+            "slug": "conwery01",
+            "mpg": 10.3,
+            "bpm": -1.2,
+            "per": 12
+          },
+          {
+            "name": "Dru Smith",
+            "slug": "smithdr01",
+            "mpg": 8.3,
+            "bpm": -3.9,
+            "per": 9.4
+          },
+          {
+            "name": "Nikola Jović",
+            "slug": "jovicni01",
+            "mpg": 12.1,
+            "bpm": -6.1,
+            "per": 6.8
+          },
+          {
+            "name": "Nick Richards",
+            "slug": "richani01",
+            "mpg": 2,
+            "bpm": 10,
+            "per": 25.6
+          },
+          {
+            "name": "Simone Fontecchio",
+            "slug": "fontesi01",
+            "mpg": 3,
+            "bpm": -17,
+            "per": -4.1
+          },
+          {
+            "name": "Myron Gardner",
+            "slug": "gardnmy01",
+            "mpg": 2,
+            "bpm": -0.9,
+            "per": 14.6
           }
         ]
       },
@@ -898,28 +898,28 @@
             "name": "Jayson Tatum",
             "slug": "tatumja01",
             "mpg": 35.1,
-            "bpm": 3.1,
+            "bpm": 3,
             "per": 22.3
           },
           {
             "name": "Paul George",
             "slug": "georgpa01",
             "mpg": 31.6,
-            "bpm": 4.1,
+            "bpm": 4,
             "per": 21.1
           },
           {
             "name": "Payton Pritchard",
             "slug": "pritcpa01",
             "mpg": 26.8,
-            "bpm": -1.8,
+            "bpm": -1.9,
             "per": 15.2
           },
           {
             "name": "Derrick White",
             "slug": "whitede01",
             "mpg": 30.6,
-            "bpm": -1.5,
+            "bpm": -1.6,
             "per": 13.6
           },
           {
@@ -933,15 +933,15 @@
             "name": "Sam Hauser",
             "slug": "hausesa01",
             "mpg": 21.1,
-            "bpm": -2.3,
-            "per": 10.7
+            "bpm": -2.4,
+            "per": 10.8
           },
           {
             "name": "Luka Garza",
             "slug": "garzalu01",
             "mpg": 12.5,
-            "bpm": 4.9,
-            "per": 22.4
+            "bpm": 4.8,
+            "per": 22.5
           },
           {
             "name": "Baylor Scheierman",
@@ -961,7 +961,7 @@
             "name": "Mike Conley",
             "slug": "conlemi01",
             "mpg": 5.5,
-            "bpm": 25.4,
+            "bpm": 25.3,
             "per": 33.1
           },
           {
@@ -989,7 +989,7 @@
             "name": "Ron Harper Jr.",
             "slug": "harpero02",
             "mpg": 5.3,
-            "bpm": -12.1,
+            "bpm": -12.2,
             "per": -1.2
           },
           {
@@ -1036,28 +1036,28 @@
             "name": "Precious Achiuwa",
             "slug": "achiupr01",
             "mpg": 27.1,
-            "bpm": 0.2,
+            "bpm": 0.3,
             "per": 16.1
           },
           {
             "name": "Malik Monk",
             "slug": "monkma01",
             "mpg": 16.1,
-            "bpm": -4,
+            "bpm": -3.9,
             "per": 10.1
           },
           {
             "name": "Keegan Murray",
             "slug": "murrake02",
             "mpg": 27,
-            "bpm": -8.7,
+            "bpm": -8.6,
             "per": 4.6
           },
           {
             "name": "Emanuel Sharp",
             "slug": "sharpem01",
             "mpg": 17.3,
-            "bpm": -5.3,
+            "bpm": -5.2,
             "per": 5.2
           },
           {
@@ -1071,7 +1071,7 @@
             "name": "Dylan Cardwell",
             "slug": "cardwdy01",
             "mpg": 13,
-            "bpm": 4.4,
+            "bpm": 4.5,
             "per": 23.6
           },
           {
@@ -1093,13 +1093,13 @@
             "slug": "karabal01",
             "mpg": 9.5,
             "bpm": -11.5,
-            "per": -0.3
+            "per": -0.2
           },
           {
             "name": "Nique Clifford",
             "slug": "cliffni01",
             "mpg": 6.4,
-            "bpm": -12.7,
+            "bpm": -12.6,
             "per": -0.4
           }
         ]
@@ -1112,7 +1112,7 @@
             "slug": "brunsja01",
             "mpg": 34.1,
             "bpm": 2,
-            "per": 19.3
+            "per": 19.4
           },
           {
             "name": "Karl-Anthony Towns",
@@ -1125,42 +1125,42 @@
             "name": "OG Anunoby",
             "slug": "anunoog01",
             "mpg": 32.9,
-            "bpm": -2.1,
+            "bpm": -2.2,
             "per": 14.1
           },
           {
             "name": "Dalton Knecht",
             "slug": "knechda01",
             "mpg": 16,
-            "bpm": 10,
-            "per": 29.9
+            "bpm": 9.9,
+            "per": 30
           },
           {
             "name": "Landry Shamet",
             "slug": "shamela01",
             "mpg": 24.9,
             "bpm": -2.9,
-            "per": 10.1
+            "per": 10.2
           },
           {
             "name": "Josh Hart",
             "slug": "hartjo01",
             "mpg": 31.7,
-            "bpm": -0.1,
+            "bpm": -0.2,
             "per": 11.3
           },
           {
             "name": "Miles McBride",
             "slug": "mcbrimi01",
             "mpg": 17.5,
-            "bpm": 0.9,
-            "per": 12.6
+            "bpm": 0.8,
+            "per": 12.7
           },
           {
             "name": "Mikal Bridges",
             "slug": "bridgmi01",
             "mpg": 25.3,
-            "bpm": -4.5,
+            "bpm": -4.6,
             "per": 6.8
           },
           {
@@ -1181,43 +1181,153 @@
             "name": "Mohamed Diawara",
             "slug": "diawamo01",
             "mpg": 9.7,
-            "bpm": -1.1,
-            "per": 13.6
+            "bpm": -1.2,
+            "per": 13.7
           },
           {
             "name": "Jose Alvarado",
             "slug": "alvarjo01",
             "mpg": 11.3,
-            "bpm": -8.2,
+            "bpm": -8.3,
             "per": 2.8
           },
           {
             "name": "Tyler Kolek",
             "slug": "kolekty01",
             "mpg": 12.2,
-            "bpm": 1.2,
-            "per": 16.7
+            "bpm": 1.1,
+            "per": 16.8
           },
           {
             "name": "Pacôme Dadiet",
             "slug": "dadiepa01",
             "mpg": 5,
-            "bpm": -11.8,
+            "bpm": -11.9,
             "per": 7.2
           },
           {
             "name": "James Wiseman",
             "slug": "wisemja01",
             "mpg": 5.3,
-            "bpm": -11.9,
+            "bpm": -12,
             "per": 14.4
           },
           {
             "name": "Jaden Akins",
             "slug": "akinsja01",
             "mpg": 1,
-            "bpm": -8.1,
+            "bpm": -8.2,
             "per": 0
+          }
+        ]
+      },
+      "PHX": {
+        "bbrCode": "PHO",
+        "players": [
+          {
+            "name": "Devin Booker",
+            "slug": "bookede01",
+            "mpg": 34.4,
+            "bpm": -0.3,
+            "per": 21
+          },
+          {
+            "name": "Dillon Brooks",
+            "slug": "brookdi01",
+            "mpg": 30.3,
+            "bpm": -1.6,
+            "per": 16.2
+          },
+          {
+            "name": "Miles Bridges",
+            "slug": "bridgmi02",
+            "mpg": 32.4,
+            "bpm": 2.7,
+            "per": 20.6
+          },
+          {
+            "name": "Jalen Green",
+            "slug": "greenja05",
+            "mpg": 28.3,
+            "bpm": -6.3,
+            "per": 9.3
+          },
+          {
+            "name": "Jordan Goodwin",
+            "slug": "goodwjo01",
+            "mpg": 18.6,
+            "bpm": 2.5,
+            "per": 18.7
+          },
+          {
+            "name": "Luke Kennard",
+            "slug": "kennalu01",
+            "mpg": 16.7,
+            "bpm": 0.9,
+            "per": 16.8
+          },
+          {
+            "name": "Khaman Maluach",
+            "slug": "maluakh01",
+            "mpg": 19.7,
+            "bpm": -3.5,
+            "per": 15
+          },
+          {
+            "name": "Oso Ighodaro",
+            "slug": "ighodos01",
+            "mpg": 21.4,
+            "bpm": -1.4,
+            "per": 14.2
+          },
+          {
+            "name": "Collin Gillespie",
+            "slug": "gilleco01",
+            "mpg": 25.3,
+            "bpm": -3.9,
+            "per": 8.8
+          },
+          {
+            "name": "Ryan Dunn",
+            "slug": "dunnry01",
+            "mpg": 15,
+            "bpm": -0.2,
+            "per": 16.1
+          },
+          {
+            "name": "Duop Reath",
+            "slug": "reathdu01",
+            "mpg": 5.4,
+            "bpm": 1.7,
+            "per": 19.6
+          },
+          {
+            "name": "Jamaree Bouyea",
+            "slug": "bouyeja01",
+            "mpg": 3.5,
+            "bpm": 6.5,
+            "per": 25.5
+          },
+          {
+            "name": "Koa Peat",
+            "slug": "peatko01",
+            "mpg": 3.5,
+            "bpm": -2.8,
+            "per": 16.1
+          },
+          {
+            "name": "Pat Spencer",
+            "slug": "spencpa01",
+            "mpg": 4,
+            "bpm": -1.5,
+            "per": 7
+          },
+          {
+            "name": "Rasheer Fleming",
+            "slug": "flemira01",
+            "mpg": 7.5,
+            "bpm": -16.2,
+            "per": -4
           }
         ]
       },
@@ -1228,216 +1338,106 @@
             "name": "Jamal Murray",
             "slug": "murraja01",
             "mpg": 37,
-            "bpm": 4.5,
-            "per": 22.7
+            "bpm": 4.6,
+            "per": 22.8
           },
           {
             "name": "Nikola Jokić",
             "slug": "jokicni01",
             "mpg": 36,
-            "bpm": 7.6,
+            "bpm": 7.7,
             "per": 26.1
           },
           {
             "name": "Christian Braun",
             "slug": "braunch01",
             "mpg": 35.1,
-            "bpm": -0.3,
+            "bpm": -0.2,
             "per": 14.9
           },
           {
             "name": "Aaron Gordon",
             "slug": "gordoaa01",
             "mpg": 29.6,
-            "bpm": -1.1,
+            "bpm": -1,
             "per": 14.4
           },
           {
             "name": "DeMar DeRozan",
             "slug": "derozde01",
             "mpg": 25,
-            "bpm": -5.5,
-            "per": 10.8
+            "bpm": -5.4,
+            "per": 10.9
           },
           {
             "name": "Cameron Johnson",
             "slug": "johnsca02",
             "mpg": 27,
-            "bpm": -4.2,
+            "bpm": -4.1,
             "per": 9.9
           },
           {
             "name": "Trevon Brazile",
             "slug": "brazitr01",
             "mpg": 22.1,
-            "bpm": -1.6,
+            "bpm": -1.5,
             "per": 14.9
           },
           {
             "name": "Bryce Hopkins",
             "slug": "hopkibr01",
             "mpg": 18.6,
-            "bpm": -5.8,
+            "bpm": -5.7,
             "per": 11
           },
           {
             "name": "Marvin Bagley III",
             "slug": "baglema01",
             "mpg": 12.4,
-            "bpm": -3.1,
+            "bpm": -3,
             "per": 16.8
           },
           {
             "name": "Cam Whitmore",
             "slug": "whitmca01",
             "mpg": 7.5,
-            "bpm": -4.5,
+            "bpm": -4.4,
             "per": 15.4
           },
           {
             "name": "Zeke Nnaji",
             "slug": "nnajize01",
             "mpg": 3.5,
-            "bpm": 14.4,
+            "bpm": 14.5,
             "per": 40.1
           },
           {
             "name": "Ryan Nembhard",
             "slug": "nembhry01",
             "mpg": 3.3,
-            "bpm": 11.6,
-            "per": 30.6
+            "bpm": 11.7,
+            "per": 30.7
           },
           {
             "name": "Tyus Jones",
             "slug": "jonesty01",
             "mpg": 10.9,
-            "bpm": -0.5,
+            "bpm": -0.4,
             "per": 12.2
           },
           {
             "name": "Alpha Diallo",
             "slug": "diallal01",
             "mpg": 10.7,
-            "bpm": -8.3,
+            "bpm": -8.2,
             "per": -0.1
           },
           {
             "name": "DaRon Holmes",
             "slug": "holmeda01",
             "mpg": 3,
-            "bpm": 7.1,
-            "per": 15.8
-          }
-        ]
-      },
-      "PHX": {
-        "bbrCode": "PHO",
-        "players": [
-          {
-            "name": "Devin Booker",
-            "slug": "bookede01",
-            "mpg": 34.7,
-            "bpm": -1.7,
-            "per": 19.5
-          },
-          {
-            "name": "Miles Bridges",
-            "slug": "bridgmi02",
-            "mpg": 32.7,
-            "bpm": 0.8,
-            "per": 18.9
-          },
-          {
-            "name": "Dillon Brooks",
-            "slug": "brookdi01",
-            "mpg": 30.5,
-            "bpm": -3.1,
-            "per": 14.6
-          },
-          {
-            "name": "Jalen Green",
-            "slug": "greenja05",
-            "mpg": 29,
-            "bpm": -6.2,
-            "per": 9.9
-          },
-          {
-            "name": "Oso Ighodaro",
-            "slug": "ighodos01",
-            "mpg": 20.8,
-            "bpm": 1.7,
-            "per": 18.3
-          },
-          {
-            "name": "Jordan Goodwin",
-            "slug": "goodwjo01",
-            "mpg": 18.6,
-            "bpm": 2.1,
-            "per": 18.7
-          },
-          {
-            "name": "Khaman Maluach",
-            "slug": "maluakh01",
-            "mpg": 19.3,
-            "bpm": -4.4,
-            "per": 14.6
-          },
-          {
-            "name": "Luke Kennard",
-            "slug": "kennalu01",
-            "mpg": 15.8,
-            "bpm": 0,
-            "per": 15.7
-          },
-          {
-            "name": "Collin Gillespie",
-            "slug": "gilleco01",
-            "mpg": 25.5,
-            "bpm": -3.6,
-            "per": 9.5
-          },
-          {
-            "name": "Ryan Dunn",
-            "slug": "dunnry01",
-            "mpg": 13.3,
-            "bpm": -1.5,
-            "per": 15.2
-          },
-          {
-            "name": "Duop Reath",
-            "slug": "reathdu01",
-            "mpg": 6.3,
-            "bpm": 2.1,
-            "per": 21.2
-          },
-          {
-            "name": "Jamaree Bouyea",
-            "slug": "bouyeja01",
-            "mpg": 4.3,
-            "bpm": 12.4,
-            "per": 31.3
-          },
-          {
-            "name": "Koa Peat",
-            "slug": "peatko01",
-            "mpg": 4.3,
-            "bpm": -2.7,
-            "per": 16.3
-          },
-          {
-            "name": "Pat Spencer",
-            "slug": "spencpa01",
-            "mpg": 5,
-            "bpm": 9.1,
-            "per": 18.3
-          },
-          {
-            "name": "Rasheer Fleming",
-            "slug": "flemira01",
-            "mpg": 7.5,
-            "bpm": -16.4,
-            "per": -4
+            "bpm": 7.2,
+            "per": 15.9
           }
         ]
       },
@@ -1454,93 +1454,93 @@
           {
             "name": "Franz Wagner",
             "slug": "wagnefr01",
-            "mpg": 35.9,
-            "bpm": -4.2,
-            "per": 13.5
+            "mpg": 36,
+            "bpm": -3.6,
+            "per": 14.2
           },
           {
             "name": "Desmond Bane",
             "slug": "banede01",
-            "mpg": 34.7,
-            "bpm": -3.3,
-            "per": 11.4
+            "mpg": 34.5,
+            "bpm": -3.8,
+            "per": 11
           },
           {
             "name": "Anthony Black",
             "slug": "blackan01",
-            "mpg": 28,
-            "bpm": 4.1,
-            "per": 20.5
+            "mpg": 28.6,
+            "bpm": 2,
+            "per": 18.2
           },
           {
             "name": "Tristan Da Silva",
             "slug": "dasiltr01",
-            "mpg": 29.4,
-            "bpm": -1,
-            "per": 13
+            "mpg": 29.5,
+            "bpm": -1.7,
+            "per": 12.6
           },
           {
             "name": "Wendell Carter Jr.",
             "slug": "cartewe01",
-            "mpg": 32.4,
-            "bpm": -2,
-            "per": 15.3
+            "mpg": 32.8,
+            "bpm": -0.7,
+            "per": 17.6
           },
           {
             "name": "Jalen Suggs",
             "slug": "suggsja01",
             "mpg": 33.3,
-            "bpm": -4.6,
+            "bpm": -4.5,
             "per": 8
-          },
-          {
-            "name": "Jamal Cain",
-            "slug": "cainja01",
-            "mpg": 16.4,
-            "bpm": -6.9,
-            "per": 6.3
           },
           {
             "name": "Jase Richardson",
             "slug": "richaja02",
-            "mpg": 21.1,
-            "bpm": -4.4,
-            "per": 8
+            "mpg": 21.9,
+            "bpm": -3.5,
+            "per": 8.7
           },
           {
-            "name": "Colin Castleton",
-            "slug": "castlco01",
-            "mpg": 5.5,
-            "bpm": 8.1,
-            "per": 32.7
-          },
-          {
-            "name": "Jevon Carter",
-            "slug": "carteje01",
-            "mpg": 17.7,
-            "bpm": -5.3,
-            "per": 5.9
+            "name": "Jamal Cain",
+            "slug": "cainja01",
+            "mpg": 17.5,
+            "bpm": -8.5,
+            "per": 4.5
           },
           {
             "name": "Goga Bitadze",
             "slug": "bitadgo01",
-            "mpg": 9.4,
-            "bpm": -3.6,
-            "per": 16.4
+            "mpg": 9.2,
+            "bpm": -4.5,
+            "per": 16.1
+          },
+          {
+            "name": "Colin Castleton",
+            "slug": "castlco01",
+            "mpg": 4,
+            "bpm": 9.4,
+            "per": 32.4
+          },
+          {
+            "name": "Jevon Carter",
+            "slug": "carteje01",
+            "mpg": 14,
+            "bpm": -5.5,
+            "per": 5.6
           },
           {
             "name": "Nikola Vučević",
             "slug": "vucevni01",
-            "mpg": 9.6,
-            "bpm": 1.6,
-            "per": 14.9
+            "mpg": 8.9,
+            "bpm": 0.5,
+            "per": 13.5
           },
           {
             "name": "Alex Morales",
             "slug": "moralal01",
-            "mpg": 8.3,
-            "bpm": -8.3,
-            "per": 3.2
+            "mpg": 7.8,
+            "bpm": -6.7,
+            "per": 3.9
           }
         ]
       },
@@ -1559,7 +1559,7 @@
             "slug": "irvinky01",
             "mpg": 29.8,
             "bpm": 6.9,
-            "per": 23.3
+            "per": 23.4
           },
           {
             "name": "P.J. Washington",
@@ -1573,7 +1573,7 @@
             "slug": "marshna01",
             "mpg": 26.6,
             "bpm": 1.7,
-            "per": 17.3
+            "per": 17.4
           },
           {
             "name": "Daniel Gafford",
@@ -1593,7 +1593,7 @@
             "name": "Zaccharie Risacher",
             "slug": "risacza01",
             "mpg": 26.6,
-            "bpm": -0.9,
+            "bpm": -1,
             "per": 11.2
           },
           {
@@ -1607,7 +1607,7 @@
             "name": "Walter Clayton",
             "slug": "claytwa01",
             "mpg": 14.4,
-            "bpm": 3.9,
+            "bpm": 3.8,
             "per": 18.1
           },
           {
@@ -1661,14 +1661,14 @@
             "name": "Cade Cunningham",
             "slug": "cunnica01",
             "mpg": 33.4,
-            "bpm": 5.4,
+            "bpm": 5.3,
             "per": 22.7
           },
           {
             "name": "Duncan Robinson",
             "slug": "robindu01",
             "mpg": 31,
-            "bpm": 5,
+            "bpm": 4.9,
             "per": 19.7
           },
           {
@@ -1682,14 +1682,14 @@
             "name": "Paul Reed",
             "slug": "reedpa01",
             "mpg": 27.3,
-            "bpm": 0.8,
+            "bpm": 0.7,
             "per": 17.8
           },
           {
             "name": "Ausar Thompson",
             "slug": "thompau01",
             "mpg": 27.6,
-            "bpm": 0.2,
+            "bpm": 0.1,
             "per": 15.4
           },
           {
@@ -1703,21 +1703,21 @@
             "name": "Daniss Jenkins",
             "slug": "jenkida01",
             "mpg": 24,
-            "bpm": -1.5,
+            "bpm": -1.6,
             "per": 12.7
           },
           {
             "name": "Isaiah Joe",
             "slug": "joeis01",
             "mpg": 14,
-            "bpm": -4.9,
-            "per": 12
+            "bpm": -5,
+            "per": 12.1
           },
           {
             "name": "Kevin Huerter",
             "slug": "huertke01",
             "mpg": 20.4,
-            "bpm": -1.7,
+            "bpm": -1.8,
             "per": 9.8
           },
           {
@@ -1731,7 +1731,7 @@
             "name": "Ron Holland",
             "slug": "hollaro01",
             "mpg": 15.8,
-            "bpm": -1.1,
+            "bpm": -1.2,
             "per": 13.1
           },
           {
@@ -1745,14 +1745,14 @@
             "name": "Taurean Prince",
             "slug": "princta02",
             "mpg": 7,
-            "bpm": 2.3,
+            "bpm": 2.2,
             "per": 12.8
           },
           {
             "name": "Ebuka Okorie",
             "slug": "okorieb01",
             "mpg": 3.5,
-            "bpm": -20.6,
+            "bpm": -20.7,
             "per": 2.9
           },
           {
@@ -1766,14 +1766,14 @@
             "name": "Isaac Jones",
             "slug": "jonesis01",
             "mpg": 3.7,
-            "bpm": 2.3,
+            "bpm": 2.2,
             "per": 18.3
           },
           {
             "name": "Elijah Harkless",
             "slug": "harklej01",
             "mpg": 3,
-            "bpm": -11,
+            "bpm": -11.1,
             "per": 0
           }
         ]
@@ -1793,7 +1793,7 @@
             "slug": "barrerj01",
             "mpg": 32.6,
             "bpm": -0.2,
-            "per": 17.6
+            "per": 17.7
           },
           {
             "name": "Kawhi Leonard",
@@ -1834,7 +1834,7 @@
             "name": "Jamal Shead",
             "slug": "sheadja01",
             "mpg": 21.6,
-            "bpm": -3.5,
+            "bpm": -3.6,
             "per": 10.1
           },
           {
@@ -1870,7 +1870,7 @@
             "slug": "bradlja02",
             "mpg": 3.8,
             "bpm": 7.9,
-            "per": 23.8
+            "per": 23.9
           },
           {
             "name": "Kyle Anderson",
@@ -1888,21 +1888,21 @@
             "name": "Deni Avdija",
             "slug": "avdijde01",
             "mpg": 32.4,
-            "bpm": 4.6,
+            "bpm": 4.8,
             "per": 22.1
           },
           {
             "name": "Damian Lillard",
             "slug": "lillada01",
             "mpg": 29.7,
-            "bpm": 2.8,
+            "bpm": 2.9,
             "per": 19.3
           },
           {
             "name": "Ja Morant",
             "slug": "moranja01",
             "mpg": 25.8,
-            "bpm": 4.2,
+            "bpm": 4.3,
             "per": 21.5
           },
           {
@@ -1910,91 +1910,91 @@
             "slug": "camarto01",
             "mpg": 27.7,
             "bpm": 2.8,
-            "per": 14.7
+            "per": 14.5
           },
           {
             "name": "Jrue Holiday",
             "slug": "holidjr01",
             "mpg": 26,
-            "bpm": 6.8,
-            "per": 20.8
+            "bpm": 6.9,
+            "per": 20.7
           },
           {
             "name": "Donovan Clingan",
             "slug": "clingdo01",
             "mpg": 24.6,
-            "bpm": 4.1,
-            "per": 22.9
+            "bpm": 4.5,
+            "per": 23.3
           },
           {
             "name": "Scoot Henderson",
             "slug": "hendesc01",
             "mpg": 22,
-            "bpm": -8.9,
+            "bpm": -8.8,
             "per": 4.4
           },
           {
             "name": "Robert Williams",
             "slug": "williro04",
             "mpg": 16.7,
-            "bpm": 4.4,
+            "bpm": 4.5,
             "per": 23.3
           },
           {
             "name": "Sidy Cissoko",
             "slug": "cissosi01",
             "mpg": 21.9,
-            "bpm": 1.1,
+            "bpm": 1.2,
             "per": 12.6
           },
           {
             "name": "John Tonje",
             "slug": "tonjejo01",
             "mpg": 5,
-            "bpm": 14,
-            "per": 29
+            "bpm": 14.1,
+            "per": 29.1
           },
           {
             "name": "Yang Hansen",
             "slug": "yangha01",
             "mpg": 8,
-            "bpm": 2.4,
+            "bpm": 2.6,
             "per": 13.1
           },
           {
             "name": "Chris Youngblood",
             "slug": "youngch01",
             "mpg": 8.7,
-            "bpm": -8.4,
+            "bpm": -8.3,
             "per": 3.6
           },
           {
             "name": "Micah Potter",
             "slug": "pottemi01",
             "mpg": 6.5,
-            "bpm": -5.2,
+            "bpm": -5,
             "per": 9.5
           },
           {
             "name": "Vít Krejčí",
             "slug": "krejcvi01",
             "mpg": 10.3,
-            "bpm": -3.8,
+            "bpm": -3.7,
             "per": 7.2
           },
           {
             "name": "Branden Carlson",
             "slug": "carlsbr01",
             "mpg": 6.3,
-            "bpm": -5.7,
+            "bpm": -5.6,
             "per": 6.6
           },
           {
             "name": "Jayson Kent",
             "slug": "kentja01",
             "mpg": 7,
-            "bpm": -33.8,
-            "per": -22.1
+            "bpm": -33.6,
+            "per": -22.2
           }
         ]
       },
@@ -2019,21 +2019,21 @@
             "name": "Kyshawn George",
             "slug": "georgky01",
             "mpg": 32.6,
-            "bpm": -1.3,
+            "bpm": -1.4,
             "per": 14.9
           },
           {
             "name": "AJ Dybantsa",
             "slug": "dybanaj01",
             "mpg": 30.5,
-            "bpm": -3.9,
+            "bpm": -4,
             "per": 15.1
           },
           {
             "name": "Alex Sarr",
             "slug": "sarral01",
             "mpg": 25,
-            "bpm": 0.3,
+            "bpm": 0.2,
             "per": 16.5
           },
           {
@@ -2047,28 +2047,28 @@
             "name": "Bilal Coulibaly",
             "slug": "coulibi01",
             "mpg": 26.8,
-            "bpm": -1.6,
-            "per": 11.9
+            "bpm": -1.7,
+            "per": 12
           },
           {
             "name": "Justin Champagnie",
             "slug": "champju01",
             "mpg": 18.3,
-            "bpm": 3.2,
+            "bpm": 3.1,
             "per": 21.6
           },
           {
             "name": "Deandre Ayton",
             "slug": "aytonde01",
             "mpg": 15.3,
-            "bpm": -1,
-            "per": 17.5
+            "bpm": -1.1,
+            "per": 17.6
           },
           {
             "name": "Bub Carrington",
             "slug": "carrica01",
             "mpg": 19.5,
-            "bpm": -2.8,
+            "bpm": -2.9,
             "per": 9.7
           },
           {
@@ -2096,7 +2096,7 @@
             "name": "Felix Okpara",
             "slug": "okparfe01",
             "mpg": 2,
-            "bpm": -16.3,
+            "bpm": -16.4,
             "per": -0.1
           },
           {
@@ -2150,14 +2150,14 @@
             "name": "Meleek Thomas",
             "slug": "thomame01",
             "mpg": 21.4,
-            "bpm": -2.2,
+            "bpm": -2.3,
             "per": 14.7
           },
           {
             "name": "Peyton Watson",
             "slug": "watsope01",
             "mpg": 28.5,
-            "bpm": -3.9,
+            "bpm": -4,
             "per": 10.4
           },
           {
@@ -2226,14 +2226,14 @@
             "slug": "sengual01",
             "mpg": 35.1,
             "bpm": 7.8,
-            "per": 25
+            "per": 25.1
           },
           {
             "name": "Kevin Durant",
             "slug": "duranke01",
             "mpg": 33.7,
             "bpm": 2.2,
-            "per": 18.7
+            "per": 18.8
           },
           {
             "name": "Jabari Smith Jr.",
@@ -2253,15 +2253,15 @@
             "name": "Fred VanVleet",
             "slug": "vanvlfr01",
             "mpg": 30,
-            "bpm": 1.8,
-            "per": 15.8
+            "bpm": 1.7,
+            "per": 15.9
           },
           {
             "name": "Reed Sheppard",
             "slug": "sheppre01",
-            "mpg": 21.7,
-            "bpm": 0.9,
-            "per": 15.7
+            "mpg": 21.8,
+            "bpm": 0.8,
+            "per": 15.6
           },
           {
             "name": "Tari Eason",
@@ -2296,7 +2296,7 @@
             "slug": "capelca01",
             "mpg": 14.2,
             "bpm": 2.8,
-            "per": 18
+            "per": 18.1
           },
           {
             "name": "Oscar Tshiebwe",
@@ -2316,7 +2316,7 @@
             "name": "Bruce Thornton",
             "slug": "thornbr01",
             "mpg": 3.2,
-            "bpm": -0.9,
+            "bpm": -1,
             "per": 15.9
           },
           {
@@ -2335,7 +2335,7 @@
             "name": "Tyler Herro",
             "slug": "herroty01",
             "mpg": 30.6,
-            "bpm": 3.2,
+            "bpm": 3.1,
             "per": 20.6
           },
           {
@@ -2357,13 +2357,13 @@
             "slug": "wareke01",
             "mpg": 18.9,
             "bpm": -5.6,
-            "per": 16.7
+            "per": 16.8
           },
           {
             "name": "Kyle Kuzma",
             "slug": "kuzmaky01",
             "mpg": 26.4,
-            "bpm": -3.3,
+            "bpm": -3.4,
             "per": 11.8
           },
           {
@@ -2371,7 +2371,7 @@
             "slug": "burribr01",
             "mpg": 17.9,
             "bpm": -3,
-            "per": 15
+            "per": 15.1
           },
           {
             "name": "Myles Turner",
@@ -2384,28 +2384,28 @@
             "name": "Kasparas Jakučionis",
             "slug": "jakucka01",
             "mpg": 21,
-            "bpm": -5.8,
+            "bpm": -5.9,
             "per": 10.3
           },
           {
             "name": "A.J. Green",
             "slug": "greenaj01",
             "mpg": 20,
-            "bpm": -3.2,
-            "per": 10.5
+            "bpm": -3.4,
+            "per": 10.3
           },
           {
             "name": "Nate Ament",
             "slug": "amentna01",
             "mpg": 14.8,
-            "bpm": -7,
-            "per": 9.5
+            "bpm": -6.7,
+            "per": 9.9
           },
           {
             "name": "Gary Trent Jr.",
             "slug": "trentga02",
             "mpg": 6.5,
-            "bpm": -2.3,
+            "bpm": -2.4,
             "per": 11.7
           },
           {
@@ -2426,7 +2426,7 @@
             "name": "Jericho Sims",
             "slug": "simsje01",
             "mpg": 6,
-            "bpm": -8.4,
+            "bpm": -8.5,
             "per": 2
           }
         ]
@@ -2445,35 +2445,35 @@
             "name": "Lauri Markkanen",
             "slug": "markkla01",
             "mpg": 30.4,
-            "bpm": 1.6,
+            "bpm": 1.7,
             "per": 16.4
           },
           {
             "name": "Jaren Jackson Jr.",
             "slug": "jacksja02",
             "mpg": 26,
-            "bpm": -2.6,
-            "per": 15
+            "bpm": -2.5,
+            "per": 15.1
           },
           {
             "name": "Darryn Peterson",
             "slug": "peterda02",
             "mpg": 30.3,
-            "bpm": -1.7,
+            "bpm": -1.6,
             "per": 11.7
           },
           {
             "name": "Ace Bailey",
             "slug": "baileac01",
             "mpg": 30.6,
-            "bpm": -1.4,
+            "bpm": -1.3,
             "per": 12.6
           },
           {
             "name": "Brice Sensabaugh",
             "slug": "sensabr01",
             "mpg": 14.9,
-            "bpm": 1.3,
+            "bpm": 1.4,
             "per": 15.1
           },
           {
@@ -2487,7 +2487,7 @@
             "name": "Jaxson Hayes",
             "slug": "hayesja02",
             "mpg": 24.7,
-            "bpm": 0,
+            "bpm": 0.1,
             "per": 14.3
           },
           {
@@ -2501,21 +2501,21 @@
             "name": "Svi Mykhailiuk",
             "slug": "mykhasv01",
             "mpg": 16.5,
-            "bpm": -5.8,
+            "bpm": -5.7,
             "per": 5.3
           },
           {
             "name": "Josh Green",
             "slug": "greenjo02",
             "mpg": 15.3,
-            "bpm": -4.7,
+            "bpm": -4.6,
             "per": 4.9
           },
           {
             "name": "Josh Okogie",
             "slug": "okogijo01",
             "mpg": 17.9,
-            "bpm": -4.1,
+            "bpm": -4,
             "per": 5.9
           },
           {
@@ -2541,7 +2541,7 @@
             "name": "Brandon Miller",
             "slug": "millebr02",
             "mpg": 32.9,
-            "bpm": -2.7,
+            "bpm": -2.8,
             "per": 13.5
           },
           {
@@ -2549,7 +2549,7 @@
             "slug": "reidna01",
             "mpg": 29.6,
             "bpm": -2.8,
-            "per": 13.7
+            "per": 13.8
           },
           {
             "name": "Grayson Allen",
@@ -2569,7 +2569,7 @@
             "name": "Moussa Diabaté",
             "slug": "diabamo01",
             "mpg": 28.8,
-            "bpm": 1.2,
+            "bpm": 1.1,
             "per": 19
           },
           {
@@ -2583,8 +2583,8 @@
             "name": "Tidjane Salaün",
             "slug": "salauti01",
             "mpg": 13.8,
-            "bpm": -0.5,
-            "per": 14.5
+            "bpm": -0.9,
+            "per": 14.1
           },
           {
             "name": "Sion James",
@@ -2618,7 +2618,7 @@
             "name": "Hannes Steinbach",
             "slug": "steinha02",
             "mpg": 7.7,
-            "bpm": -7.7,
+            "bpm": -7.8,
             "per": 9.1
           },
           {
@@ -2639,7 +2639,7 @@
             "name": "PJ Hall",
             "slug": "hallpj01",
             "mpg": 5.5,
-            "bpm": -5.9,
+            "bpm": -6,
             "per": 1.5
           }
         ]
@@ -2672,7 +2672,7 @@
             "name": "Obi Toppin",
             "slug": "toppiob01",
             "mpg": 22.2,
-            "bpm": 3.6,
+            "bpm": 3.5,
             "per": 21.4
           },
           {
@@ -2686,14 +2686,14 @@
             "name": "Quenton Jackson",
             "slug": "jacksqu01",
             "mpg": 21.8,
-            "bpm": 0.3,
+            "bpm": 0.2,
             "per": 16.6
           },
           {
             "name": "Kelly Oubre Jr.",
             "slug": "oubreke01",
             "mpg": 23.1,
-            "bpm": -3.9,
+            "bpm": -4,
             "per": 10.9
           },
           {
@@ -2750,7 +2750,7 @@
             "slug": "sheppbe01",
             "mpg": 12,
             "bpm": -10,
-            "per": 1.8
+            "per": 1.9
           }
         ]
       },
@@ -2768,7 +2768,7 @@
             "name": "Jalen Johnson",
             "slug": "johnsja05",
             "mpg": 32.6,
-            "bpm": 2.5,
+            "bpm": 2.4,
             "per": 17.7
           },
           {
@@ -2789,7 +2789,7 @@
             "name": "Onyeka Okongwu",
             "slug": "okongon01",
             "mpg": 29.1,
-            "bpm": -0.5,
+            "bpm": -0.6,
             "per": 15.4
           },
           {
@@ -2824,7 +2824,7 @@
             "name": "Jock Landale",
             "slug": "landajo01",
             "mpg": 15.3,
-            "bpm": -3.7,
+            "bpm": -3.8,
             "per": 13.5
           },
           {
@@ -2832,7 +2832,7 @@
             "slug": "ejiofzu01",
             "mpg": 10.3,
             "bpm": -2.3,
-            "per": 13.4
+            "per": 13.5
           },
           {
             "name": "RayJ Dennis",
@@ -2864,7 +2864,7 @@
             "name": "Zion Williamson",
             "slug": "willizi01",
             "mpg": 32.9,
-            "bpm": 4.1,
+            "bpm": 4.2,
             "per": 23.2
           },
           {
@@ -2886,20 +2886,20 @@
             "slug": "murphtr02",
             "mpg": 33,
             "bpm": -1.4,
-            "per": 14
+            "per": 14.1
           },
           {
             "name": "Jeremiah Fears",
             "slug": "fearsje01",
             "mpg": 28,
-            "bpm": -5,
+            "bpm": -4.9,
             "per": 11.9
           },
           {
             "name": "Derik Queen",
             "slug": "queende01",
             "mpg": 24.1,
-            "bpm": 1.6,
+            "bpm": 1.7,
             "per": 19.4
           },
           {
@@ -2948,7 +2948,7 @@
             "name": "Jordan Poole",
             "slug": "poolejo01",
             "mpg": 16,
-            "bpm": -0.6,
+            "bpm": -0.5,
             "per": 13.1
           },
           {
@@ -2956,7 +2956,7 @@
             "slug": "reeseju01",
             "mpg": 3,
             "bpm": -17.4,
-            "per": 10.1
+            "per": 10.2
           },
           {
             "name": "Bryce McGowens",
@@ -2981,7 +2981,7 @@
             "name": "Michael Porter Jr.",
             "slug": "portemi01",
             "mpg": 33.3,
-            "bpm": 0.6,
+            "bpm": 0.5,
             "per": 17.9
           },
           {
@@ -3002,15 +3002,15 @@
             "name": "Nolan Traoré",
             "slug": "traorno01",
             "mpg": 22.1,
-            "bpm": 1.6,
-            "per": 16.9
+            "bpm": 1.5,
+            "per": 17
           },
           {
             "name": "Moritz Wagner",
             "slug": "wagnemo01",
             "mpg": 18.9,
             "bpm": 0.6,
-            "per": 17.8
+            "per": 17.9
           },
           {
             "name": "Danny Wolf",
@@ -3030,14 +3030,14 @@
             "name": "Day'Ron Sharpe",
             "slug": "sharpda01",
             "mpg": 23.1,
-            "bpm": -1.9,
+            "bpm": -2,
             "per": 13.8
           },
           {
             "name": "Noah Clowney",
             "slug": "clownno01",
             "mpg": 21,
-            "bpm": -5.3,
+            "bpm": -5.4,
             "per": 8.8
           },
           {
@@ -3051,7 +3051,7 @@
             "name": "Keon Ellis",
             "slug": "elliske01",
             "mpg": 22.6,
-            "bpm": -3.4,
+            "bpm": -3.5,
             "per": 7.2
           },
           {
@@ -3066,7 +3066,7 @@
             "slug": "sarafbe01",
             "mpg": 4,
             "bpm": -4.3,
-            "per": 17.9
+            "per": 18
           },
           {
             "name": "Terance Mann",
@@ -3126,7 +3126,7 @@
             "name": "Derrick Jones Jr.",
             "slug": "jonesde02",
             "mpg": 29.9,
-            "bpm": 1.4,
+            "bpm": 1.5,
             "per": 14.7
           },
           {
@@ -3147,7 +3147,7 @@
             "name": "Isaiah Jackson",
             "slug": "jacksis01",
             "mpg": 21,
-            "bpm": -0.3,
+            "bpm": -0.2,
             "per": 16.9
           },
           {
@@ -3168,35 +3168,35 @@
             "name": "Nick Martinelli",
             "slug": "martini01",
             "mpg": 5,
-            "bpm": 5.4,
+            "bpm": 5.5,
             "per": 24.7
           },
           {
             "name": "Baba Miller",
             "slug": "milleba01",
             "mpg": 8.4,
-            "bpm": 0.1,
+            "bpm": 0.2,
             "per": 12.2
           },
           {
             "name": "Jalen Pickett",
             "slug": "pickeja02",
             "mpg": 5.3,
-            "bpm": 10.5,
-            "per": 23.8
+            "bpm": 10.6,
+            "per": 23.9
           },
           {
             "name": "Cam Christie",
             "slug": "chrisca02",
             "mpg": 6.8,
-            "bpm": -14.3,
+            "bpm": -14.2,
             "per": -2.7
           },
           {
             "name": "Blake Wesley",
             "slug": "weslebl01",
             "mpg": 4.5,
-            "bpm": -16.9,
+            "bpm": -16.8,
             "per": 2.3
           }
         ]
@@ -3215,7 +3215,7 @@
             "name": "Norman Powell",
             "slug": "powelno01",
             "mpg": 28.8,
-            "bpm": -2.7,
+            "bpm": -2.8,
             "per": 15.8
           },
           {
@@ -3236,14 +3236,14 @@
             "name": "Tre Jones",
             "slug": "jonestr01",
             "mpg": 18.3,
-            "bpm": 3.2,
+            "bpm": 3.1,
             "per": 22.3
           },
           {
             "name": "Josh Giddey",
             "slug": "giddejo01",
             "mpg": 27.1,
-            "bpm": -4.5,
+            "bpm": -4.6,
             "per": 11.6
           },
           {
@@ -3271,21 +3271,21 @@
             "name": "Noa Essengue",
             "slug": "essenno01",
             "mpg": 14,
-            "bpm": -11.7,
+            "bpm": -11.8,
             "per": 5.3
           },
           {
             "name": "Jaylin Sellers",
             "slug": "selleja01",
             "mpg": 9.2,
-            "bpm": -4.1,
+            "bpm": -4.2,
             "per": 8.3
           },
           {
             "name": "Patrick Williams",
             "slug": "willipa01",
             "mpg": 20,
-            "bpm": -13.4,
+            "bpm": -13.5,
             "per": 1.2
           },
           {
@@ -3293,20 +3293,20 @@
             "slug": "swainda01",
             "mpg": 9.5,
             "bpm": -8.6,
-            "per": 5.7
+            "per": 5.8
           },
           {
             "name": "Tobe Awaka",
             "slug": "awakato01",
             "mpg": 10.3,
-            "bpm": -1.9,
+            "bpm": -2,
             "per": 18.3
           },
           {
             "name": "Jordan Hawkins",
             "slug": "hawkijo01",
             "mpg": 5.5,
-            "bpm": -14.8,
+            "bpm": -14.9,
             "per": 2.3
           },
           {
@@ -3323,7 +3323,7 @@
   "wnba": {
     "source": "basketball-reference.com",
     "season": "2026",
-    "fetchedAt": "2026-11-05T17:48:53.707Z",
+    "fetchedAt": "2026-11-06T17:06:25.426Z",
     "teams": {
       "TOR": {
         "bbrCode": "TOR",
