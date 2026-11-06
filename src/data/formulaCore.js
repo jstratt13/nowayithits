@@ -40,9 +40,14 @@ const MODEL_CONFIG = {
     multiplier: 0.185,
     starCap: { min: -5.0, max: 5.5 },
     hca: {
-      standard: 3.50, // Base ANG default
-      highTier: 4.00, // High-tier / Extreme urgency
-      lowPace:  2.75, // Low-Possession / Slow team
+      // Re-anchored 11/5/26 to the empirical "neither B2B" home margin
+      // across 2 full seasons: +2.03 (2024-25) and +2.21 (2025-26) → ~2.1.
+      // Previously 3.50 (stale — NBA HCA has shrunk steadily over the
+      // last decade). The highTier / lowPace tiers remain their original
+      // relative values; they don't fire yet (no arena classifier).
+      standard: 2.10,
+      highTier: 2.60,
+      lowPace:  1.30,
     },
     paceDeflate:     3.5,  // NBA playoff half-court tightening (gated to Apr–Jun)
     paceDefault:     100,
@@ -450,15 +455,61 @@ function blendedSRS(teamStats, league) {
   return 0.5 * srs + 0.5 * recentSrsProxy;
 }
 
-// Returns { favoredIsHome, favSRS, undSRS, hca, deltaStar, baseANG }.
+// B2B / rest adjustment — empirically measured from 2 full NBA seasons
+// (2024-25 + 2025-26, ~2,600 games). "Neither B2B" is the baseline; the
+// coefficients below are the measured home-margin shifts vs that baseline.
+//
+//   daysRest === 1  → back-to-back (team played yesterday)
+//   daysRest > 1 or null → not B2B (treated as baseline)
+//
+// Margin side (signed from HOME perspective):
+//   Home B2B only → −3.00 pts (home disadvantaged)
+//   Away B2B only → +1.75 pts (home advantaged)
+//   Both B2B      → 0 (effect flipped between the two seasons → noise)
+//
+// Totals side (multiplicative):
+//   Home B2B only → ×1.01   (B2B home actually produced slightly HIGHER
+//                            totals — pace effect beats fatigue effect)
+//   Both B2B      → ×0.99
+//   Away B2B only → ×1.00  (variance too high to call — status surfaced
+//                            on the breakdown, no number applied)
+function restState(game) {
+  const hDaysRest = game.home?.daysRest;
+  const aDaysRest = game.away?.daysRest;
+  const homeB2B = hDaysRest === 1;
+  const awayB2B = aDaysRest === 1;
+  return { hDaysRest, aDaysRest, homeB2B, awayB2B };
+}
+
+function restMarginAdjustment(game) {
+  const { homeB2B, awayB2B } = restState(game);
+  if (homeB2B && awayB2B) return 0;
+  if (homeB2B)            return -3.00;   // home disadvantage
+  if (awayB2B)            return +1.75;   // home advantage
+  return 0;
+}
+
+function restTotalMultiplier(game) {
+  const { homeB2B, awayB2B } = restState(game);
+  if (homeB2B && awayB2B) return 0.99;
+  if (homeB2B && !awayB2B) return 1.01;
+  // Away-B2B-alone case: variance too high in historical data to apply
+  // an adjustment. Status surfaced on the breakdown, multiplier stays 1.
+  return 1.00;
+}
+
+// Returns { favoredIsHome, favSRS, undSRS, hca, deltaStar, baseANG, rest }.
 function favoritedView(game, ctx) {
   const homeSRS = blendedSRS(stats(ctx, game.league, game.home.abbr), game.league);
   const awaySRS = blendedSRS(stats(ctx, game.league, game.away.abbr), game.league);
 
   const hca = hcaDynamic(game, ctx);
 
-  // Model selects its OWN favorite: home if SRS + HCA outpaces away.
-  const homeNeutral = homeSRS + hca;
+  // Home-perspective rest adjustment (+ = home benefit; − = home hit).
+  const restMarginHome = restMarginAdjustment(game);
+
+  // Model selects its OWN favorite: home if SRS + HCA + rest outpaces away.
+  const homeNeutral = homeSRS + hca + restMarginHome;
   const favoredIsHome = homeNeutral >= awaySRS;
 
   const favSRS = favoredIsHome ? homeSRS : awaySRS;
@@ -468,7 +519,11 @@ function favoritedView(game, ctx) {
   const starDetail = deltaStar(ctx, game.league, favId, undId);
 
   const hcaSigned = favoredIsHome ? +hca : -hca;
-  const baseANG = (favSRS - undSRS) + hcaSigned + starDetail.value;
+  // Rest adjustment flips sign if the away team is the favorite — same
+  // convention as HCA — so Base_ANG stays "favored-perspective".
+  const restSigned = favoredIsHome ? +restMarginHome : -restMarginHome;
+  const baseANG = (favSRS - undSRS) + hcaSigned + starDetail.value + restSigned;
+
   return {
     favoredIsHome,
     favSRS,
@@ -476,6 +531,11 @@ function favoritedView(game, ctx) {
     hca,
     deltaStar: starDetail.value,
     deltaStarDetail: starDetail,
+    rest: {
+      ...restState(game),
+      marginHome: restMarginHome,   // signed from home perspective
+      marginSigned: restSigned,     // signed from favored perspective
+    },
     baseANG,
   };
 }
@@ -796,7 +856,8 @@ export function projectedTotal(game, ctx) {
   const poss = projectedPossessions(game, ctx);
   const combined = combinedOffRating(game, ctx);
   const matchup = totalMatchupDetail(game, ctx);
-  return (poss * combined / 100) * matchup.multiplier;
+  const restMult = restTotalMultiplier(game);
+  return (poss * combined / 100) * matchup.multiplier * restMult;
 }
 
 // Structured breakdown of the totals projection — mirrors predictionBreakdown
@@ -825,7 +886,11 @@ export function totalBreakdown(game, ctx) {
 
   const matchup = totalMatchupDetail(game, ctx);
   const baseTotal = (possessions * combined) / 100;
-  const total = baseTotal * matchup.multiplier;
+  const matchupAdjustedTotal = baseTotal * matchup.multiplier;
+
+  const rest = restState(game);
+  const restMultiplier = restTotalMultiplier(game);
+  const total = matchupAdjustedTotal * restMultiplier;
 
   return {
     possessions: {
@@ -853,6 +918,13 @@ export function totalBreakdown(game, ctx) {
       baseTotal,
     },
     matchup,
+    rest: {
+      homeDaysRest: rest.hDaysRest,
+      awayDaysRest: rest.aDaysRest,
+      homeB2B: rest.homeB2B,
+      awayB2B: rest.awayB2B,
+      multiplier: restMultiplier,
+    },
     total,
   };
 }
@@ -929,6 +1001,14 @@ export function predictionBreakdown(game, ctx) {
       hca: b.hca,
       hcaSigned: b.favoredIsHome ? +b.hca : -b.hca,
       deltaStar: b.deltaStar,
+      rest: b.rest ? {
+        homeDaysRest: b.rest.hDaysRest,
+        awayDaysRest: b.rest.aDaysRest,
+        homeB2B: b.rest.homeB2B,
+        awayB2B: b.rest.awayB2B,
+        marginHome: b.rest.marginHome,       // signed, home-perspective
+        marginSigned: b.rest.marginSigned,   // signed, favored-perspective
+      } : null,
       total: b.baseANG,
     },
     deltaVol: {

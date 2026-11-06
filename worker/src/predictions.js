@@ -81,6 +81,64 @@ async function fetchSlate(league, etDateStr) {
   return (data.events || []).map((ev) => normalizeEvent(ev, league)).filter(Boolean);
 }
 
+// Walks backwards 3 days from the target slate date, pulling ESPN
+// scoreboards and recording the most recent completed game for each
+// team. Returns teamId → ET YYYYMMDD of that team's last game. Used by
+// the formula layer to know whether a team is playing on B2B / rest.
+//
+// 3-day window is enough to tell "played yesterday (B2B)" apart from
+// "played 2 days ago (1 day rest)" apart from "played 3+ days ago
+// (well-rested)" — anything beyond that collapses to the same "rested"
+// bucket in the rest-adjustment coefficient.
+async function fetchRecentGames(league, etDateStr) {
+  const path = LEAGUE_PATH[league];
+  if (!path) return {};
+  const lastGamePlayed = {};
+  for (let i = 1; i <= 3; i++) {
+    const prevDate = shiftEtYmd(etDateStr, -i);
+    try {
+      const url = `${ESPN_BASE}/${path}/scoreboard?dates=${prevDate}`;
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      for (const ev of (data.events || [])) {
+        const state = ev.status?.type?.state;
+        // Count all scheduled + completed games — "in progress" shouldn't
+        // happen for a date in the past, but if it does, that team was
+        // still playing that day, so they still get a rest-day entry.
+        if (state === 'pre' && i > 0) continue;
+        const comp = ev.competitions?.[0];
+        if (!comp) continue;
+        for (const c of (comp.competitors || [])) {
+          const teamId = String(c.team?.id || c.id || '');
+          // First-write-wins: since we iterate i=1 (yesterday) first,
+          // the most recent game for each team is what we keep.
+          if (teamId && !lastGamePlayed[teamId]) {
+            lastGamePlayed[teamId] = prevDate;
+          }
+        }
+      }
+    } catch (e) {
+      /* skip this day on any error — rest info is nice-to-have, not required */
+    }
+  }
+  return lastGamePlayed;
+}
+
+// Days between the slate game and the team's previous game, inclusive
+// of calendar-day boundaries. Interpretation:
+//   1 = played yesterday  → back-to-back (B2B)
+//   2 = played 2 days ago → 1 day of rest between games
+//   3+ = well-rested
+//   null = no recent game in our 3-day window (likely 3+ rest)
+function daysSincePreviousGame(teamId, gameEtDateStr, lastGamePlayed) {
+  const last = lastGamePlayed[teamId];
+  if (!last) return null;
+  const toDay = (s) => Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8), 12);
+  const diffMs = toDay(gameEtDateStr) - toDay(last);
+  return Math.round(diffMs / 86_400_000);
+}
+
 // Fetches the ESPN injuries endpoint and reduces it to per-team injury
 // data: scalar score (for Δ_Star) + per-player rows (for the breakdown
 // surface). Both come from a single computeInjuryScoreDetailed pass so
@@ -277,13 +335,15 @@ function mergeGame(existing, fresh, nowMs) {
 export async function refreshPredictions(env, league, etDateStr) {
   const now = Date.now();
 
-  // Slate + team stats in parallel. Injuries comes AFTER the slate so we
-  // can build the espnAbbr-by-teamId map (Step B: needed to join ESPN's
-  // injury entries with the bundled BBR roster for per-player weighting).
+  // Slate + team stats + 3-day lookback in parallel. Injuries comes
+  // AFTER the slate so we can build the espnAbbr-by-teamId map (Step B:
+  // needed to join ESPN's injury entries with the bundled BBR roster
+  // for per-player weighting).
   const hSlot = Math.floor(now / 3_600_000);
-  const [slate, teamsBlob] = await Promise.all([
+  const [slate, teamsBlob, lastGamePlayed] = await Promise.all([
     fetchSlate(league, etDateStr),
     cached(env, `teams:${league}:${hSlot}`, 60 * 60 * 6, () => scrapeTeamStats(league, env)),
+    fetchRecentGames(league, etDateStr),
   ]);
 
   const espnAbbrByTeamId = {};
@@ -316,6 +376,12 @@ export async function refreshPredictions(env, league, etDateStr) {
   for (const game of slate) {
     if (etYmdFromIso(game.date) !== etDateStr) continue;
 
+    // Attach each team's days-since-previous-game before handing the game
+    // off to formulaCore — used for the B2B margin + total adjustments.
+    const slateEtDate = etYmdFromIso(game.date);
+    game.home.daysRest = daysSincePreviousGame(String(game.home.id), slateEtDate, lastGamePlayed);
+    game.away.daysRest = daysSincePreviousGame(String(game.away.id), slateEtDate, lastGamePlayed);
+
     const usable = hasUsableOdds(game);
     const fresh = {
       gameId: game.id,
@@ -330,6 +396,7 @@ export async function refreshPredictions(env, league, etDateStr) {
         name:  game.home.shortName || game.home.name,
         score: game.home.score,
         winner: game.home.winner,
+        daysRest: game.home.daysRest,
       },
       away: {
         id:    game.away.id,
@@ -337,6 +404,7 @@ export async function refreshPredictions(env, league, etDateStr) {
         name:  game.away.shortName || game.away.name,
         score: game.away.score,
         winner: game.away.winner,
+        daysRest: game.away.daysRest,
       },
       odds: game.odds,
       predictions: usable ? snapshotFor(game, ctx) : null,

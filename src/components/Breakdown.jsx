@@ -16,6 +16,7 @@ export default function Breakdown({ breakdown }) {
         <Row label={`SRS Δ (${favAbbr} − ${undAbbr})`} value={baseANG.srsDelta} signed />
         <Row label="HCA" value={baseANG.hcaSigned} signed />
         <DeltaStarRow deltaStar={deltaStar} />
+        {baseANG.rest && <RestRow rest={baseANG.rest} />}
         <Row label="Base ANG" value={baseANG.total} signed bold />
       </Section>
 
@@ -54,7 +55,7 @@ export default function Breakdown({ breakdown }) {
 // matchup adjustment) then the final number. Each sub-row expands to
 // show the inputs it was built from so the arithmetic can be traced.
 function TotalSection({ total }) {
-  const { possessions, ratings, matchup, total: projTotal } = total;
+  const { possessions, ratings, matchup, rest, total: projTotal } = total;
   return (
     <Section title="Projected Total">
       <ExpandRow
@@ -132,8 +133,92 @@ function TotalSection({ total }) {
         />
       </ExpandRow>
 
+      {rest && (
+        <ExpandRow
+          label={`Rest / B2B (×${rest.multiplier.toFixed(3)})`}
+          value={(rest.multiplier - 1) * 100}
+          formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+        >
+          <Row
+            label="Home"
+            value={null}
+            formatter={() => restLabel(rest.homeDaysRest)}
+            muted
+          />
+          <Row
+            label="Away"
+            value={null}
+            formatter={() => restLabel(rest.awayDaysRest)}
+            muted
+          />
+          <Row
+            label="Scenario"
+            value={null}
+            formatter={() => restScenario(rest)}
+            muted
+          />
+        </ExpandRow>
+      )}
+
       <Row label="Projected Total" value={projTotal} formatter={(v) => v.toFixed(1)} bold />
     </Section>
+  );
+}
+
+function restLabel(n) {
+  if (n == null) return 'rested (3d+)';
+  if (n === 1) return 'B2B';
+  if (n === 2) return '1d rest';
+  return `${n - 1}d rest`;
+}
+
+function restScenario(r) {
+  if (r.homeB2B && r.awayB2B) return 'Both B2B → ×0.99';
+  if (r.homeB2B)              return 'Home B2B only → ×1.01';
+  if (r.awayB2B)              return 'Away B2B only → ×1.00 (status only)';
+  return 'Neither B2B → baseline';
+}
+
+// Rest / B2B margin adjustment. Signed from the favored-perspective so it
+// slots cleanly into the Base ANG column. Expands to show both teams'
+// actual rest days + the home-perspective shift.
+function RestRow({ rest }) {
+  const [open, setOpen] = useState(false);
+  const label = rest.marginSigned === 0 ? 'Rest / B2B' : 'Rest / B2B';
+  const restText = (n) => {
+    if (n == null) return 'rested (3d+)';
+    if (n === 1) return 'B2B';
+    if (n === 2) return '1d rest';
+    return `${n - 1}d rest`;
+  };
+  return (
+    <>
+      <button
+        type="button"
+        className={'breakdown-row breakdown-row-toggle' + (open ? ' is-open' : '')}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span className="breakdown-row-label">
+          {label}
+          <span className="breakdown-row-chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
+        </span>
+        <span className="breakdown-row-value">{fmtLine(rest.marginSigned)}</span>
+      </button>
+      {open && (
+        <div className="breakdown-substack">
+          <Row label="Home status" value={null} formatter={() => restText(rest.homeDaysRest)} muted />
+          <Row label="Away status" value={null} formatter={() => restText(rest.awayDaysRest)} muted />
+          <Row label="Home-perspective adj" value={rest.marginHome} signed muted />
+          <Row
+            label="Applied to favored side"
+            value={rest.marginSigned}
+            signed
+            muted
+          />
+        </div>
+      )}
+    </>
   );
 }
 
