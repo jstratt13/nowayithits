@@ -108,29 +108,33 @@ function TotalSection({ total }) {
         formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
       >
         <Row
-          label={`Game TO% (${matchup.gameToRate.toFixed(1)}) vs league ${matchup.leagueAvgTO.toFixed(1)}`}
-          value={matchup.toExcess}
+          label={`Game TO diff (${matchup.gameToDiff?.toFixed(2)}) vs league 0`}
+          value={matchup.gameToDiff}
           signed
           muted
         />
         <Row
-          label={`TO impact (× ${matchup.toCoef.toFixed(1)})`}
-          value={matchup.toImpactPct}
+          label={`TO diff impact (× ${matchup.toDiffCoef?.toFixed(1)})`}
+          value={matchup.toDiffImpactPct}
           formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
           muted
         />
-        <Row
-          label={`Game ORB% (${matchup.gameOrbRate.toFixed(1)}) vs league ${matchup.leagueAvgORB.toFixed(1)}`}
-          value={matchup.orbExcess}
-          signed
-          muted
-        />
-        <Row
-          label={`ORB impact (× ${matchup.orbCoef.toFixed(1)})`}
-          value={matchup.orbImpactPct}
-          formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
-          muted
-        />
+        {matchup.gameDrbRate != null && (
+          <>
+            <Row
+              label={`Game DRB% (${matchup.gameDrbRate.toFixed(1)}) vs league ${matchup.leagueAvgDRB.toFixed(1)}`}
+              value={matchup.drbExcess}
+              signed
+              muted
+            />
+            <Row
+              label={`DRB impact (× ${matchup.drbCoef.toFixed(1)})`}
+              value={matchup.drbImpactPct}
+              formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+              muted
+            />
+          </>
+        )}
         {matchup.game3PArRate != null && (
           <>
             <Row
@@ -140,7 +144,7 @@ function TotalSection({ total }) {
               muted
             />
             <Row
-              label={`3PAr impact (× ${matchup.threePArCoef.toFixed(2)})`}
+              label="3PAr impact (asymmetric non-linear)"
               value={matchup.threePArImpactPct}
               formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
               muted

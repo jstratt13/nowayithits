@@ -61,13 +61,14 @@ const MODEL_CONFIG = {
     // scrape is just per-team rounding noise.
     //
     // Live NBA 2026-27 averages for reference:
-    //   ORtg 113.24 · DRtg 113.38 · TO% 13.81 · ORB% 27.36 · Pace 99.47
-    //   3PAr 0.429 (stable ~0.42 across 2024-25 + 2025-26)
+    //   ORtg 113.24 · DRtg 113.38 · TO% 13.81 · ORB% 27.36 · DRB% 72.51
+    //   oppTO% 13.78 · Pace 99.47 · 3PAr 0.429
     offRtgDefault:  113,
     defRtgDefault:  113,
-    leagueAvgTO:    13.8,   // team TOV% (and matching opp TOV%) league-wide
-    leagueAvgORB:   27.4,   // team ORB% league-wide
+    leagueAvgDRB:   72.5,   // team DRB% league-wide (shrinkage anchor only)
     leagueAvg3PAr:  0.42,   // team FG3A / FGA (3-point attempt rate) league-wide
+    // TO differential's league average = 0 by definition (every TO forced
+    // equals a TO committed by someone else), so no config constant.
     blowoutMargin:   16,
     // MPF disabled for NBA (Volume Delta passes through Δ_Vol × 1.0).
     paceMpfBaseline: null,
@@ -100,12 +101,11 @@ const MODEL_CONFIG = {
     // actual league averages diverge meaningfully, especially ORtg/DRtg.
     //
     // Live WNBA 2026 averages for reference:
-    //   ORtg 109.13 · DRtg 109.09 · TO% 14.39 · ORB% 25.45 · Pace 79.31
-    //   3PAr 0.372 (2026) — WNBA shoots fewer 3s than NBA
+    //   ORtg 109.13 · DRtg 109.09 · TO% 14.39 · ORB% 25.45 · DRB% 74.55
+    //   Pace 79.31 · 3PAr 0.372
     offRtgDefault:  109,
     defRtgDefault:  109,
-    leagueAvgTO:    14.4,
-    leagueAvgORB:   25.5,
+    leagueAvgDRB:   74.5,
     leagueAvg3PAr:  0.37,
     blowoutMargin:   14,
     // Matchup Pace Factor (MPF): scales Volume Delta in True Gap so games
@@ -788,41 +788,59 @@ function combinedOffRating(game, ctx) {
   return homeExpected + awayExpected;
 }
 
-// ── Totals matchup adjustment (TO% + ORB%) ──────────────────────────────
+// ── Totals matchup adjustment (TO diff + DRB% + 3PAr) ───────────────────
 //
-// Raw ORtg/DRtg already encode each team's SEASON-LONG turnover and
-// offensive rebound rates. What they don't capture is the MATCHUP
-// interaction — if a high-TO offense plays a defense that forces lots of
-// turnovers, actual game TOs will exceed either team's season baseline.
-// Same for a strong ORB team facing a weak defensive-rebounding opponent.
+// Each component below was fit against ~2,600 games across two full NBA
+// seasons (2024-25 + 2025-26) by bucketing games by the game-average of
+// each variable and measuring the actual deviation in final total. All
+// three components use the same (gp/15)² shrinkage as SRS / ratings —
+// raw rates are volatile early in a season.
 //
-// Model:
-//   gameTO%  = avg( (homeTO_off + awayTO_def)/2 , (awayTO_off + homeTO_def)/2 )
-//   gameORB% = avg( (homeORB + (100 − awayDRB))/2 , (awayORB + (100 − homeDRB))/2 )
-//   toExcess  = gameTO%  − leagueAvgTO
-//   orbExcess = gameORB% − leagueAvgORB
-//   multiplier = 1 + (orbExcess × ORB_COEF − toExcess × TO_COEF) / 100
+// TO DIFFERENTIAL (replaces the old game TO rate):
+//   per-team differential = opp_TOV% − own_TOV%   (positive = good at
+//     forcing TOs net of committing)
+//   game diff = average of both teams' differential
+//   impact% = −diff × 1.0        (each unit of game diff → 1% drop, i.e. ~2.3 pts)
 //
-// Coefficients are starting values — calibrate against real outcomes:
-//   TO_COEF  = 0.7  → each %pt excess TO drops projected total ~0.7%
-//   ORB_COEF = 0.5  → each %pt excess ORB raises projected total ~0.5%
-// Asymmetric because a TO = 0 points (full possession lost), while an
-// extra ORB only buys a second shot attempt at ~1pt avg value.
+//   Why differential, not rate: rate (how many TOs happen in a game) had
+//   inconsistent sign across seasons in the bucket analysis. Differential
+//   (strength of defenses at forcing TOs, net of offensive mistakes) was
+//   monotonic in both seasons at ~−2.3 pts per unit.
 //
-// TO%/ORB% inputs use the SAME small-sample shrinkage as SRS and the
-// ratings — raw rates are wildly volatile after 2–3 games. Weight ramps
-// via srsShrinkWeight (quadratic over 15 games). opp_tov_pct and drb_pct
-// come from the same BBR advanced-team scrape that fills off/def rtg.
-const MATCHUP_TO_COEF   = 0.7;
-const MATCHUP_ORB_COEF  = 0.5;
-// 3PAr coefficient: each 1 percentage point of game-expected 3PAr above
-// league average → that pct drop in total. Data-derived from 3 seasons
-// of incremental correlation analysis (r ≈ −0.22 for 3PAr against
-// per-team pts residualized on ORtg), translated to game-total impact.
-// Sign is baked into totalMatchupDetail (high 3PAr → negative total adj).
-// Teams that shoot more 3s forego foul-drawing opportunities (FTs), so
-// per-game output drops slightly even when per-possession ORtg is equal.
-const MATCHUP_3PAR_COEF = 0.15;
+// DRB% (new):
+//   game DRB = avg of both teams' DRB%
+//   excess = game DRB − leagueAvgDRB
+//   impact% = −excess × 0.8      (each pp of game DRB% above avg → 0.8% drop)
+//
+//   Better defensive rebounders end possessions faster → fewer second-
+//   chance pts → lower total. Clean monotonic signal in both seasons at
+//   ~−1.9 pts per pp.
+//
+// 3PAr (asymmetric non-linear):
+//   middle bonus at league-average 3PAr, quadratic penalty on the
+//   high-3PAr side, gentle linear fade on the low side. Captures the
+//   measured pattern: high-3PAr games under-produce vs their ORtg (lose
+//   FT opportunities), middle games slightly OVER-produce, low-3PAr
+//   games are roughly neutral.
+//
+// ORB% was dropped — bucket shapes flipped between seasons (U-shape in
+// 2024-25, inverted-U in 2025-26), r ≈ −0.02 to −0.15. Not a reliable
+// signal at the game total level.
+const MATCHUP_TO_DIFF_COEF = 1.0;
+const MATCHUP_DRB_COEF     = 0.8;
+
+// 3PAr asymmetric non-linear impact. Returns % change to total.
+//   excess >= 0 : MIDDLE_BONUS − 0.05 × excess²  (quadratic penalty)
+//   excess <  0 : MIDDLE_BONUS × (1 − 0.03 × |excess|)  (gentle fade)
+const MATCHUP_3PAR_MIDDLE_BONUS = 0.30;
+const MATCHUP_3PAR_HIGH_COEF    = 0.05;
+const MATCHUP_3PAR_LOW_FADE     = 0.03;
+function threePArImpactPct(excessPp) {
+  if (excessPp >= 0) {
+    return MATCHUP_3PAR_MIDDLE_BONUS - MATCHUP_3PAR_HIGH_COEF * excessPp * excessPp;
+  }
+  return MATCHUP_3PAR_MIDDLE_BONUS * (1 - MATCHUP_3PAR_LOW_FADE * Math.abs(excessPp));
+}
 
 function shrinkRate(raw, leagueAvg, teamStats) {
   const w = srsShrinkWeight(teamStats);
@@ -834,47 +852,53 @@ function totalMatchupDetail(game, ctx) {
   const hStats = stats(ctx, game.league, game.home.abbr);
   const aStats = stats(ctx, game.league, game.away.abbr);
 
-  // Defaults: TO% and ORB% default to league average when BBR hasn't
-  // filled the field; opponent DRB% defaults to (100 − leagueAvgORB).
-  const defOrbDef = 100 - c.leagueAvgORB;
+  // ── TO differential ────────────────────────────────────────────────
+  // Each team's differential = opp_TOV% − own_TOV%. Shrinkage is applied
+  // to each side independently (toward league avg) before differencing.
+  // Default when BBR missed the field: league-average TOV% (12.5 is
+  // reasonable, matches the NBA average that leagueAvgDRB implies via
+  // the four-factors relationship; exact value doesn't matter much since
+  // both sides shrink toward the same anchor and the diff cancels).
+  const DEFAULT_TOV = 13.5;
+  const hToOff = shrinkRate(get(hStats, 'toOff', DEFAULT_TOV), DEFAULT_TOV, hStats);
+  const aToOff = shrinkRate(get(aStats, 'toOff', DEFAULT_TOV), DEFAULT_TOV, aStats);
+  const hToDef = shrinkRate(get(hStats, 'toDef', DEFAULT_TOV), DEFAULT_TOV, hStats);
+  const aToDef = shrinkRate(get(aStats, 'toDef', DEFAULT_TOV), DEFAULT_TOV, aStats);
+  const hTODiff = hToDef - hToOff;
+  const aTODiff = aToDef - aToOff;
+  const gameToDiff = (hTODiff + aTODiff) / 2;
+  // league average diff = 0 by construction; no subtraction needed
+  const toDiffImpactPct = -gameToDiff * MATCHUP_TO_DIFF_COEF;
 
-  const hToOff = shrinkRate(get(hStats, 'toOff',  c.leagueAvgTO),  c.leagueAvgTO,  hStats);
-  const aToOff = shrinkRate(get(aStats, 'toOff',  c.leagueAvgTO),  c.leagueAvgTO,  aStats);
-  const hToDef = shrinkRate(get(hStats, 'toDef',  c.leagueAvgTO),  c.leagueAvgTO,  hStats);
-  const aToDef = shrinkRate(get(aStats, 'toDef',  c.leagueAvgTO),  c.leagueAvgTO,  aStats);
-  const hOrb   = shrinkRate(get(hStats, 'orbOff', c.leagueAvgORB), c.leagueAvgORB, hStats);
-  const aOrb   = shrinkRate(get(aStats, 'orbOff', c.leagueAvgORB), c.leagueAvgORB, aStats);
-  const hDrb   = shrinkRate(get(hStats, 'drbDef', defOrbDef),      defOrbDef,      hStats);
-  const aDrb   = shrinkRate(get(aStats, 'drbDef', defOrbDef),      defOrbDef,      aStats);
+  // ── DRB% ───────────────────────────────────────────────────────────
+  const hDrb = shrinkRate(get(hStats, 'drbDef', c.leagueAvgDRB), c.leagueAvgDRB, hStats);
+  const aDrb = shrinkRate(get(aStats, 'drbDef', c.leagueAvgDRB), c.leagueAvgDRB, aStats);
+  const gameDrbRate = (hDrb + aDrb) / 2;
+  const drbExcess = gameDrbRate - c.leagueAvgDRB;
+  const drbImpactPct = -drbExcess * MATCHUP_DRB_COEF;
 
-  const gameToRate  = ((hToOff + aToDef) / 2 + (aToOff + hToDef) / 2) / 2;
-  const gameOrbRate = ((hOrb + (100 - aDrb)) / 2 + (aOrb + (100 - hDrb)) / 2) / 2;
-
-  // 3PAr matchup — each team contributes their own 3PAr; no defensive
-  // mirror because teams can't really dictate opponent shot selection the
-  // way they dictate TO%/ORB% outcomes. Game-expected 3PAr = simple avg
-  // of both teams' shrunk rates. Working in percentage-point space (pp)
-  // for consistency with the TO%/ORB% coefficients: multiply decimal by
-  // 100 so leagueAvg 0.42 reads as 42.0 and a 5pp-above-avg team reads
-  // as 47.0.
+  // ── 3PAr (asymmetric non-linear) ───────────────────────────────────
+  // Convert decimal → percentage points so shrinkage anchor and coefficients
+  // read naturally (leagueAvg 42 vs raw 0.42).
   const h3PAr = shrinkRate(get(hStats, 'threePAr', c.leagueAvg3PAr), c.leagueAvg3PAr, hStats) * 100;
   const a3PAr = shrinkRate(get(aStats, 'threePAr', c.leagueAvg3PAr), c.leagueAvg3PAr, aStats) * 100;
   const game3PArRate = (h3PAr + a3PAr) / 2;
   const leagueAvg3PArPp = c.leagueAvg3PAr * 100;
-
-  const toExcess    = gameToRate    - c.leagueAvgTO;
-  const orbExcess   = gameOrbRate   - c.leagueAvgORB;
   const threePArExcess = game3PArRate - leagueAvg3PArPp;
+  const threePArImpact = threePArImpactPct(threePArExcess);
 
-  const toImpactPct     = -toExcess        * MATCHUP_TO_COEF;    // negative = drops total
-  const orbImpactPct    = +orbExcess       * MATCHUP_ORB_COEF;   // positive = raises total
-  const threePArImpactPct = -threePArExcess * MATCHUP_3PAR_COEF; // more 3s = fewer game pts
-  const multiplier = 1 + (toImpactPct + orbImpactPct + threePArImpactPct) / 100;
+  const multiplier = 1 + (toDiffImpactPct + drbImpactPct + threePArImpact) / 100;
 
   return {
-    gameToRate, leagueAvgTO: c.leagueAvgTO, toExcess, toImpactPct, toCoef: MATCHUP_TO_COEF,
-    gameOrbRate, leagueAvgORB: c.leagueAvgORB, orbExcess, orbImpactPct, orbCoef: MATCHUP_ORB_COEF,
-    game3PArRate, leagueAvg3PAr: leagueAvg3PArPp, threePArExcess, threePArImpactPct, threePArCoef: MATCHUP_3PAR_COEF,
+    // TO differential
+    gameToDiff, toDiffImpactPct, toDiffCoef: MATCHUP_TO_DIFF_COEF,
+    // DRB%
+    gameDrbRate, leagueAvgDRB: c.leagueAvgDRB, drbExcess, drbImpactPct, drbCoef: MATCHUP_DRB_COEF,
+    // 3PAr
+    game3PArRate, leagueAvg3PAr: leagueAvg3PArPp, threePArExcess,
+    threePArImpactPct: threePArImpact,
+    threePArModel: 'asymmetric',
+    // Final
     multiplier,
   };
 }
