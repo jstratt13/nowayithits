@@ -55,7 +55,7 @@ export default function Breakdown({ breakdown }) {
 // matchup adjustment) then the final number. Each sub-row expands to
 // show the inputs it was built from so the arithmetic can be traced.
 function TotalSection({ total }) {
-  const { possessions, ratings, matchup, rest, total: projTotal } = total;
+  const { possessions, ratings, rest, total: projTotal } = total;
   return (
     <Section title="Projected Total">
       <ExpandRow
@@ -100,57 +100,6 @@ function TotalSection({ total }) {
           />
         )}
         <Row label="Base total (poss × combined ÷ 100)" value={ratings.baseTotal} formatter={(v) => v.toFixed(1)} muted />
-      </ExpandRow>
-
-      <ExpandRow
-        label={`Matchup adj (×${matchup.multiplier.toFixed(3)})`}
-        value={(matchup.multiplier - 1) * 100}
-        formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
-      >
-        <Row
-          label={`Game TO diff (${matchup.gameToDiff?.toFixed(2)}) vs league 0`}
-          value={matchup.gameToDiff}
-          signed
-          muted
-        />
-        <Row
-          label={`TO diff impact (× ${matchup.toDiffCoef?.toFixed(1)})`}
-          value={matchup.toDiffImpactPct}
-          formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
-          muted
-        />
-        {matchup.gameDrbRate != null && (
-          <>
-            <Row
-              label={`Game DRB% (${matchup.gameDrbRate.toFixed(1)}) vs league ${matchup.leagueAvgDRB.toFixed(1)}`}
-              value={matchup.drbExcess}
-              signed
-              muted
-            />
-            <Row
-              label={`DRB impact (× ${matchup.drbCoef.toFixed(1)})`}
-              value={matchup.drbImpactPct}
-              formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
-              muted
-            />
-          </>
-        )}
-        {matchup.game3PArRate != null && (
-          <>
-            <Row
-              label={`Game 3PAr (${matchup.game3PArRate.toFixed(1)}) vs league ${matchup.leagueAvg3PAr.toFixed(1)}`}
-              value={matchup.threePArExcess}
-              signed
-              muted
-            />
-            <Row
-              label="3PAr impact (asymmetric non-linear)"
-              value={matchup.threePArImpactPct}
-              formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
-              muted
-            />
-          </>
-        )}
       </ExpandRow>
 
       {rest && (

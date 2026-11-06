@@ -788,127 +788,47 @@ function combinedOffRating(game, ctx) {
   return homeExpected + awayExpected;
 }
 
-// ── Totals matchup adjustment (TO diff + DRB% + 3PAr) ───────────────────
+// ── Totals matchup adjustment — REMOVED (11/6/26) ──────────────────────
 //
-// Each component below was fit against ~2,600 games across two full NBA
-// seasons (2024-25 + 2025-26) by bucketing games by the game-average of
-// each variable and measuring the actual deviation in final total. All
-// three components use the same (gp/15)² shrinkage as SRS / ratings —
-// raw rates are volatile early in a season.
+// We successively tried TO% + ORB% matchup math, then swapped to
+// TO differential + DRB% + non-linear 3PAr based on raw bucket analysis
+// against 2 full seasons. All of those approaches produced clean-looking
+// slopes in RAW correlations — BUT incremental correlations (residualizing
+// each variable against ORtg + DRtg + pace) showed |r| < 0.03 for every
+// variable across both seasons. Stratified fringe analysis of pooled
+// 2,643 games showed max residual effect of 1.4 pts at the extreme deciles
+// — within 95% CI noise bands, never approaching the 1% / ~2.3 pt
+// threshold Jordan set as his significance bar.
 //
-// TO DIFFERENTIAL (replaces the old game TO rate):
-//   per-team differential = opp_TOV% − own_TOV%   (positive = good at
-//     forcing TOs net of committing)
-//   game diff = average of both teams' differential
-//   impact% = −diff × 1.0        (each unit of game diff → 1% drop, i.e. ~2.3 pts)
+// The raw signal was entirely subsumed by the fact that teams with these
+// "good" stats are already good offensive/defensive teams, and that
+// shows up in ORtg/DRtg. We were double-counting.
 //
-//   Why differential, not rate: rate (how many TOs happen in a game) had
-//   inconsistent sign across seasons in the bucket analysis. Differential
-//   (strength of defenses at forcing TOs, net of offensive mistakes) was
-//   monotonic in both seasons at ~−2.3 pts per unit.
+// Totals projection now pure: possessions × combined effective rating / 100,
+// with the injury-adjusted effOff / effDef already handling the per-team
+// quality signal. Rest/B2B multiplier stays (that's NOT in ORtg/DRtg).
 //
-// DRB% (new):
-//   game DRB = avg of both teams' DRB%
-//   excess = game DRB − leagueAvgDRB
-//   impact% = −excess × 0.8      (each pp of game DRB% above avg → 0.8% drop)
-//
-//   Better defensive rebounders end possessions faster → fewer second-
-//   chance pts → lower total. Clean monotonic signal in both seasons at
-//   ~−1.9 pts per pp.
-//
-// 3PAr (asymmetric non-linear):
-//   middle bonus at league-average 3PAr, quadratic penalty on the
-//   high-3PAr side, gentle linear fade on the low side. Captures the
-//   measured pattern: high-3PAr games under-produce vs their ORtg (lose
-//   FT opportunities), middle games slightly OVER-produce, low-3PAr
-//   games are roughly neutral.
-//
-// ORB% was dropped — bucket shapes flipped between seasons (U-shape in
-// 2024-25, inverted-U in 2025-26), r ≈ −0.02 to −0.15. Not a reliable
-// signal at the game total level.
-const MATCHUP_TO_DIFF_COEF = 1.0;
-const MATCHUP_DRB_COEF     = 0.8;
-
-// 3PAr asymmetric non-linear impact. Returns % change to total.
-//   excess >= 0 : MIDDLE_BONUS − 0.05 × excess²  (quadratic penalty)
-//   excess <  0 : MIDDLE_BONUS × (1 − 0.03 × |excess|)  (gentle fade)
-const MATCHUP_3PAR_MIDDLE_BONUS = 0.30;
-const MATCHUP_3PAR_HIGH_COEF    = 0.05;
-const MATCHUP_3PAR_LOW_FADE     = 0.03;
-function threePArImpactPct(excessPp) {
-  if (excessPp >= 0) {
-    return MATCHUP_3PAR_MIDDLE_BONUS - MATCHUP_3PAR_HIGH_COEF * excessPp * excessPp;
-  }
-  return MATCHUP_3PAR_MIDDLE_BONUS * (1 - MATCHUP_3PAR_LOW_FADE * Math.abs(excessPp));
-}
+// If future per-game-level data (shot-by-shot, lineup-adjusted) surfaces
+// a real interaction effect we were missing, that'd be the place to
+// re-introduce a matchup term. Team-season averages won't get us there.
 
 function shrinkRate(raw, leagueAvg, teamStats) {
   const w = srsShrinkWeight(teamStats);
   return leagueAvg + (raw - leagueAvg) * w;
 }
 
-function totalMatchupDetail(game, ctx) {
-  const c = cfg(game.league);
-  const hStats = stats(ctx, game.league, game.home.abbr);
-  const aStats = stats(ctx, game.league, game.away.abbr);
-
-  // ── TO differential ────────────────────────────────────────────────
-  // Each team's differential = opp_TOV% − own_TOV%. Shrinkage is applied
-  // to each side independently (toward league avg) before differencing.
-  // Default when BBR missed the field: league-average TOV% (12.5 is
-  // reasonable, matches the NBA average that leagueAvgDRB implies via
-  // the four-factors relationship; exact value doesn't matter much since
-  // both sides shrink toward the same anchor and the diff cancels).
-  const DEFAULT_TOV = 13.5;
-  const hToOff = shrinkRate(get(hStats, 'toOff', DEFAULT_TOV), DEFAULT_TOV, hStats);
-  const aToOff = shrinkRate(get(aStats, 'toOff', DEFAULT_TOV), DEFAULT_TOV, aStats);
-  const hToDef = shrinkRate(get(hStats, 'toDef', DEFAULT_TOV), DEFAULT_TOV, hStats);
-  const aToDef = shrinkRate(get(aStats, 'toDef', DEFAULT_TOV), DEFAULT_TOV, aStats);
-  const hTODiff = hToDef - hToOff;
-  const aTODiff = aToDef - aToOff;
-  const gameToDiff = (hTODiff + aTODiff) / 2;
-  // league average diff = 0 by construction; no subtraction needed
-  const toDiffImpactPct = -gameToDiff * MATCHUP_TO_DIFF_COEF;
-
-  // ── DRB% ───────────────────────────────────────────────────────────
-  const hDrb = shrinkRate(get(hStats, 'drbDef', c.leagueAvgDRB), c.leagueAvgDRB, hStats);
-  const aDrb = shrinkRate(get(aStats, 'drbDef', c.leagueAvgDRB), c.leagueAvgDRB, aStats);
-  const gameDrbRate = (hDrb + aDrb) / 2;
-  const drbExcess = gameDrbRate - c.leagueAvgDRB;
-  const drbImpactPct = -drbExcess * MATCHUP_DRB_COEF;
-
-  // ── 3PAr (asymmetric non-linear) ───────────────────────────────────
-  // Convert decimal → percentage points so shrinkage anchor and coefficients
-  // read naturally (leagueAvg 42 vs raw 0.42).
-  const h3PAr = shrinkRate(get(hStats, 'threePAr', c.leagueAvg3PAr), c.leagueAvg3PAr, hStats) * 100;
-  const a3PAr = shrinkRate(get(aStats, 'threePAr', c.leagueAvg3PAr), c.leagueAvg3PAr, aStats) * 100;
-  const game3PArRate = (h3PAr + a3PAr) / 2;
-  const leagueAvg3PArPp = c.leagueAvg3PAr * 100;
-  const threePArExcess = game3PArRate - leagueAvg3PArPp;
-  const threePArImpact = threePArImpactPct(threePArExcess);
-
-  const multiplier = 1 + (toDiffImpactPct + drbImpactPct + threePArImpact) / 100;
-
-  return {
-    // TO differential
-    gameToDiff, toDiffImpactPct, toDiffCoef: MATCHUP_TO_DIFF_COEF,
-    // DRB%
-    gameDrbRate, leagueAvgDRB: c.leagueAvgDRB, drbExcess, drbImpactPct, drbCoef: MATCHUP_DRB_COEF,
-    // 3PAr
-    game3PArRate, leagueAvg3PAr: leagueAvg3PArPp, threePArExcess,
-    threePArImpactPct: threePArImpact,
-    threePArModel: 'asymmetric',
-    // Final
-    multiplier,
-  };
+// Legacy matchup detail — kept as a stub returning multiplier 1.0 so
+// older snapshots in KV that expect the field don't break.
+// See the comment block above for why the actual math was removed.
+function totalMatchupDetail(_game, _ctx) {
+  return { multiplier: 1.0, removed: true };
 }
 
 export function projectedTotal(game, ctx) {
   const poss = projectedPossessions(game, ctx);
   const combined = combinedOffRating(game, ctx);
-  const matchup = totalMatchupDetail(game, ctx);
   const restMult = restTotalMultiplier(game);
-  return (poss * combined / 100) * matchup.multiplier * restMult;
+  return (poss * combined / 100) * restMult;
 }
 
 // Structured breakdown of the totals projection — mirrors predictionBreakdown
@@ -935,13 +855,11 @@ export function totalBreakdown(game, ctx) {
   const paceDeflate = isNbaPlayoffs(game.league) ? c.paceDeflate : 0;
   const possessions = (hPace + aPace) / 2 - paceDeflate;
 
-  const matchup = totalMatchupDetail(game, ctx);
   const baseTotal = (possessions * combined) / 100;
-  const matchupAdjustedTotal = baseTotal * matchup.multiplier;
 
   const rest = restState(game);
   const restMultiplier = restTotalMultiplier(game);
-  const total = matchupAdjustedTotal * restMultiplier;
+  const total = baseTotal * restMultiplier;
 
   return {
     possessions: {
@@ -968,7 +886,6 @@ export function totalBreakdown(game, ctx) {
       combined,
       baseTotal,
     },
-    matchup,
     rest: {
       homeDaysRest: rest.hDaysRest,
       awayDaysRest: rest.aDaysRest,
