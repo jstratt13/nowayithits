@@ -113,54 +113,24 @@ export async function scrapeTeamStats(league, env) {
     teams[abbr].losses = num(row.losses);
   }
 
-  // Fetch recent-form ORtg inline — using playoff page for NBA Apr–Jun.
+  // L10 recent-form: three distinct paths based on league/month.
+  //   NBA Apr–Jun  → scrape BBR's playoff page advanced-team table (same
+  //                  layout as season page, L10 ratings ARE the playoff
+  //                  ratings since playoffs = small sample).
+  //   NBA Oct–Mar  → compute L10 Off/Def Rtg from BBR's monthly game log
+  //                  pages (approximate, see fetchL10FromGameLog below).
+  //   WNBA         → not implemented yet (offseason anyway).
   {
     const m = new Date().getUTCMonth() + 1;
     const isPlayoffs = league === 'nba' && m >= 4 && m <= 6;
-    const recentUrl = isPlayoffs
-      ? `https://www.basketball-reference.com/playoffs/NBA_${year}.html`
-      : league === 'nba'
-        ? `https://www.basketball-reference.com/leagues/NBA_${year}.html`
-        : `https://www.basketball-reference.com/wnba/years/${year}.html`;
 
-    const rRes = await fetch(recentUrl, {
-      headers: { 'user-agent': env.USER_AGENT, 'accept': 'text/html', 'cache-control': 'no-cache' },
-    });
-    if (rRes.ok) {
-      let rHtml = await rRes.text();
-      rHtml = rHtml.replace(/<!--/g, '').replace(/-->/g, '');
-      const rTableM = rHtml.match(/<table[^>]*id="advanced-team"[\s\S]*?<\/table>/);
-      if (rTableM) {
-        const rTbody = rTableM[0].match(/<tbody[\s\S]*?<\/tbody>/);
-        if (rTbody) {
-          const rRows = rTbody[0].match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
-          // Helper: pull a numeric value for a given data-stat name out of
-          // the row, returning null if missing or non-numeric. BBR's
-          // cells embed `data-stat="X"` then the rendered value as text.
-          const cell = (row, statName) => {
-            const m = row.match(new RegExp(`data-stat="${statName}"[^>]*>([0-9.]+)`));
-            return m ? parseFloat(m[1]) : null;
-          };
-
-          for (const rRow of rRows) {
-            const hM = rRow.match(/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
-            if (!hM) continue;
-            const abbr = hM[1];
-            if (!teams[abbr]) teams[abbr] = {};
-            // L10 versions of the four matchup-volume inputs follow the
-            // same data-stat names as the season-page advanced-team
-            // table: tov_pct, opp_tov_pct, orb_pct, drb_pct. Mirrors the
-            // off/def L10 already extracted above.
-            teams[abbr].offLast10    = cell(rRow, 'off_rtg');
-            teams[abbr].defLast10    = cell(rRow, 'def_rtg');
-            teams[abbr].toOffLast10  = cell(rRow, 'tov_pct');
-            teams[abbr].toDefLast10  = cell(rRow, 'opp_tov_pct');
-            teams[abbr].orbOffLast10 = cell(rRow, 'orb_pct');
-            teams[abbr].drbDefLast10 = cell(rRow, 'drb_pct');
-          }
-        }
-      }
+    if (isPlayoffs) {
+      await fillL10FromPlayoffPage(league, year, teams, env);
+    } else if (league === 'nba') {
+      await fetchL10FromGameLog(league, year, teams, env);
     }
+    // WNBA regular season: offLast10/defLast10 stay null, blendedOff/Def
+    // falls back to full-season only. Separate TODO (see WNBA notes above).
   }
 
   return {
@@ -169,6 +139,143 @@ export async function scrapeTeamStats(league, env) {
     fetchedAt: new Date().toISOString(),
     teams,
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  L10 fetchers
+// ─────────────────────────────────────────────────────────────────────────
+
+// Playoff-path L10 (NBA Apr–Jun only). Scrapes BBR's playoff advanced-team
+// table — in playoffs, each team only has ~4-15 games, so this table IS
+// the L10. Volume stats (TO%, ORB%, DRB%) are available too.
+async function fillL10FromPlayoffPage(league, year, teams, env) {
+  const url = `https://www.basketball-reference.com/playoffs/NBA_${year}.html`;
+  const res = await fetch(url, {
+    headers: { 'user-agent': env.USER_AGENT, 'accept': 'text/html', 'cache-control': 'no-cache' },
+  });
+  if (!res.ok) return;
+  let html = await res.text();
+  html = html.replace(/<!--/g, '').replace(/-->/g, '');
+  const tblM = html.match(/<table[^>]*id="advanced-team"[\s\S]*?<\/table>/);
+  if (!tblM) return;
+  const body = tblM[0].replace(/<thead[\s\S]*?<\/thead>/g, '');
+  const rows = body.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  const cell = (row, name) => {
+    const m = row.match(new RegExp(`data-stat="${name}"[^>]*>([0-9.]+)`));
+    return m ? parseFloat(m[1]) : null;
+  };
+  for (const row of rows) {
+    const h = row.match(/href=['"]\/(?:wnba\/)?teams\/([A-Z]{2,5})\//);
+    if (!h) continue;
+    const abbr = h[1];
+    if (!teams[abbr]) teams[abbr] = {};
+    teams[abbr].offLast10    = cell(row, 'off_rtg');
+    teams[abbr].defLast10    = cell(row, 'def_rtg');
+    teams[abbr].toOffLast10  = cell(row, 'tov_pct');
+    teams[abbr].toDefLast10  = cell(row, 'opp_tov_pct');
+    teams[abbr].orbOffLast10 = cell(row, 'orb_pct');
+    teams[abbr].drbDefLast10 = cell(row, 'drb_pct');
+  }
+}
+
+// Regular-season L10: approximate ORtg/DRtg from BBR monthly game-log pages.
+//
+// BBR's season-page advanced-team table ONLY has season-long ratings — it
+// doesn't publish a "last 10" view. Per-team gamelog pages have exact
+// per-game ORtg/DRtg but 30 fetches per scrape is too much. Compromise:
+// fetch 1-2 monthly games pages (cheap), compute each team's pts scored
+// and pts allowed over their last 10 games, approximate ORtg/DRtg by
+// dividing by the team's season pace. Loses a few percent of precision
+// vs real per-game ratings, but the 50/50 blend in blendedOff/Def doesn't
+// need pinpoint accuracy — it needs recent-form directional signal.
+//
+// Only Off/Def ratings are populated by this path; TO%/ORB%/DRB% L10
+// fields stay null (monthly game log doesn't expose box-score detail).
+// blendVal in formulaCore.js correctly falls back to full-season when
+// an L10 field is missing.
+async function fetchL10FromGameLog(league, year, teams, env) {
+  // NBA regular-season months: Oct, Nov, Dec of (year-1), Jan, Feb, Mar
+  // of (year). We fetch the current month + previous month (enough for
+  // L10 after ~late October when teams have played 10+ games). On Oct
+  // where the previous month is September, the fetch 404s and is skipped.
+  const now = new Date();
+  const currentMonth = now.getUTCMonth(); // 0-11
+  const monthNames = ['january','february','march','april','may','june',
+                      'july','august','september','october','november','december'];
+  const curName = monthNames[currentMonth];
+  const prevName = monthNames[(currentMonth + 11) % 12];
+
+  const urls = [
+    `https://www.basketball-reference.com/leagues/NBA_${year}_games-${curName}.html`,
+    `https://www.basketball-reference.com/leagues/NBA_${year}_games-${prevName}.html`,
+  ];
+
+  // Collect all games we can parse. Each row: date, home abbr, away abbr,
+  // home pts, away pts. date gets used to order chronologically within
+  // each team's list.
+  const games = [];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'user-agent': env.USER_AGENT, 'accept': 'text/html', 'cache-control': 'no-cache' },
+      });
+      if (!res.ok) continue;
+      let html = await res.text();
+      html = html.replace(/<!--/g, '').replace(/-->/g, '');
+      const tblM = html.match(/<table[^>]*id="schedule"[\s\S]*?<\/table>/);
+      if (!tblM) continue;
+      const body = tblM[0].replace(/<thead[\s\S]*?<\/thead>/g, '');
+      const rows = body.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+      for (const row of rows) {
+        if (/class="[^"]*thead/.test(row)) continue;
+        // csk looks like "202511050BOS" — first 8 chars are YYYYMMDD
+        const csk = (row.match(/csk="([^"]+)"/) || [])[1];
+        if (!csk) continue;
+        const date = csk.slice(0, 8);
+        // Visitor and home team hrefs
+        const vHref = row.match(/data-stat="visitor_team_name"[^>]*>[\s\S]*?href=['"]\/teams\/([A-Z]{2,5})\//);
+        const hHref = row.match(/data-stat="home_team_name"[^>]*>[\s\S]*?href=['"]\/teams\/([A-Z]{2,5})\//);
+        const vPts = row.match(/data-stat="visitor_pts"[^>]*>([0-9]+)/);
+        const hPts = row.match(/data-stat="home_pts"[^>]*>([0-9]+)/);
+        if (!vHref || !hHref || !vPts || !hPts) continue;
+        games.push({
+          date,
+          visitor: vHref[1],
+          home: hHref[1],
+          vPts: +vPts[1],
+          hPts: +hPts[1],
+        });
+      }
+    } catch { /* skip month on fetch error */ }
+  }
+
+  // Bucket games per team with pts-for / pts-against
+  const perTeam = {};  // abbr -> [{date, scored, allowed}]
+  for (const g of games) {
+    (perTeam[g.home] = perTeam[g.home] || []).push({ date: g.date, scored: g.hPts, allowed: g.vPts });
+    (perTeam[g.visitor] = perTeam[g.visitor] || []).push({ date: g.date, scored: g.vPts, allowed: g.hPts });
+  }
+
+  // For each team, sort by date asc, take last 10, approximate ratings
+  for (const [abbr, list] of Object.entries(perTeam)) {
+    list.sort((a, b) => a.date.localeCompare(b.date));
+    const last10 = list.slice(-10);
+    if (last10.length === 0) continue;
+    const avgScored = last10.reduce((s, g) => s + g.scored, 0) / last10.length;
+    const avgAllowed = last10.reduce((s, g) => s + g.allowed, 0) / last10.length;
+
+    // Pace for per-100-poss scaling. Fall back to league-average pace
+    // if we somehow don't have it (rare: team wasn't in advanced-team).
+    const pace = teams[abbr]?.pace || 100;
+
+    const target = teams[abbr] = teams[abbr] || {};
+    target.offLast10 = (avgScored * 100) / pace;
+    target.defLast10 = (avgAllowed * 100) / pace;
+    target.l10GameCount = last10.length;
+    // TO%/ORB%/DRB% L10 fields deliberately NOT set — the monthly games
+    // page doesn't carry that detail. blendVal falls back to full-season
+    // when an L10 field is null.
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
