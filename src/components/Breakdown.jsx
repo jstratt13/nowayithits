@@ -55,7 +55,7 @@ export default function Breakdown({ breakdown }) {
 // matchup adjustment) then the final number. Each sub-row expands to
 // show the inputs it was built from so the arithmetic can be traced.
 function TotalSection({ total }) {
-  const { possessions, ratings, rest, total: projTotal } = total;
+  const { possessions, ratings, matchup, rest, total: projTotal } = total;
   return (
     <Section title="Projected Total">
       <ExpandRow
@@ -101,6 +101,47 @@ function TotalSection({ total }) {
         )}
         <Row label="Base total (poss × combined ÷ 100)" value={ratings.baseTotal} formatter={(v) => v.toFixed(1)} muted />
       </ExpandRow>
+
+      {matchup && (
+        <ExpandRow
+          label={`Matchup adj (×${matchup.multiplier.toFixed(3)})`}
+          value={(matchup.multiplier - 1) * 100}
+          formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+        >
+          <Row
+            label={`Game TO diff (${matchup.gameToDiff?.toFixed(2)}) — symmetric quadratic`}
+            value={matchup.gameToDiff}
+            signed
+            muted
+          />
+          <Row
+            label="TO diff impact"
+            value={matchup.toDiffImpactPct}
+            formatter={(v) => (v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+            muted
+          />
+          {matchup.game3PAr != null && (
+            <>
+              <Row
+                label={`Game 3PAr (${matchup.game3PAr.toFixed(1)}) — bottom-decile threshold`}
+                value={matchup.game3PAr}
+                formatter={(v) => v.toFixed(1)}
+                muted
+              />
+              <Row
+                label={
+                  matchup.threePArImpactPct < 0
+                    ? `3PAr low penalty (below ${matchup.threePArLowThreshold})`
+                    : '3PAr (no penalty — above threshold)'
+                }
+                value={matchup.threePArImpactPct}
+                formatter={(v) => (v === 0 ? '0.00%' : v >= 0 ? `+${v.toFixed(2)}%` : `${v.toFixed(2)}%`)}
+                muted
+              />
+            </>
+          )}
+        </ExpandRow>
+      )}
 
       {rest && (
         <ExpandRow

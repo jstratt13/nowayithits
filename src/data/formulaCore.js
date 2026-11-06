@@ -788,47 +788,102 @@ function combinedOffRating(game, ctx) {
   return homeExpected + awayExpected;
 }
 
-// ── Totals matchup adjustment — REMOVED (11/6/26) ──────────────────────
+// ── Totals matchup adjustment (11/6/26 trimmed to only the signals that
+//    survived Jordan's precision bar) ────────────────────────────────────
 //
-// We successively tried TO% + ORB% matchup math, then swapped to
-// TO differential + DRB% + non-linear 3PAr based on raw bucket analysis
-// against 2 full seasons. All of those approaches produced clean-looking
-// slopes in RAW correlations — BUT incremental correlations (residualizing
-// each variable against ORtg + DRtg + pace) showed |r| < 0.03 for every
-// variable across both seasons. Stratified fringe analysis of pooled
-// 2,643 games showed max residual effect of 1.4 pts at the extreme deciles
-// — within 95% CI noise bands, never approaching the 1% / ~2.3 pt
-// threshold Jordan set as his significance bar.
+// History: we tried TO% + ORB% matchup, then TO diff + DRB% + linear 3PAr,
+// then TO diff + DRB% + asymmetric 3PAr. All removed when the incremental
+// analysis (residualize against ORtg+DRtg+pace) showed |r|<0.03 — the raw
+// slopes were entirely captured by ORtg/DRtg already.
 //
-// The raw signal was entirely subsumed by the fact that teams with these
-// "good" stats are already good offensive/defensive teams, and that
-// shows up in ORtg/DRtg. We were double-counting.
+// What's kept now, per Jordan's call after reviewing the stratified fringe
+// analysis (pooled 2,643 games, residualized on ORtg+DRtg+pace):
 //
-// Totals projection now pure: possessions × combined effective rating / 100,
-// with the injury-adjusted effOff / effDef already handling the per-team
-// quality signal. Rest/B2B multiplier stays (that's NOT in ORtg/DRtg).
+// 1) TO DIFFERENTIAL — symmetric quadratic
+//    Fringe residuals showed both extreme deciles at ~−1.2 pts (an
+//    inverted-U around the middle). Model: small middle bonus at
+//    TO diff = 0, quadratic penalty as |TO diff| grows.
+//      TO_DIFF_MIDDLE_BONUS = 0.3%       (at middle)
+//      TO_DIFF_PENALTY_COEF = 0.15       (per TO diff² pp)
+//    Values: TO diff = 0 → +0.3%, |TO diff| = 2 → −0.3%, |TO diff| = 2.5
+//    (fringe) → −0.64%. Roughly matches the ~−1.2 pt extreme residuals.
 //
-// If future per-game-level data (shot-by-shot, lineup-adjusted) surfaces
-// a real interaction effect we were missing, that'd be the place to
-// re-introduce a matchup term. Team-season averages won't get us there.
+// 2) 3PAr BOTTOM-DECILE ONLY — one-sided threshold penalty
+//    Bottom 10% games (avg 3PAr ~37pp) showed residual −1.40 pts (0.6%)
+//    — a real signal Jordan wanted captured. Top-side effects were noise
+//    (±0.2 to -0.86 pts, no clear direction). Model: linear penalty
+//    ramping between a threshold and a floor, no top-side term.
+//      THREE_PAR_LOW_THRESHOLD = 40pp    (penalty starts here)
+//      THREE_PAR_LOW_FLOOR     = 37pp    (full −0.6% penalty)
+//
+// Everything else (DRB%, previous asymmetric 3PAr top-side penalty,
+// ORB%) stays dropped — stratified fringes didn't support them.
+const TO_DIFF_MIDDLE_BONUS = 0.30;
+const TO_DIFF_PENALTY_COEF = 0.15;
+
+const THREE_PAR_LOW_THRESHOLD = 40;
+const THREE_PAR_LOW_FLOOR     = 37;
+const THREE_PAR_LOW_MAX_PENALTY = 0.6;
+
+function toDiffImpactPct(gameToDiff) {
+  return TO_DIFF_MIDDLE_BONUS - TO_DIFF_PENALTY_COEF * gameToDiff * gameToDiff;
+}
+
+function threePArLowImpactPct(game3PArPp) {
+  if (game3PArPp >= THREE_PAR_LOW_THRESHOLD) return 0;
+  if (game3PArPp <= THREE_PAR_LOW_FLOOR)     return -THREE_PAR_LOW_MAX_PENALTY;
+  // Linear interpolation between threshold (0%) and floor (-max%)
+  const t = (THREE_PAR_LOW_THRESHOLD - game3PArPp) / (THREE_PAR_LOW_THRESHOLD - THREE_PAR_LOW_FLOOR);
+  return -THREE_PAR_LOW_MAX_PENALTY * t;
+}
 
 function shrinkRate(raw, leagueAvg, teamStats) {
   const w = srsShrinkWeight(teamStats);
   return leagueAvg + (raw - leagueAvg) * w;
 }
 
-// Legacy matchup detail — kept as a stub returning multiplier 1.0 so
-// older snapshots in KV that expect the field don't break.
-// See the comment block above for why the actual math was removed.
-function totalMatchupDetail(_game, _ctx) {
-  return { multiplier: 1.0, removed: true };
+function totalMatchupDetail(game, ctx) {
+  const c = cfg(game.league);
+  const hStats = stats(ctx, game.league, game.home.abbr);
+  const aStats = stats(ctx, game.league, game.away.abbr);
+
+  // ── TO differential (symmetric quadratic) ──────────────────────────
+  // Per-team diff = opp_TOV% − own_TOV%. Both sides shrunk toward league
+  // avg TOV (13.5 placeholder — exact value doesn't matter, both sides
+  // shrink toward the same anchor and the diff cancels).
+  const DEFAULT_TOV = 13.5;
+  const hToOff = shrinkRate(get(hStats, 'toOff', DEFAULT_TOV), DEFAULT_TOV, hStats);
+  const aToOff = shrinkRate(get(aStats, 'toOff', DEFAULT_TOV), DEFAULT_TOV, aStats);
+  const hToDef = shrinkRate(get(hStats, 'toDef', DEFAULT_TOV), DEFAULT_TOV, hStats);
+  const aToDef = shrinkRate(get(aStats, 'toDef', DEFAULT_TOV), DEFAULT_TOV, aStats);
+  const hDiff = hToDef - hToOff;
+  const aDiff = aToDef - aToOff;
+  const gameToDiff = (hDiff + aDiff) / 2;
+  const toDiffImpact = toDiffImpactPct(gameToDiff);
+
+  // ── 3PAr bottom-decile threshold penalty ──────────────────────────
+  const h3PAr = shrinkRate(get(hStats, 'threePAr', c.leagueAvg3PAr), c.leagueAvg3PAr, hStats) * 100;
+  const a3PAr = shrinkRate(get(aStats, 'threePAr', c.leagueAvg3PAr), c.leagueAvg3PAr, aStats) * 100;
+  const game3PAr = (h3PAr + a3PAr) / 2;
+  const threePArImpact = threePArLowImpactPct(game3PAr);
+
+  const multiplier = 1 + (toDiffImpact + threePArImpact) / 100;
+
+  return {
+    gameToDiff, toDiffImpactPct: toDiffImpact,
+    toDiffMiddleBonus: TO_DIFF_MIDDLE_BONUS, toDiffPenaltyCoef: TO_DIFF_PENALTY_COEF,
+    game3PAr, threePArImpactPct: threePArImpact,
+    threePArLowThreshold: THREE_PAR_LOW_THRESHOLD, threePArLowFloor: THREE_PAR_LOW_FLOOR,
+    multiplier,
+  };
 }
 
 export function projectedTotal(game, ctx) {
   const poss = projectedPossessions(game, ctx);
   const combined = combinedOffRating(game, ctx);
+  const matchup = totalMatchupDetail(game, ctx);
   const restMult = restTotalMultiplier(game);
-  return (poss * combined / 100) * restMult;
+  return (poss * combined / 100) * matchup.multiplier * restMult;
 }
 
 // Structured breakdown of the totals projection — mirrors predictionBreakdown
@@ -856,10 +911,11 @@ export function totalBreakdown(game, ctx) {
   const possessions = (hPace + aPace) / 2 - paceDeflate;
 
   const baseTotal = (possessions * combined) / 100;
+  const matchup = totalMatchupDetail(game, ctx);
 
   const rest = restState(game);
   const restMultiplier = restTotalMultiplier(game);
-  const total = baseTotal * restMultiplier;
+  const total = baseTotal * matchup.multiplier * restMultiplier;
 
   return {
     possessions: {
@@ -886,6 +942,7 @@ export function totalBreakdown(game, ctx) {
       combined,
       baseTotal,
     },
+    matchup,
     rest: {
       homeDaysRest: rest.hDaysRest,
       awayDaysRest: rest.aDaysRest,
