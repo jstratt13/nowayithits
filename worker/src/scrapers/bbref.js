@@ -249,28 +249,43 @@ async function fetchL10FromGameLog(league, year, teams, env) {
     } catch { /* skip month on fetch error */ }
   }
 
-  // Bucket games per team with pts-for / pts-against
-  const perTeam = {};  // abbr -> [{date, scored, allowed}]
+  // Bucket games per team, tracking the opponent so we can approximate
+  // each game's pace as avg of both teams' season pace.
+  const perTeam = {};  // abbr -> [{date, scored, allowed, opp}]
   for (const g of games) {
-    (perTeam[g.home] = perTeam[g.home] || []).push({ date: g.date, scored: g.hPts, allowed: g.vPts });
-    (perTeam[g.visitor] = perTeam[g.visitor] || []).push({ date: g.date, scored: g.vPts, allowed: g.hPts });
+    (perTeam[g.home] = perTeam[g.home] || []).push({ date: g.date, scored: g.hPts, allowed: g.vPts, opp: g.visitor });
+    (perTeam[g.visitor] = perTeam[g.visitor] || []).push({ date: g.date, scored: g.vPts, allowed: g.hPts, opp: g.home });
   }
 
-  // For each team, sort by date asc, take last 10, approximate ratings
+  // For each team, sort by date asc, take last 10, approximate ratings.
+  //
+  // Per Jordan: use L10 PACE (not season pace) as the divisor so we get
+  // the team's actual per-100-possessions efficiency over the last 10
+  // games, not a value distorted by season-long pace. Per-game pace is
+  // approximated as the average of the two teams' season paces (we don't
+  // have true per-game possession counts without scraping each team's
+  // gamelog page). Then L10 pace = avg of those per-game estimates.
   for (const [abbr, list] of Object.entries(perTeam)) {
     list.sort((a, b) => a.date.localeCompare(b.date));
     const last10 = list.slice(-10);
     if (last10.length === 0) continue;
-    const avgScored = last10.reduce((s, g) => s + g.scored, 0) / last10.length;
+
+    const teamSeasonPace = teams[abbr]?.pace || 100;
+
+    // L10 pace = avg of per-game pace estimates
+    const gamePaces = last10.map((g) => {
+      const oppPace = teams[g.opp]?.pace || 100;
+      return (teamSeasonPace + oppPace) / 2;
+    });
+    const l10Pace = gamePaces.reduce((s, p) => s + p, 0) / gamePaces.length;
+
+    const avgScored  = last10.reduce((s, g) => s + g.scored,  0) / last10.length;
     const avgAllowed = last10.reduce((s, g) => s + g.allowed, 0) / last10.length;
 
-    // Pace for per-100-poss scaling. Fall back to league-average pace
-    // if we somehow don't have it (rare: team wasn't in advanced-team).
-    const pace = teams[abbr]?.pace || 100;
-
     const target = teams[abbr] = teams[abbr] || {};
-    target.offLast10 = (avgScored * 100) / pace;
-    target.defLast10 = (avgAllowed * 100) / pace;
+    target.offLast10   = (avgScored  * 100) / l10Pace;
+    target.defLast10   = (avgAllowed * 100) / l10Pace;
+    target.paceLast10  = l10Pace;
     target.l10GameCount = last10.length;
     // TO%/ORB%/DRB% L10 fields deliberately NOT set — the monthly games
     // page doesn't carry that detail. blendVal falls back to full-season
