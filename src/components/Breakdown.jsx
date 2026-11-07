@@ -8,7 +8,7 @@ import { fmtLine } from '../data/formulaCore.js';
 // are bit-identical to what was frozen at tipoff.
 export default function Breakdown({ breakdown }) {
   if (!breakdown) return null;
-  const { baseANG, deltaVol, deltaStar, dbp, total, favAbbr, undAbbr } = breakdown;
+  const { baseANG, deltaStar, dbp, total, favAbbr, undAbbr } = breakdown;
 
   return (
     <div className="breakdown">
@@ -18,24 +18,6 @@ export default function Breakdown({ breakdown }) {
         <DeltaStarRow deltaStar={deltaStar} />
         {baseANG.rest && <RestRow rest={baseANG.rest} />}
         <Row label="Base ANG" value={baseANG.total} signed bold />
-      </Section>
-
-      <Section title="Δ Vol">
-        <Row
-          label={`Matchup TOG (${fmtLine(deltaVol.matchupTOG.value)}) × 1.4`}
-          value={deltaVol.togWeighted}
-          signed
-        />
-        <Row
-          label={`Matchup ORG (${fmtLine(deltaVol.matchupORG.value)}) × 0.5`}
-          value={deltaVol.orgWeighted}
-          signed
-        />
-        <Row label="Σ pre-MPF" value={deltaVol.sum} signed />
-        {deltaVol.mpf !== 1 && (
-          <Row label={`MPF (×${deltaVol.mpf.toFixed(2)})`} value={deltaVol.total} signed />
-        )}
-        <Row label="Δ Vol" value={deltaVol.total} signed bold />
       </Section>
 
       <Section title="DBP%">

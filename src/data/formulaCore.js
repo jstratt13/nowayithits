@@ -568,79 +568,27 @@ function blendVal(teamStats, fullKey, l10Key) {
   return full * 0.5 + l10 * 0.5;
 }
 
-// Returns a detail object — `.value` is what existing scalar callers
-// consume; the per-team blended inputs power the breakdown surface.
-function matchupTOG(favStats, undStats) {
-  // From the favorite's perspective, positive should mean
-  // "TO matchup helps the favorite." Higher TO% is BAD for the team
-  // turning it over (unlike ORB%/DRB% which are control stats). So:
-  //   ((undOff_TO + favDef_TO) / 2)   = und's expected TO% (high = good for fav)
-  // − ((favOff_TO + undDef_TO) / 2)   = fav's expected TO% (high = bad for fav)
-  //
-  // Previously the two halves were swapped, which inverted the sign:
-  // a favorite with the better TO matchup ended up REDUCING their
-  // projected margin via Δ_Vol. Fixed 5/26/26 after a sign-trace on
-  // tomorrow's OKC @ SAS — OKC forces TOs at 14.6%/15.7% (high) and
-  // SAS at 11.5%/11.8% (low), so the TO matchup clearly favors OKC,
-  // and matchupTOG should reflect that with a POSITIVE value.
-  //
-  // Each input is the 50/50 blend of full-season + L10. If the data
-  // pipeline doesn't provide L10 for this league/season, blendVal
-  // returns the plain full-season value.
-  const favOff = blendVal(favStats, 'toOff', 'toOffLast10');
-  const undDef = blendVal(undStats, 'toDef', 'toDefLast10');
-  const undOff = blendVal(undStats, 'toOff', 'toOffLast10');
-  const favDef = blendVal(favStats, 'toDef', 'toDefLast10');
-  if ([favOff, undDef, undOff, favDef].some((v) => v == null)) {
-    return { value: 0, favOff_TO: null, undDef_TO: null, undOff_TO: null, favDef_TO: null };
-  }
-  const value = ((undOff + favDef) / 2) - ((favOff + undDef) / 2);
-  return { value, favOff_TO: favOff, undDef_TO: undDef, undOff_TO: undOff, favDef_TO: favDef };
-}
-
-function matchupORG(favStats, undStats) {
-  // ((ORB%_Fav_Off + DRB%_Und_Def_Allowed) / 2)
-  //  − ((ORB%_Und_Off + DRB%_Fav_Def_Allowed) / 2)
-  // DRB%_X_Def_Allowed = 100 − opponent ORB% — but our team-stats schema
-  // already stores `drbDef` as the team's defensive rebound %, so the
-  // "allowed" portion is implicit. We approximate the blueprint as:
-  //   favBoardEdge = (favOrbOff + undDrbDef) / 2
-  //                  − (undOrbOff + favDrbDef) / 2
-  // Each input is the 50/50 full-season + L10 blend.
-  const favOff = blendVal(favStats, 'orbOff', 'orbOffLast10');
-  const undDef = blendVal(undStats, 'drbDef', 'drbDefLast10');
-  const undOff = blendVal(undStats, 'orbOff', 'orbOffLast10');
-  const favDef = blendVal(favStats, 'drbDef', 'drbDefLast10');
-  if ([favOff, undDef, undOff, favDef].some((v) => v == null)) {
-    return { value: 0, favOff_ORB: null, undDef_ORB: null, undOff_ORB: null, favDef_ORB: null };
-  }
-  const value = ((favOff + undDef) / 2) - ((undOff + favDef) / 2);
-  return { value, favOff_ORB: favOff, undDef_ORB: undDef, undOff_ORB: undOff, favDef_ORB: favDef };
-}
-
-function deltaVol(game, view, ctx) {
-  const favAbbr = view.favoredIsHome ? game.home.abbr : game.away.abbr;
-  const undAbbr = view.favoredIsHome ? game.away.abbr : game.home.abbr;
-  const favStats = stats(ctx, game.league, favAbbr);
-  const undStats = stats(ctx, game.league, undAbbr);
-  const tog = matchupTOG(favStats, undStats);
-  const org = matchupORG(favStats, undStats);
-  const value = (tog.value * 1.4) + (org.value * 0.5);
-  return { value, tog, org };
-}
-
-// Matchup Pace Factor. When the league config enables it, scales Volume
-// Delta in True Gap by the game's expected possession count relative to
-// a baseline. Slow-paced games (WNBA at ~80 pace) get a sub-1 multiplier
-// → Δ_Vol contributes less, because fewer possessions mean fewer chances
-// for TOV/ORB advantages to manifest.
+// ── Δ_Vol REMOVED (11/6/26) ─────────────────────────────────────────────
 //
-//   MPF = (home_pace + away_pace) / mpfBaseline
+// matchupTOG + matchupORG + deltaVol were previously summed into a Δ_Vol
+// term added to Base_ANG inside trueGap (DBP% / margin path). Incremental
+// analysis against 2 full seasons (residualize margin on NetRtg diff)
+// showed |r| < 0.03 for TO differential, DRB%, and 3PAr differential —
+// all zero incremental signal after SRS/NetRtg. Same conclusion that
+// stripped the totals matchup math; applied symmetrically to the margin
+// path on 11/6/26. See [[feedback-model-validation]].
 //
-// WNBA: mpfBaseline = 192 (2 × 96 reference pace), so MPF ≈ 0.83 at
-// league-average pace 80 → Δ_Vol contribution dampened ~17%.
-// NBA: mpfBaseline = null → MPF = 1.0 (no scaling, identical behavior
-// to before this change).
+// matchupPaceFactor() is INTENTIONALLY preserved below but now orphaned.
+// Its only call site was scaling deltaVol inside trueGap; with Δ_Vol gone
+// it has nothing to multiply. Kept in code so the MODEL_CONFIG
+// `paceMpfBaseline` entries stay referenced and we don't lose the
+// implementation if we later find a data-validated place to reconnect
+// it (e.g. pace-weighted HCA or Δ_Star). It returns 1.0 when
+// `paceMpfBaseline` is null (NBA default), so even if accidentally
+// called it's a no-op.
+
+// Matchup Pace Factor — orphaned (see note above). Kept as a scaffold
+// for future pace-based adjustments.
 function matchupPaceFactor(game, ctx) {
   const c = cfg(game.league);
   if (!c.paceMpfBaseline) return 1.0;
@@ -656,16 +604,13 @@ function matchupPaceFactor(game, ctx) {
 function computeBreakdown(game, ctx) {
   const c = cfg(game.league);
   const view = favoritedView(game, ctx);
-  const dvolDetail = deltaVol(game, view, ctx);
-  const mpf = matchupPaceFactor(game, ctx);
-  const trueGap = view.baseANG + dvolDetail.value * mpf;
+  // Δ_Vol removed 11/6/26 — trueGap is now just Base_ANG. See comment
+  // block above matchupPaceFactor() for history + rationale.
+  const trueGap = view.baseANG;
   const z = c.intercept + c.multiplier * trueGap;
   const dbp = sigmoid(z) * 100;
   return {
     ...view,
-    deltaVol: dvolDetail.value,
-    deltaVolDetail: dvolDetail,
-    mpf,
     trueGap,
     z,
     dbp,
@@ -1020,8 +965,6 @@ export function predictionBreakdown(game, ctx) {
   const favDetail = getDetail(game.league, favId);
   const undDetail = getDetail(game.league, undId);
 
-  const tog = b.deltaVolDetail.tog;
-  const org = b.deltaVolDetail.org;
   const star = b.deltaStarDetail;
 
   return {
@@ -1044,15 +987,6 @@ export function predictionBreakdown(game, ctx) {
         marginSigned: b.rest.marginSigned,   // signed, favored-perspective
       } : null,
       total: b.baseANG,
-    },
-    deltaVol: {
-      matchupTOG: tog,
-      matchupORG: org,
-      togWeighted: tog.value * 1.4,
-      orgWeighted: org.value * 0.5,
-      sum: b.deltaVolDetail.value,
-      mpf: b.mpf,
-      total: b.deltaVolDetail.value * b.mpf,
     },
     deltaStar: {
       favTeam: {
@@ -1091,8 +1025,6 @@ export function predictionInputs(game, ctx) {
     hca: b.hca,
     deltaStar: b.deltaStar,
     baseANG: +b.baseANG.toFixed(2),
-    deltaVol: +b.deltaVol.toFixed(2),
-    mpf: +b.mpf.toFixed(3),
     trueGap: +b.trueGap.toFixed(2),
     z: +b.z.toFixed(3),
   };
