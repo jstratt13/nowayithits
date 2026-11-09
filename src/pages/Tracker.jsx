@@ -72,6 +72,48 @@ function saveRows(rows) {
   catch { /* ignore */ }
 }
 
+// ── Export helpers ──────────────────────────────────────────────────────
+// The tracker's whole value is the accumulated graded record, but it lives
+// only in localStorage — so give the user (and any downstream analysis) a
+// one-click way to get the FULL dataset out as JSON or CSV, plus copy-to-
+// clipboard. Exports every row, not the filtered view, so it's a true backup.
+function triggerDownload(filename, text, mime) {
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: mime }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch { /* download unsupported — no-op */ }
+}
+
+// Lead columns in a readable order; any extra fields present in the data
+// (newer captures like projMargin / injury scores) are appended so the CSV
+// never silently drops a column we add later.
+const CSV_LEAD = [
+  'id', 'league', 'date', 'matchup', 'posSRS', 'srsGap', 'starDelta',
+  'hca', 'dbp', 'zone', 'spreadPick', 'ouPick', 'spreadResult', 'ouResult',
+  'bookSpread', 'bookTotal', 'projMargin', 'projTotal', 'margin',
+  'actualHomeMargin', 'total', 'awayScore', 'homeScore', 'blowout', 'graded',
+];
+function toCSV(rows) {
+  const seen = new Set(CSV_LEAD);
+  const extra = [];
+  rows.forEach((r) => Object.keys(r).forEach((k) => {
+    if (!seen.has(k)) { seen.add(k); extra.push(k); }
+  }));
+  const cols = [...CSV_LEAD, ...extra];
+  const esc = (v) => {
+    if (v == null) return '';
+    const s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  return [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n');
+}
+
 function dbpColor(v) {
   if (v >= 55) return '#b91c1c';
   if (v >= 45) return '#c2410c';
@@ -200,6 +242,19 @@ export default function Tracker() {
     else { setSortKey(k); setSortDir(-1); }
   };
 
+  // Export the FULL dataset (all rows, every league), not the filtered view.
+  const [copied, setCopied] = useState(false);
+  const exportStamp = () => new Date().toISOString().slice(0, 10);
+  const exportJSON = () => triggerDownload(`nwih-tracker-${exportStamp()}.json`, JSON.stringify(rows, null, 2), 'application/json');
+  const exportCSV = () => triggerDownload(`nwih-tracker-${exportStamp()}.csv`, toCSV(rows), 'text/csv;charset=utf-8');
+  const copyJSON = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(rows));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard blocked — Export buttons still work */ }
+  };
+
   return (
     <div className="page-with-sidebar">
       <div className="page-main">
@@ -211,6 +266,20 @@ export default function Tracker() {
           <SyncBadge sync={sync} />
           <span style={{ marginLeft: '0.85em' }}>
             {filtered.length} of {rows.length} games
+          </span>
+          <span className="tracker-export" style={{ marginLeft: '0.85em', display: 'inline-flex', gap: 6 }}>
+            <button type="button" className="filter-chip" onClick={exportJSON}
+              title={`Download all ${rows.length} tracker rows as JSON`} disabled={!rows.length}>
+              Export JSON
+            </button>
+            <button type="button" className="filter-chip" onClick={exportCSV}
+              title={`Download all ${rows.length} tracker rows as CSV`} disabled={!rows.length}>
+              Export CSV
+            </button>
+            <button type="button" className={'filter-chip' + (copied ? ' active' : '')} onClick={copyJSON}
+              title="Copy all tracker rows (JSON) to the clipboard" disabled={!rows.length}>
+              {copied ? 'Copied ✓' : 'Copy'}
+            </button>
           </span>
         </div>
       </div>
