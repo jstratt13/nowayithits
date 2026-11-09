@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────────────────
+#  Daily graded-tracker export — calls the worker's /tracker/graded endpoint
+#  (which grades the stored pregame snapshots against ESPN final scores) and
+#  commits src/data/trackerGraded.json. This puts the graded Hit/Miss record
+#  in the repo instead of only in one browser's localStorage, so it's durable,
+#  device-independent, and readable programmatically.
+#
+#  Timing: 11:00 UTC = 7 AM ET — after the previous night's games are final
+#  (and after the 10:00 UTC L10 refresh), so grades are complete.
+#
+#  Setup (one-time): the worker must have an EXPORT_TOKEN secret set
+#  (`cd worker && npx wrangler secret put EXPORT_TOKEN`), and this repo must
+#  have a matching Actions secret TRACKER_EXPORT_TOKEN with the SAME value
+#  (Settings → Secrets and variables → Actions). Without them the endpoint
+#  returns 503/401 and this workflow goes red (nothing committed).
+#
+#  Manual trigger: Actions tab → "Refresh graded tracker" → "Run workflow".
+#
+#  Failure mode: endpoint unreachable / unauthorized, or the merge would
+#  shrink the file → script exits non-zero, workflow red, JSON untouched.
+# ─────────────────────────────────────────────────────────────────────────
+
+name: Refresh graded tracker
+
+on:
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-tracker-graded
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Export graded tracker rows
+        env:
+          TRACKER_EXPORT_TOKEN: ${{ secrets.TRACKER_EXPORT_TOKEN }}
+          # Override WORKER_URL here only if the worker moves.
+        run: node scripts/export-tracker-graded.mjs
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet src/data/trackerGraded.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "trackerGraded.json unchanged"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat src/data/trackerGraded.json
+          fi
+
+      - name: Commit + push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data/trackerGraded.json
+          git commit -m "Refresh graded tracker [skip ci]"
+          git push
