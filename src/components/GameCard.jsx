@@ -173,7 +173,6 @@ export default function GameCard({ game, serverPrediction = null }) {
 function InputRow({ inputs, breakdown, open, onToggle }) {
   const content = (
     <>
-      <span className="input-stat"><span className="k">Base ANG</span><span className="v">{fmtLine(inputs.baseANG)}</span></span>
       <span className="input-stat"><span className="k">True Gap</span><span className="v">{fmtLine(inputs.trueGap)}</span></span>
     </>
   );

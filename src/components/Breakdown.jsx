@@ -12,16 +12,15 @@ export default function Breakdown({ breakdown }) {
 
   return (
     <div className="breakdown">
-      <Section title="Base ANG">
+      <Section title="True Gap">
         <Row label={`SRS Δ (${favAbbr} − ${undAbbr})`} value={baseANG.srsDelta} signed />
         <Row label="HCA" value={baseANG.hcaSigned} signed />
         <DeltaStarRow deltaStar={deltaStar} />
         {baseANG.rest && <RestRow rest={baseANG.rest} />}
-        <Row label="Base ANG" value={baseANG.total} signed bold />
+        <Row label="True Gap" value={baseANG.total} signed bold />
       </Section>
 
       <Section title="DBP%">
-        <Row label="True Gap" value={dbp.trueGap} signed />
         <Row label="Intercept" value={dbp.intercept} signed muted />
         <Row label="Multiplier" value={dbp.multiplier} formatter={(v) => v.toFixed(3)} muted />
         <Row label="Z" value={dbp.z} formatter={(v) => (v >= 0 ? `+${v.toFixed(3)}` : v.toFixed(3))} />
