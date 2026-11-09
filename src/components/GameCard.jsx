@@ -174,7 +174,6 @@ function InputRow({ inputs, breakdown, open, onToggle }) {
   const content = (
     <>
       <span className="input-stat"><span className="k">Base ANG</span><span className="v">{fmtLine(inputs.baseANG)}</span></span>
-      <span className="input-stat"><span className="k">Δ Vol</span><span className="v">{fmtLine(inputs.deltaVol)}</span></span>
       <span className="input-stat"><span className="k">True Gap</span><span className="v">{fmtLine(inputs.trueGap)}</span></span>
     </>
   );
