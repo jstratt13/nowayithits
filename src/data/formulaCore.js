@@ -734,8 +734,22 @@ function teamInjuryScore(game, ctx, teamSide) {
 // Applies to the EFFECTIVE ratings (post-shrinkage, post-injury) so the
 // correction naturally scales down early-season when shrinkage compresses
 // both deltas toward zero.
-const MATCHUP_ORTG_COEF = 0.40;
-const MATCHUP_DRTG_COEF = 0.63;
+//
+// ── Dominance strength k (tuned quarterly — see scripts/ktune/) ─────────
+// The BASE coefficients below are from that original fit, which used
+// SEASON-AGGREGATE (full-season) ratings — i.e. k = 1. Re-fitting on
+// POINT-IN-TIME ratings (only games before each game, the way the live
+// model sees it) shows full strength over-amplifies noisy live deltas:
+// the optimal strength on point-in-time data is ~0.2 across the recent
+// full seasons (2023-24..2025-26), and k = 1 actually hurts live totals
+// accuracy. So we scale BOTH base coefficients by MATCHUP_DOMINANCE_K.
+// Re-fit quarterly (scripts/ktune/ktune.py) and update this ONE number;
+// like any model change it affects NEW snapshots only (integrity rule).
+const MATCHUP_ORTG_COEF_BASE = 0.40;
+const MATCHUP_DRTG_COEF_BASE = 0.63;
+const MATCHUP_DOMINANCE_K    = 0.20;  // 11/8/26 shipped at 1.0 → 0.20 on 11/9/26 (point-in-time fit)
+const MATCHUP_ORTG_COEF = MATCHUP_ORTG_COEF_BASE * MATCHUP_DOMINANCE_K;  // 0.080 → own-off weight 0.58
+const MATCHUP_DRTG_COEF = MATCHUP_DRTG_COEF_BASE * MATCHUP_DOMINANCE_K;  // 0.126 → opp-def weight 0.626
 
 // Matchup-adjusted combined scoring rate.
 //
