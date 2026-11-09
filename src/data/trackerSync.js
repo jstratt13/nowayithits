@@ -215,7 +215,7 @@ function buildUngradedRow(game) {
 
 // Convert a locked snapshot + a FINAL game into a tracker row.
 function buildTrackerRow(game, snapshot) {
-  const { sp, ou, dbp, inputs, book } = snapshot;
+  const { sp, ou, dbp, inputs, book, breakdown, projMargin, projTotal } = snapshot;
   const zone = getZone(dbp).label;
 
   const awayScore = game.away.score ?? null;
@@ -232,6 +232,27 @@ function buildTrackerRow(game, snapshot) {
   const ouResult     = gradeOU(ou, game.away, game.home);
   const blowout      = gradeBlowout(margin, game.league);
 
+  // Raw injury scores for the model's favored / underdog teams.
+  //
+  // starDelta captures the final clamped Δ_Star sent into Base_ANG; these
+  // raw numbers are what we need to CALIBRATE the coefficient. Once
+  // ≥50 graded rows exist, regress (actualMargin − projMargin) on
+  // (undInjuryScore − favInjuryScore). Slope ≠ 1.0 means the Δ_Star
+  // coefficient is miscalibrated; retune.
+  //
+  // Totals-path calibration uses the HOME / AWAY scores directly against
+  // (actualTotal − projTotal) to measure α (currently 0.7) and
+  // β (currently 0.2).
+  const favInjuryScore  = breakdown?.deltaStar?.favTeam?.score ?? null;
+  const undInjuryScore  = breakdown?.deltaStar?.undTeam?.score ?? null;
+  const homeInjuryScore = breakdown?.total?.ratings?.home?.injuryScore ?? null;
+  const awayInjuryScore = breakdown?.total?.ratings?.away?.injuryScore ?? null;
+
+  // Signed home margin (home − away). projMargin is model's home-perspective
+  // prediction; the residual = (homeScore − awayScore) − projMargin is what
+  // calibration regresses.
+  const signedHomeMargin = (homeScore != null && awayScore != null) ? homeScore - awayScore : null;
+
   return {
     id: trackerIdFor(game),
     league: game.league,
@@ -240,6 +261,11 @@ function buildTrackerRow(game, snapshot) {
     posSRS: favAbbr,
     srsGap: roundTo(inputs ? inputs.favSRS - inputs.undSRS : 0, 2),
     starDelta: roundTo(inputs?.deltaStar ?? 0, 2),
+    // Raw injury scores — new 11/8/26 for α/β/Δ_Star calibration.
+    favInjuryScore: roundTo(favInjuryScore, 2),
+    undInjuryScore: roundTo(undInjuryScore, 2),
+    homeInjuryScore: roundTo(homeInjuryScore, 2),
+    awayInjuryScore: roundTo(awayInjuryScore, 2),
     hca: inputs?.hca ?? null,
     dbp: roundTo(dbp, 2),
     zone,
@@ -248,8 +274,14 @@ function buildTrackerRow(game, snapshot) {
     ouPick: ouPickStr,
     spreadResult: spreadResult || '',
     ouResult: ouResult || '',
+    // Signed values enable model-residual regression. margin (unsigned) is
+    // what the UI table displays today; actualHomeMargin keeps the sign so
+    // calibration can compute residuals.
     margin,
+    actualHomeMargin: signedHomeMargin,
+    projMargin: roundTo(projMargin, 2),
     total,
+    projTotal: roundTo(projTotal, 2),
     awayScore,
     homeScore,
     bookSpread: book?.spread ?? null,
