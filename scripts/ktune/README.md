@@ -61,6 +61,17 @@ python3 scripts/ktune/ktune.py --seasons 2024-25,2025-26,2026-27
 python3 scripts/ktune/ktune.py --gp-min 10          # stricter min games-played
 ```
 
+## Automation / cadence
+
+Run **locally** — `python3 scripts/ktune/ktune.py --refresh` works from a dev
+machine. The cloud sandbox **cannot** reach stats.nba.com (egress proxy returns
+403), so the fetch can't run there (verified 2026-11-09).
+
+A quarterly cloud routine (`trig_01WbnkeNKT6xsYTHEBGSx7YJ`, 1st of
+Jan/Apr/Jul/Oct) therefore just **pushes a reminder** to run the script locally
+— it does not fetch or open PRs. Manage it at
+<https://claude.ai/code/routines/trig_01WbnkeNKT6xsYTHEBGSx7YJ>.
+
 ## How to act on the output
 
 1. Look at the **current season** row once it's mature (~Jan, ~25–30 GP/team).
