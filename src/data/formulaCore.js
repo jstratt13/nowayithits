@@ -711,22 +711,50 @@ function teamInjuryScore(game, ctx, teamSide) {
   return inj(game.league, teamSide.id) || 0;
 }
 
+// ── Matchup dominance correction (11/8/26) ──────────────────────────────
+//
+// The pure (effOff + effDef) / 2 average under-weights both inputs. Fit
+// across 4 full seasons of game-level data (10,216 team-scoring instances,
+// leave-one-season-out CV, R² = 0.0385) showed the real relationship is:
+//
+//   per_team_expected = (effOff + oppEffDef) / 2
+//                     + MATCHUP_ORTG_COEF × (effOff − leagueAvgRating)
+//                     + MATCHUP_DRTG_COEF × (oppEffDef − leagueAvgRating)
+//
+// Effective weights become 0.5 + MATCHUP_ORTG_COEF on own ORtg and
+// 0.5 + MATCHUP_DRTG_COEF on opponent DRtg. The fact that DRtg carries
+// MORE weight than ORtg is a real finding — playing against an elite
+// defense determines your scoring more than your own offense does. A top
+// defense can shut down anyone; a top offense can still be stopped.
+//
+// Fitted on pooled regression, intercept was a contaminated version of
+// HCA (home-only intercept +1.49, away-only −0.56, diff = 2.05 ≈ hca
+// standard 2.10). HCA stays in Base_ANG only — no double-counting here.
+//
+// Applies to the EFFECTIVE ratings (post-shrinkage, post-injury) so the
+// correction naturally scales down early-season when shrinkage compresses
+// both deltas toward zero.
+const MATCHUP_ORTG_COEF = 0.40;
+const MATCHUP_DRTG_COEF = 0.63;
+
 // Matchup-adjusted combined scoring rate.
 //
 // Each team's expected output blends THEIR offense with the OPPONENT's
-// defense, not just the sum of two raw offensive ratings. Books and
-// industry models do this — without it, totals are systematically biased
-// OVER because the formula assumes you score your ORtg against everyone
-// (ignoring that strong defenses suppress scoring).
+// defense, then applies the dominance correction above. Combined =
+// home_expected + away_expected.
 //
-//   homeExpected  =  (effOff(home) + effDef(away))  / 2
-//   awayExpected  =  (effOff(away) + effDef(home))  / 2
-//   combined      =  homeExpected + awayExpected
+//   homeExpected  =  (effOff(home) + effDef(away)) / 2
+//                    + MATCHUP_ORTG_COEF × (effOff(home) − leagueAvg)
+//                    + MATCHUP_DRTG_COEF × (effDef(away) − leagueAvg)
+//   awayExpected  =  (effOff(away) + effDef(home)) / 2
+//                    + MATCHUP_ORTG_COEF × (effOff(away) − leagueAvg)
+//                    + MATCHUP_DRTG_COEF × (effDef(home) − leagueAvg)
 //
 // Where effOff / effDef each have their team's injury impact subtracted
 // from offense / added to defense respectively (see INJURY_TOTAL_ALPHA
 // and INJURY_TOTAL_BETA above).
 function combinedOffRating(game, ctx) {
+  const c = cfg(game.league);
   const hStats = stats(ctx, game.league, game.home.abbr);
   const aStats = stats(ctx, game.league, game.away.abbr);
   const hInj = teamInjuryScore(game, ctx, game.home);
@@ -737,8 +765,24 @@ function combinedOffRating(game, ctx) {
   const effHomeDef = blendedDef(hStats, game.league) + INJURY_TOTAL_BETA  * hInj;
   const effAwayDef = blendedDef(aStats, game.league) + INJURY_TOTAL_BETA  * aInj;
 
-  const homeExpected = (effHomeOff + effAwayDef) / 2;
-  const awayExpected = (effAwayOff + effHomeDef) / 2;
+  // League anchor — ORtg and DRtg averages are identical by construction
+  // at the league level (one team's points scored equals another's
+  // allowed). Using offRtgDefault is fine; it's set to the empirical
+  // league average per the 11/5/26 re-anchoring.
+  const leagueAvg = c.offRtgDefault;
+
+  const homeBase = (effHomeOff + effAwayDef) / 2;
+  const awayBase = (effAwayOff + effHomeDef) / 2;
+
+  const homeCorrection =
+    MATCHUP_ORTG_COEF * (effHomeOff - leagueAvg) +
+    MATCHUP_DRTG_COEF * (effAwayDef - leagueAvg);
+  const awayCorrection =
+    MATCHUP_ORTG_COEF * (effAwayOff - leagueAvg) +
+    MATCHUP_DRTG_COEF * (effHomeDef - leagueAvg);
+
+  const homeExpected = homeBase + homeCorrection;
+  const awayExpected = awayBase + awayCorrection;
   return homeExpected + awayExpected;
 }
 
@@ -855,8 +899,17 @@ export function totalBreakdown(game, ctx) {
   const effHomeDef = blendedDef(hStats, game.league) + INJURY_TOTAL_BETA  * hInj;
   const effAwayDef = blendedDef(aStats, game.league) + INJURY_TOTAL_BETA  * aInj;
 
-  const homeExpected = (effHomeOff + effAwayDef) / 2;
-  const awayExpected = (effAwayOff + effHomeDef) / 2;
+  const leagueAvg = c.offRtgDefault;
+  const homeBase = (effHomeOff + effAwayDef) / 2;
+  const awayBase = (effAwayOff + effHomeDef) / 2;
+  const homeCorrection =
+    MATCHUP_ORTG_COEF * (effHomeOff - leagueAvg) +
+    MATCHUP_DRTG_COEF * (effAwayDef - leagueAvg);
+  const awayCorrection =
+    MATCHUP_ORTG_COEF * (effAwayOff - leagueAvg) +
+    MATCHUP_DRTG_COEF * (effHomeDef - leagueAvg);
+  const homeExpected = homeBase + homeCorrection;
+  const awayExpected = awayBase + awayCorrection;
   const combined = homeExpected + awayExpected;
 
   const hPace = get(hStats, 'pace', c.paceDefault);
@@ -884,6 +937,8 @@ export function totalBreakdown(game, ctx) {
         ratingOff: effHomeOff,
         ratingDef: effHomeDef,
         injuryScore: hInj,
+        baseExpected: homeBase,
+        correction: homeCorrection,
         expected: homeExpected,
       },
       away: {
@@ -891,10 +946,17 @@ export function totalBreakdown(game, ctx) {
         ratingOff: effAwayOff,
         ratingDef: effAwayDef,
         injuryScore: aInj,
+        baseExpected: awayBase,
+        correction: awayCorrection,
         expected: awayExpected,
       },
       combined,
       baseTotal,
+      matchupCorrection: {
+        leagueAvg,
+        ortgCoef: MATCHUP_ORTG_COEF,
+        drtgCoef: MATCHUP_DRTG_COEF,
+      },
     },
     matchup,
     rest: {

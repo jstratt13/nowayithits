@@ -64,6 +64,22 @@ function TotalSection({ total }) {
         />
         <Row label={`${ratings.home.abbr} effective ORtg`} value={ratings.home.ratingOff} formatter={(v) => v.toFixed(1)} muted />
         <Row label={`${ratings.away.abbr} effective DRtg`} value={ratings.away.ratingDef} formatter={(v) => v.toFixed(1)} muted />
+        {ratings.home.baseExpected != null && ratings.matchupCorrection && (
+          <>
+            <Row
+              label={`${ratings.home.abbr} base avg (50/50)`}
+              value={ratings.home.baseExpected}
+              formatter={(v) => v.toFixed(1)}
+              muted
+            />
+            <Row
+              label={`${ratings.home.abbr} dominance correction (×${ratings.matchupCorrection.ortgCoef.toFixed(2)} ORtg Δ · ×${ratings.matchupCorrection.drtgCoef.toFixed(2)} DRtg Δ)`}
+              value={ratings.home.correction}
+              signed
+              muted
+            />
+          </>
+        )}
         <Row
           label={`${ratings.away.abbr} off / ${ratings.home.abbr} def → away exp`}
           value={ratings.away.expected}
@@ -72,6 +88,22 @@ function TotalSection({ total }) {
         />
         <Row label={`${ratings.away.abbr} effective ORtg`} value={ratings.away.ratingOff} formatter={(v) => v.toFixed(1)} muted />
         <Row label={`${ratings.home.abbr} effective DRtg`} value={ratings.home.ratingDef} formatter={(v) => v.toFixed(1)} muted />
+        {ratings.away.baseExpected != null && ratings.matchupCorrection && (
+          <>
+            <Row
+              label={`${ratings.away.abbr} base avg (50/50)`}
+              value={ratings.away.baseExpected}
+              formatter={(v) => v.toFixed(1)}
+              muted
+            />
+            <Row
+              label={`${ratings.away.abbr} dominance correction`}
+              value={ratings.away.correction}
+              signed
+              muted
+            />
+          </>
+        )}
         {(ratings.home.injuryScore > 0 || ratings.away.injuryScore > 0) && (
           <Row
             label={`Injury adj (${ratings.home.abbr} ${ratings.home.injuryScore.toFixed(1)} · ${ratings.away.abbr} ${ratings.away.injuryScore.toFixed(1)})`}
