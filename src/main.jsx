@@ -12,6 +12,16 @@ import Verify from './pages/Verify.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
 import { RequireAuth, RedirectIfAuth } from './auth/RouteGuards.jsx';
 
+// Installable app (PWA): register the service worker in production builds
+// only — in `npm run dev` it would cache Vite's dev modules and get in the
+// way. Scope = the GitHub Pages base (/nowayithits/).
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    const base = import.meta.env.BASE_URL;
+    navigator.serviceWorker.register(`${base}sw.js`, { scope: base }).catch(() => {});
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
