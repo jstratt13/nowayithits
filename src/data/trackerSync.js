@@ -286,8 +286,40 @@ function buildTrackerRow(game, snapshot) {
     homeScore,
     bookSpread: book?.spread ?? null,
     bookTotal:  book?.total ?? null,
+    ...lineTimingFields(game, snapshot),
     graded: true,
     syncedAt: new Date().toISOString(),
+  };
+}
+
+// Line-timing grades (11/20/26). Same final scores, graded at the other
+// two moments the snapshot records (see worker lineTiming):
+//   open  — the model's FINAL projection vs DraftKings' opening line
+//           ("what if we'd bet the open")
+//   first — the pick the app showed on its first run with a line
+//           ("what if we'd bet as soon as the app had a pick")
+// Rows from before this capture existed simply have nulls.
+function pickVsLine(projMargin, homeLine, game) {
+  if (projMargin == null || homeLine == null) return null;
+  const homeEdge = projMargin + homeLine;
+  return homeEdge >= 0
+    ? { side: game.home.abbr, line: homeLine, edge: homeEdge }
+    : { side: game.away.abbr, line: -homeLine, edge: -homeEdge };
+}
+function lineTimingFields(game, snapshot) {
+  const lines = snapshot?.lines;
+  if (!lines) return {};
+  const openSp  = pickVsLine(snapshot.projMargin, lines.open?.homeLine, game);
+  const firstSp = lines.first?.sp || null;
+  return {
+    openHomeLine:      lines.open?.homeLine ?? null,
+    firstHomeLine:     lines.first?.homeLine ?? null,
+    firstLineAt:       lines.first?.at ?? null,
+    closeHomeLine:     lines.close?.homeLine ?? null,
+    spreadPickOpen:    openSp ? `${openSp.side} ${fmtSignedLine(openSp.line)}` : '',
+    spreadResultOpen:  gradeSpread(openSp, game.away, game.home) || '',
+    spreadPickFirst:   firstSp ? `${firstSp.side} ${fmtSignedLine(firstSp.line)}` : '',
+    spreadResultFirst: gradeSpread(firstSp, game.away, game.home) || '',
   };
 }
 

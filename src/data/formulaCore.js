@@ -571,7 +571,7 @@ function srsShrinkWeight(teamStats) {
 // margin/DBP path totally insensitive to playoff results. The fix: use
 // (offL10 − defL10) as a per-100-possession recent NetRtg, multiply by
 // the team's own pace to get points-per-game units (matches SRS units),
-// then 50/50 blend with full-season SRS.
+// then blend with full-season SRS at L10_WEIGHT (NBA 0.60 + SOS, 11/20/26).
 //
 // L10 source today:
 //   NBA April–June  → BBR's playoff page Off/Def Rtg (worker scraper)
@@ -586,6 +586,43 @@ function srsShrinkWeight(teamStats) {
 // was slightly off — tiny numerically (~0.04 typical, ≤~0.4 at extreme
 // pace gaps) but it puts spreads on the same scale as the totals path.
 // Without gamePoss it reduces exactly to the old per-game behavior.
+//
+// Recent-form weight + strength-of-schedule on the L10 (11/20/26, chosen
+// for ATS). Backtest 2024-25..2026-27 weighted toward the two most recent
+// seasons (Jordan: 2023-24 no longer representative), ESPN/DK + dataset
+// closing lines: 10-game SOS-adjusted @ 0.60 ranked #1 of 168 options on
+// recency-weighted ATS (51.1% vs live 50.2%; 2025-26 51.4% vs 50.2%) and
+// matches the cover-margin regression's implied weight (0.60). Not a proven
+// edge (inside the best-of-168 luck band) — margin RMSE is ~0.03 worse
+// than 0.5 raw. WNBA untested → keeps 0.5, no SOS.
+export const L10_WEIGHT = { nba: 0.60, wnba: 0.5 };
+const L10_SOS_HCA_PER100 = 2.1; // home edge per 100 poss stripped out of L10
+
+// SOS adjustment for a team's last-10 NetRtg, in pts per 100 possessions:
+//   mean over the 10 opponents of their CURRENT strength (shrunk SRS per 100)
+//   − home-court edge × share of those games played at home.
+// A team whose L10 came against strong opponents gets credit; a soft or
+// home-heavy stretch gets marked down. teamsByCode is the team table keyed
+// by the same BBR codes the L10 scrape stores (BRK, CHO, PHO…). Returns
+// null when the schedule context is missing (older cache) → no adjustment.
+export function l10SosAdjustment(team, teamsByCode, league = 'nba') {
+  if (league !== 'nba') return null;
+  const opps = team?.l10Opponents;
+  if (!Array.isArray(opps) || opps.length === 0 || !teamsByCode) return null;
+  const c = cfg(league);
+  let sum = 0, n = 0;
+  for (const code of opps) {
+    const o = code && teamsByCode[code];
+    if (!o) continue;
+    const pace = get(o, 'pace', c.paceDefault) || c.paceDefault;
+    sum += (get(o, 'srs', 0) * srsShrinkWeight(o) * 100) / pace;
+    n++;
+  }
+  if (n < Math.ceil(opps.length / 2)) return null; // too many unknown opponents
+  const homeShare = team.l10HomeGames != null ? team.l10HomeGames / opps.length : 0.5;
+  return sum / n - L10_SOS_HCA_PER100 * homeShare;
+}
+
 function blendedSRS(teamStats, league, gamePoss) {
   const c = cfg(league);
   const rawSrs = get(teamStats, 'srs', 0);
@@ -596,8 +633,10 @@ function blendedSRS(teamStats, league, gamePoss) {
   const offL10 = get(teamStats, 'offLast10', null);
   const defL10 = get(teamStats, 'defLast10', null);
   if (offL10 == null || defL10 == null) return (srsPer100 * poss) / 100;
-  const l10Per100 = offL10 - defL10;
-  return ((0.5 * srsPer100 + 0.5 * l10Per100) * poss) / 100;
+  const sos = league === 'nba' ? get(teamStats, 'l10Sos', null) : null;
+  const l10Per100 = offL10 - defL10 + (sos ?? 0);
+  const w = L10_WEIGHT[league] ?? 0.5;
+  return (((1 - w) * srsPer100 + w * l10Per100) * poss) / 100;
 }
 
 // B2B / rest adjustment — empirically measured from 2 full NBA seasons

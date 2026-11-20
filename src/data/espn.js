@@ -93,6 +93,7 @@ function normalizeEvent(ev, league) {
       homeFavored,
       favored: favoredAbbr,
       provider: odds?.provider?.name || null,
+      ...openingLines(odds),
     },
     // Where to watch: ESPN's `comp.broadcasts` is an array of
     //   { market: 'national' | 'home' | 'away', names: [...] }
@@ -112,6 +113,22 @@ function normalizeBroadcasts(comp) {
     }
   }
   return out;
+}
+
+// DraftKings" OPENING spread/total as ESPN reports it next to the current
+// line (odds.pointSpread.home.open.line, odds.total.over.open.line). Kept
+// so the tracker can grade "bet at the open" vs "bet at the close" — the
+// 11/20/26 backtest showed lines move toward the model ~71% of the time.
+function parseLineNum(s) {
+  if (s == null) return null;
+  const n = parseFloat(String(s).replace(/^[ou]/i, ""));
+  return Number.isFinite(n) ? n : null;
+}
+function openingLines(odds) {
+  return {
+    openLine:  parseLineNum(odds?.pointSpread?.home?.open?.line),
+    openTotal: parseLineNum(odds?.total?.over?.open?.line),
+  };
 }
 
 function teamFrom(side) {

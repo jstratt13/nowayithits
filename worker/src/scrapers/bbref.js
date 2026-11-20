@@ -38,6 +38,7 @@
 //      scraper's scope, lives in its own scraper file (TODO).
 
 import { getL10 } from './bbrL10.js';
+import { l10SosAdjustment } from '../../../src/data/formulaCore.js';
 
 const BBR = {
   nba: (year) => `https://www.basketball-reference.com/leagues/NBA_${year}.html`,
@@ -141,6 +142,8 @@ export async function scrapeTeamStats(league, env) {
       team.orbOffLast10 = l10.orbPct;
       team.drbDefLast10 = l10.oppOrbPct != null ? 100 - l10.oppOrbPct : null;
       team.l10GameCount = l10.gameCount;
+      team.l10Opponents = l10.opponents ?? null;
+      team.l10HomeGames = l10.homeGames ?? null;
       team.l10Source    = 'bundled';
       bundledUsed.add(abbr);
     }
@@ -158,6 +161,16 @@ export async function scrapeTeamStats(league, env) {
     await fetchL10FromGameLog(league, year, teams, env);
   }
   // WNBA regular season: still no L10 path (offseason + separate scraper TODO).
+
+  // Strength-of-schedule on the L10 (pts/100), computed against THIS table
+  // so opponents' strength is current. Needs every team's SRS/pace/W-L
+  // first, hence a pass after all L10 sources ran. Only for the bundled
+  // L10 — its opponent list describes exactly those 10 games (the playoff /
+  // monthly fallbacks don't carry schedule context). Null → no adjustment.
+  for (const team of Object.values(teams)) {
+    const sos = team.l10Source === 'bundled' ? l10SosAdjustment(team, teams, league) : null;
+    team.l10Sos = sos == null ? null : Math.round(sos * 100) / 100;
+  }
 
   return {
     source: 'basketball-reference.com',
@@ -201,6 +214,7 @@ async function fillL10FromPlayoffPage(league, year, teams, env) {
     teams[abbr].toDefLast10  = cell(row, 'opp_tov_pct');
     teams[abbr].orbOffLast10 = cell(row, 'orb_pct');
     teams[abbr].drbDefLast10 = cell(row, 'drb_pct');
+    teams[abbr].l10Source    = 'playoffs'; // no per-game schedule → no SOS
   }
 }
 

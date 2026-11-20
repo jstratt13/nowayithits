@@ -96,7 +96,9 @@ function triggerDownload(filename, text, mime) {
 const CSV_LEAD = [
   'id', 'league', 'date', 'matchup', 'posSRS', 'srsGap', 'starDelta',
   'hca', 'dbp', 'zone', 'spreadPick', 'ouPick', 'spreadResult', 'ouResult',
-  'bookSpread', 'bookTotal', 'projMargin', 'projTotal', 'margin',
+  'bookSpread', 'bookTotal', 'openHomeLine', 'firstHomeLine', 'closeHomeLine',
+  'spreadPickOpen', 'spreadResultOpen', 'spreadPickFirst', 'spreadResultFirst',
+  'projMargin', 'projTotal', 'margin',
   'actualHomeMargin', 'total', 'awayScore', 'homeScore', 'blowout', 'graded',
 ];
 function toCSV(rows) {
@@ -200,6 +202,16 @@ export default function Tracker() {
     const gradedN = graded.length;
     const sH = graded.filter((r) => r.spreadResult === 'Hit').length;
     const oH = graded.filter((r) => r.ouResult === 'Hit').length;
+    // Line timing (rows captured from 11/20/26 on): same games graded at
+    // DraftKings' opening line and at the app's first pick. Compare each
+    // against the close on the SAME rows so the three numbers line up.
+    const timed = graded.filter((r) => r.spreadResultOpen || r.spreadResultFirst);
+    const tN = timed.length;
+    const tClose = timed.filter((r) => r.spreadResult === 'Hit').length;
+    const openRows = timed.filter((r) => r.spreadResultOpen);
+    const tOpen = openRows.filter((r) => r.spreadResultOpen === 'Hit').length;
+    const firstRows = timed.filter((r) => r.spreadResultFirst);
+    const tFirst = firstRows.filter((r) => r.spreadResultFirst === 'Hit').length;
     const ungradedN = n - gradedN;
 
     // Blowout % is a pure outcome stat now — what fraction of games
@@ -217,6 +229,10 @@ export default function Tracker() {
       gradedN,
       ungradedN,
       spreadPct: pct(sH, gradedN),
+      tN, tClose, tOpen, tFirst, openN: openRows.length, firstN: firstRows.length,
+      closePctTimed: pct(tClose, tN),
+      openPct: pct(tOpen, openRows.length),
+      firstPct: pct(tFirst, firstRows.length),
       ouPct: pct(oH, gradedN),
       blowPct: pct(blowN, n),
       sH, oH, blowN,
@@ -306,6 +322,14 @@ export default function Tracker() {
               sub={stats.gradedN ? `${stats.sH}/${stats.gradedN}` : ''}
               color={stats.spreadPct == null ? 'var(--muted)' : stats.spreadPct >= 50 ? 'var(--hit)' : 'var(--miss)'}
             />
+            {stats.tN > 0 && (
+              <StatCell
+                l="Spread · open / first / close"
+                v={[stats.openPct, stats.firstPct, stats.closePctTimed].map((p) => p == null ? '—' : `${p.toFixed(1)}`).join(' / ')}
+                sub={`${stats.tOpen}/${stats.openN} · ${stats.tFirst}/${stats.firstN} · ${stats.tClose}/${stats.tN}`}
+                color="var(--accent2)"
+              />
+            )}
             <StatCell
               l="O/U hit %"
               v={stats.ouPct == null ? '—' : `${stats.ouPct.toFixed(1)}%`}

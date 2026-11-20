@@ -110,8 +110,17 @@ function parseTeamGamelog(html) {
     const gameNum = numCell(row, 'team_game_num_season');
     const pace = numCell(row, 'pace');
     if (gameNum == null || pace == null) continue;
+    // Opponent + location feed the strength-of-schedule adjustment on the
+    // L10 (worker computes it against the live team table). The opponent
+    // cell links /teams/<BBR code>/<year>.html — the current franchise
+    // code, same keys as the team table. game_location is "@" for road
+    // games, empty for home.
+    const oppM = row.match(/data-stat="opp_name_abbr"[^>]*>\s*<a href="\/teams\/([A-Z]{3})\//);
+    const locM = row.match(/data-stat="game_location"[^>]*>([^<]*)</);
     out.push({
       gameNum,
+      opp:       oppM ? oppM[1] : null,
+      home:      locM ? locM[1].trim() !== '@' : null,
       offRtg:    numCell(row, 'team_off_rtg'),
       defRtg:    numCell(row, 'team_def_rtg'),
       pace,
@@ -148,6 +157,10 @@ function averageL10(games) {
     orbPct:       avg('orbPct'),
     oppOrbPct:    avg('oppOrbPct'),
     threePAr:     avg('threePAr'),
+    // Per-game schedule context for the SOS adjustment (null entries kept
+    // positional so a parse miss on one row can't shift the others).
+    opponents:    last10.map((g) => g.opp),
+    homeGames:    last10.filter((g) => g.home === true).length,
   };
 }
 
@@ -163,7 +176,7 @@ async function scrapeNba(year) {
       const l10 = averageL10(games);
       if (l10) {
         result[abbr] = l10;
-        console.log(`  ${abbr}: ${l10.gameCount} games (${l10.firstGameNum}-${l10.lastGameNum}) · ORtg ${l10.offRtg?.toFixed(1)} DRtg ${l10.defRtg?.toFixed(1)} Pace ${l10.pace?.toFixed(1)}`);
+        console.log(`  ${abbr}: ${l10.gameCount} games (${l10.firstGameNum}-${l10.lastGameNum}) · ORtg ${l10.offRtg?.toFixed(1)} DRtg ${l10.defRtg?.toFixed(1)} Pace ${l10.pace?.toFixed(1)} · ${l10.homeGames} home · opp ${l10.opponents.join(',')}`);
       } else {
         console.warn(`  ${abbr}: no games parsed`);
       }

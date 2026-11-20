@@ -1,6 +1,6 @@
 {
   "source": "basketball-reference.com",
-  "fetchedAt": "2026-11-20T18:24:54.762Z",
+  "fetchedAt": "2026-11-20T20:43:43.103Z",
   "nba": {
     "ATL": {
       "gameCount": 10,
@@ -13,7 +13,20 @@
       "oppTovPct": 15.25,
       "orbPct": 29.51,
       "oppOrbPct": 23.9,
-      "threePAr": 0.4593
+      "threePAr": 0.4593,
+      "opponents": [
+        "CLE",
+        "NOP",
+        "IND",
+        "WAS",
+        "WAS",
+        "BRK",
+        "LAL",
+        "CHI",
+        "MIL",
+        "OKC"
+      ],
+      "homeGames": 4
     },
     "BOS": {
       "gameCount": 10,
@@ -26,7 +39,20 @@
       "oppTovPct": 14.680000000000001,
       "orbPct": 31.629999999999995,
       "oppOrbPct": 26.68,
-      "threePAr": 0.5214
+      "threePAr": 0.5214,
+      "opponents": [
+        "ORL",
+        "HOU",
+        "MIL",
+        "CHO",
+        "MIL",
+        "PHI",
+        "TOR",
+        "DAL",
+        "ORL",
+        "DEN"
+      ],
+      "homeGames": 3
     },
     "BRK": {
       "gameCount": 10,
@@ -39,7 +65,20 @@
       "oppTovPct": 13.41,
       "orbPct": 27.02,
       "oppOrbPct": 29.759999999999998,
-      "threePAr": 0.48150000000000004
+      "threePAr": 0.48150000000000004,
+      "opponents": [
+        "DET",
+        "IND",
+        "NYK",
+        "CHO",
+        "ATL",
+        "DAL",
+        "NOP",
+        "MEM",
+        "PHI",
+        "CHI"
+      ],
+      "homeGames": 4
     },
     "CHI": {
       "gameCount": 10,
@@ -52,7 +91,20 @@
       "oppTovPct": 12.209999999999999,
       "orbPct": 27.839999999999996,
       "oppOrbPct": 30.74,
-      "threePAr": 0.45280000000000004
+      "threePAr": 0.45280000000000004,
+      "opponents": [
+        "NYK",
+        "BOS",
+        "PHI",
+        "NYK",
+        "PHI",
+        "SAS",
+        "ATL",
+        "MIN",
+        "CLE",
+        "BRK"
+      ],
+      "homeGames": 4
     },
     "CHO": {
       "gameCount": 10,
@@ -65,7 +117,20 @@
       "oppTovPct": 12.85,
       "orbPct": 31.929999999999996,
       "oppOrbPct": 21.32,
-      "threePAr": 0.5315000000000001
+      "threePAr": 0.5315000000000001,
+      "opponents": [
+        "DET",
+        "WAS",
+        "PHI",
+        "DET",
+        "BRK",
+        "BOS",
+        "CLE",
+        "PHO",
+        "LAC",
+        "LAL"
+      ],
+      "homeGames": 4
     },
     "CLE": {
       "gameCount": 10,
@@ -78,7 +143,20 @@
       "oppTovPct": 10.600000000000001,
       "orbPct": 26.429999999999996,
       "oppOrbPct": 25.499999999999996,
-      "threePAr": 0.47380000000000005
+      "threePAr": 0.47380000000000005,
+      "opponents": [
+        "OKC",
+        "OKC",
+        "PHI",
+        "NYK",
+        "CHO",
+        "NYK",
+        "MIA",
+        "DAL",
+        "CHI",
+        "MEM"
+      ],
+      "homeGames": 6
     },
     "DAL": {
       "gameCount": 10,
@@ -91,7 +169,20 @@
       "oppTovPct": 14.129999999999999,
       "orbPct": 29.370000000000005,
       "oppOrbPct": 28.089999999999996,
-      "threePAr": 0.43359999999999993
+      "threePAr": 0.43359999999999993,
+      "opponents": [
+        "HOU",
+        "SAC",
+        "SAS",
+        "UTA",
+        "BRK",
+        "IND",
+        "MIN",
+        "CLE",
+        "BOS",
+        "GSW"
+      ],
+      "homeGames": 6
     },
     "DEN": {
       "gameCount": 10,
@@ -104,7 +195,20 @@
       "oppTovPct": 12.67,
       "orbPct": 23.410000000000004,
       "oppOrbPct": 29.759999999999998,
-      "threePAr": 0.35120000000000007
+      "threePAr": 0.35120000000000007,
+      "opponents": [
+        "NOP",
+        "PHO",
+        "POR",
+        "TOR",
+        "IND",
+        "HOU",
+        "MEM",
+        "NOP",
+        "PHO",
+        "BOS"
+      ],
+      "homeGames": 4
     },
     "DET": {
       "gameCount": 10,
@@ -117,7 +221,20 @@
       "oppTovPct": 16.38,
       "orbPct": 24.58,
       "oppOrbPct": 29.109999999999996,
-      "threePAr": 0.39990000000000003
+      "threePAr": 0.39990000000000003,
+      "opponents": [
+        "CHO",
+        "BRK",
+        "CHO",
+        "PHI",
+        "LAL",
+        "WAS",
+        "WAS",
+        "MIA",
+        "SAS",
+        "NOP"
+      ],
+      "homeGames": 4
     },
     "GSW": {
       "gameCount": 10,
@@ -130,7 +247,20 @@
       "oppTovPct": 13.080000000000002,
       "orbPct": 26.669999999999998,
       "oppOrbPct": 28.7,
-      "threePAr": 0.48259999999999986
+      "threePAr": 0.48259999999999986,
+      "opponents": [
+        "LAC",
+        "PHO",
+        "MIA",
+        "ORL",
+        "NOP",
+        "HOU",
+        "SAS",
+        "NOP",
+        "DAL",
+        "MEM"
+      ],
+      "homeGames": 5
     },
     "HOU": {
       "gameCount": 10,
@@ -143,7 +273,20 @@
       "oppTovPct": 12.27,
       "orbPct": 33.07,
       "oppOrbPct": 26.889999999999997,
-      "threePAr": 0.40790000000000004
+      "threePAr": 0.40790000000000004,
+      "opponents": [
+        "OKC",
+        "BOS",
+        "MIN",
+        "PHO",
+        "DEN",
+        "GSW",
+        "UTA",
+        "WAS",
+        "MIA",
+        "IND"
+      ],
+      "homeGames": 6
     },
     "IND": {
       "gameCount": 10,
@@ -156,7 +299,20 @@
       "oppTovPct": 13.35,
       "orbPct": 19.630000000000003,
       "oppOrbPct": 26.610000000000003,
-      "threePAr": 0.4103
+      "threePAr": 0.4103,
+      "opponents": [
+        "MIA",
+        "BRK",
+        "ATL",
+        "MEM",
+        "DEN",
+        "DAL",
+        "WAS",
+        "NYK",
+        "PHI",
+        "HOU"
+      ],
+      "homeGames": 6
     },
     "LAC": {
       "gameCount": 10,
@@ -169,7 +325,20 @@
       "oppTovPct": 13.45,
       "orbPct": 22.77,
       "oppOrbPct": 27.330000000000002,
-      "threePAr": 0.4436
+      "threePAr": 0.4436,
+      "opponents": [
+        "MIN",
+        "GSW",
+        "TOR",
+        "MIA",
+        "NOP",
+        "PHO",
+        "OKC",
+        "CHO",
+        "UTA",
+        "SAS"
+      ],
+      "homeGames": 6
     },
     "LAL": {
       "gameCount": 10,
@@ -182,7 +351,20 @@
       "oppTovPct": 16.150000000000002,
       "orbPct": 30.139999999999997,
       "oppOrbPct": 29.409999999999997,
-      "threePAr": 0.43499999999999994
+      "threePAr": 0.43499999999999994,
+      "opponents": [
+        "TOR",
+        "MIA",
+        "SAC",
+        "POR",
+        "DET",
+        "ATL",
+        "MIL",
+        "PHO",
+        "CHO",
+        "UTA"
+      ],
+      "homeGames": 5
     },
     "MEM": {
       "gameCount": 10,
@@ -195,7 +377,20 @@
       "oppTovPct": 11.69,
       "orbPct": 30.73,
       "oppOrbPct": 28.899999999999995,
-      "threePAr": 0.4506
+      "threePAr": 0.4506,
+      "opponents": [
+        "NOP",
+        "IND",
+        "OKC",
+        "TOR",
+        "DEN",
+        "NOP",
+        "BRK",
+        "WAS",
+        "CLE",
+        "GSW"
+      ],
+      "homeGames": 6
     },
     "MIA": {
       "gameCount": 10,
@@ -208,7 +403,20 @@
       "oppTovPct": 14.239999999999998,
       "orbPct": 25.839999999999996,
       "oppOrbPct": 27.29,
-      "threePAr": 0.48389999999999994
+      "threePAr": 0.48389999999999994,
+      "opponents": [
+        "IND",
+        "LAL",
+        "LAC",
+        "GSW",
+        "SAC",
+        "UTA",
+        "CLE",
+        "DET",
+        "HOU",
+        "MIL"
+      ],
+      "homeGames": 5
     },
     "MIL": {
       "gameCount": 10,
@@ -221,7 +429,20 @@
       "oppTovPct": 13.009999999999996,
       "orbPct": 27.389999999999997,
       "oppOrbPct": 33.85,
-      "threePAr": 0.5134
+      "threePAr": 0.5134,
+      "opponents": [
+        "MIN",
+        "BOS",
+        "TOR",
+        "BOS",
+        "NYK",
+        "LAL",
+        "ORL",
+        "ATL",
+        "MIA",
+        "POR"
+      ],
+      "homeGames": 5
     },
     "MIN": {
       "gameCount": 10,
@@ -234,7 +455,20 @@
       "oppTovPct": 14.419999999999998,
       "orbPct": 27.919999999999998,
       "oppOrbPct": 27.49,
-      "threePAr": 0.413
+      "threePAr": 0.413,
+      "opponents": [
+        "SAS",
+        "MIL",
+        "HOU",
+        "NOP",
+        "UTA",
+        "DAL",
+        "CHI",
+        "POR",
+        "POR",
+        "NYK"
+      ],
+      "homeGames": 7
     },
     "NOP": {
       "gameCount": 10,
@@ -247,7 +481,20 @@
       "oppTovPct": 12.819999999999999,
       "orbPct": 25.72,
       "oppOrbPct": 29.639999999999997,
-      "threePAr": 0.3457
+      "threePAr": 0.3457,
+      "opponents": [
+        "MEM",
+        "UTA",
+        "MIN",
+        "LAC",
+        "GSW",
+        "BRK",
+        "MEM",
+        "DEN",
+        "GSW",
+        "DET"
+      ],
+      "homeGames": 7
     },
     "NYK": {
       "gameCount": 10,
@@ -260,7 +507,20 @@
       "oppTovPct": 12.430000000000001,
       "orbPct": 30.52,
       "oppOrbPct": 22.71,
-      "threePAr": 0.47140000000000004
+      "threePAr": 0.47140000000000004,
+      "opponents": [
+        "PHI",
+        "BRK",
+        "CHI",
+        "CLE",
+        "MIL",
+        "CLE",
+        "IND",
+        "TOR",
+        "TOR",
+        "MIN"
+      ],
+      "homeGames": 4
     },
     "OKC": {
       "gameCount": 10,
@@ -273,7 +533,20 @@
       "oppTovPct": 11.98,
       "orbPct": 24.009999999999998,
       "oppOrbPct": 24.52,
-      "threePAr": 0.34639999999999993
+      "threePAr": 0.34639999999999993,
+      "opponents": [
+        "HOU",
+        "CLE",
+        "CLE",
+        "MEM",
+        "WAS",
+        "POR",
+        "POR",
+        "LAC",
+        "SAC",
+        "ATL"
+      ],
+      "homeGames": 3
     },
     "ORL": {
       "gameCount": 10,
@@ -286,7 +559,20 @@
       "oppTovPct": 13.61,
       "orbPct": 27.15,
       "oppOrbPct": 21.209999999999997,
-      "threePAr": 0.47450000000000003
+      "threePAr": 0.47450000000000003,
+      "opponents": [
+        "TOR",
+        "BOS",
+        "WAS",
+        "PHO",
+        "GSW",
+        "SAC",
+        "UTA",
+        "MIL",
+        "BOS",
+        "PHI"
+      ],
+      "homeGames": 4
     },
     "PHI": {
       "gameCount": 10,
@@ -299,7 +585,20 @@
       "oppTovPct": 11.55,
       "orbPct": 25.640000000000004,
       "oppOrbPct": 21.919999999999998,
-      "threePAr": 0.39740000000000003
+      "threePAr": 0.39740000000000003,
+      "opponents": [
+        "CHO",
+        "CHI",
+        "DET",
+        "CLE",
+        "CHI",
+        "BOS",
+        "TOR",
+        "IND",
+        "BRK",
+        "ORL"
+      ],
+      "homeGames": 4
     },
     "PHO": {
       "gameCount": 10,
@@ -312,7 +611,20 @@
       "oppTovPct": 14.8,
       "orbPct": 24.869999999999997,
       "oppOrbPct": 30.729999999999997,
-      "threePAr": 0.40970000000000006
+      "threePAr": 0.40970000000000006,
+      "opponents": [
+        "GSW",
+        "POR",
+        "ORL",
+        "HOU",
+        "SAS",
+        "LAC",
+        "CHO",
+        "LAL",
+        "DEN",
+        "SAC"
+      ],
+      "homeGames": 7
     },
     "POR": {
       "gameCount": 10,
@@ -325,7 +637,20 @@
       "oppTovPct": 12.48,
       "orbPct": 27.07,
       "oppOrbPct": 27.059999999999995,
-      "threePAr": 0.5077
+      "threePAr": 0.5077,
+      "opponents": [
+        "DEN",
+        "PHO",
+        "LAL",
+        "SAS",
+        "OKC",
+        "OKC",
+        "SAC",
+        "MIN",
+        "MIN",
+        "MIL"
+      ],
+      "homeGames": 3
     },
     "SAC": {
       "gameCount": 10,
@@ -338,7 +663,20 @@
       "oppTovPct": 13.23,
       "orbPct": 21.68,
       "oppOrbPct": 22.49,
-      "threePAr": 0.4513
+      "threePAr": 0.4513,
+      "opponents": [
+        "NOP",
+        "MEM",
+        "DAL",
+        "LAL",
+        "SAS",
+        "MIA",
+        "ORL",
+        "POR",
+        "OKC",
+        "PHO"
+      ],
+      "homeGames": 7
     },
     "SAS": {
       "gameCount": 10,
@@ -351,7 +689,20 @@
       "oppTovPct": 12.62,
       "orbPct": 29.420000000000005,
       "oppOrbPct": 23.18,
-      "threePAr": 0.3929999999999999
+      "threePAr": 0.3929999999999999,
+      "opponents": [
+        "UTA",
+        "DAL",
+        "SAC",
+        "POR",
+        "PHO",
+        "CHI",
+        "GSW",
+        "UTA",
+        "DET",
+        "LAC"
+      ],
+      "homeGames": 5
     },
     "TOR": {
       "gameCount": 10,
@@ -364,7 +715,20 @@
       "oppTovPct": 15.199999999999998,
       "orbPct": 27.589999999999996,
       "oppOrbPct": 29.810000000000002,
-      "threePAr": 0.41719999999999996
+      "threePAr": 0.41719999999999996,
+      "opponents": [
+        "LAL",
+        "LAC",
+        "DEN",
+        "MIL",
+        "MEM",
+        "BOS",
+        "PHI",
+        "NYK",
+        "NYK",
+        "WAS"
+      ],
+      "homeGames": 5
     },
     "UTA": {
       "gameCount": 10,
@@ -377,7 +741,20 @@
       "oppTovPct": 12.01,
       "orbPct": 24.7,
       "oppOrbPct": 26.599999999999994,
-      "threePAr": 0.4375
+      "threePAr": 0.4375,
+      "opponents": [
+        "SAS",
+        "NOP",
+        "DAL",
+        "MIN",
+        "MIA",
+        "ORL",
+        "HOU",
+        "SAS",
+        "LAC",
+        "LAL"
+      ],
+      "homeGames": 3
     },
     "WAS": {
       "gameCount": 10,
@@ -390,7 +767,20 @@
       "oppTovPct": 11.81,
       "orbPct": 26.619999999999997,
       "oppOrbPct": 30.639999999999997,
-      "threePAr": 0.3751
+      "threePAr": 0.3751,
+      "opponents": [
+        "ORL",
+        "ATL",
+        "ATL",
+        "OKC",
+        "DET",
+        "IND",
+        "DET",
+        "HOU",
+        "MEM",
+        "TOR"
+      ],
+      "homeGames": 4
     }
   },
   "wnba": {}
