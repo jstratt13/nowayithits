@@ -386,7 +386,7 @@ export const INJURY_V2 = {
   OFF_REPLACEMENT:  -1.5,  // totals split (OBPM side)
   DEF_REPLACEMENT:  -1.5,  // totals split (DBPM side)
   NO_PRIOR_BPM:     -1,    // players w/o a usable prior season (fit vs −2 / replacement)
-  PRIOR_MIN_MP:     250,   // last-season minutes needed for the prior to count
+  PRIOR_MIN_MP:     250,   // total minutes over the prior seasons (3-season, minutes-weighted) needed for the prior to count
   // UNVALIDATED (backtest only had last season's BPM): regress this season's
   // BPM toward last season's — this season reaches 50% weight at 20 games.
   PRIOR_GAMES:      20,

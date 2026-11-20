@@ -186,8 +186,7 @@ function numOrNull(v) {
 
 // Season-aggregate BPM per player for a (prior) season: prefers the
 // multi-team TOT/2TM row so traded players get their whole-season value.
-// Feeds the injury model's BPM prior (last season's BPM, regressed against
-// this season's as games accumulate).
+// Feeds the injury model's BPM prior (see combinePriorSeasons).
 function parseAdvancedSeason(html) {
   const stripped = html.replace(/<!--/g, '').replace(/-->/g, '');
   const rows = findTableRows(stripped, ['advanced']);
@@ -204,6 +203,35 @@ function parseAdvancedSeason(html) {
       obpm: numOrNull(pickCell(row, 'obpm')),
       dbpm: numOrNull(pickCell(row, 'dbpm')),
       mp:   numOrNull(pickCell(row, 'mp')),
+    });
+  }
+  return out;
+}
+
+// Minutes-weighted blend of several past seasons (most recent first). Each
+// season votes by minutes played — no extra recency weight. Seasons with no
+// minutes or no BPM are skipped; priorMp = total minutes across them (the
+// model ignores priors under INJURY_V2.PRIOR_MIN_MP).
+const PRIOR_SEASONS = 3;
+function combinePriorSeasons(seasonMaps) {
+  const acc = new Map();
+  for (const m of seasonMaps) {
+    for (const [slug, r] of m) {
+      if (!r.mp || r.bpm == null) continue;
+      const a = acc.get(slug) || { mp: 0, bpm: 0, obpm: 0, dbpm: 0, seasons: 0 };
+      a.mp += r.mp; a.seasons += 1;
+      a.bpm  += r.mp * r.bpm;
+      a.obpm += r.mp * (r.obpm ?? 0);
+      a.dbpm += r.mp * (r.dbpm ?? 0);
+      acc.set(slug, a);
+    }
+  }
+  const round2 = (x) => Math.round(x * 100) / 100;
+  const out = new Map();
+  for (const [slug, a] of acc) {
+    out.set(slug, {
+      bpm: round2(a.bpm / a.mp), obpm: round2(a.obpm / a.mp), dbpm: round2(a.dbpm / a.mp),
+      mp: Math.round(a.mp), seasons: a.seasons,
     });
   }
   return out;
@@ -241,15 +269,23 @@ async function scrapeLeague(league, previous) {
   const pgMap  = parsePerGame(perGameHtml);
   const advMap = parseAdvanced(advancedHtml);
 
-  // NBA only: last season's BPM — the injury model's prior. It never
-  // changes, so if the page fails we carry forward what's already on disk
-  // (by slug) rather than silently dropping it.
+  // NBA only: the injury model's BPM prior = MINUTES-WEIGHTED average of the
+  // last PRIOR_SEASONS seasons (tested 11/20: ties last-season-only on
+  // accuracy but stops one short/injured/fluky season from mis-rating a
+  // player — e.g. Haliburton, who missed all of 2025-26). Past seasons never
+  // change, so if ANY page fails we carry forward what's already on disk (by
+  // slug) rather than silently mixing a 2-season prior with 3-season ones.
   let priorMap = null;
   if (league === 'nba') {
-    const priorUrl = pageUrls(league, year - 1).advanced;
+    const seasonMaps = [];
     try {
-      console.log(`[${league}] fetching prior season ${priorUrl}`);
-      priorMap = parseAdvancedSeason(await fetchHtml(priorUrl));
+      for (let i = 1; i <= PRIOR_SEASONS; i++) {
+        const priorUrl = pageUrls(league, year - i).advanced;
+        console.log(`[${league}] fetching prior season ${priorUrl}`);
+        seasonMaps.push(parseAdvancedSeason(await fetchHtml(priorUrl)));
+        await new Promise((r) => setTimeout(r, 3500)); // stay well under BBR's rate limit
+      }
+      priorMap = combinePriorSeasons(seasonMaps);
     } catch (e) {
       console.warn(`[${league}] prior-season fetch failed (${e.message}) — carrying forward previous prior* fields`);
     }
@@ -285,6 +321,7 @@ async function scrapeLeague(league, previous) {
       entry.priorObpm = pr ? pr.obpm : (priorMap ? null : carry?.priorObpm ?? null);
       entry.priorDbpm = pr ? pr.dbpm : (priorMap ? null : carry?.priorDbpm ?? null);
       entry.priorMp   = pr ? pr.mp   : (priorMap ? null : carry?.priorMp ?? null);
+      entry.priorSeasons = pr ? pr.seasons : (priorMap ? null : carry?.priorSeasons ?? null);
     }
     teams[espnAbbr].players.push(entry);
   }
