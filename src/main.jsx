@@ -12,6 +12,11 @@ import Signup from './pages/Signup.jsx';
 import Verify from './pages/Verify.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
 import { RequireAuth, RedirectIfAuth } from './auth/RouteGuards.jsx';
+import { installResumeRefresh } from './data/refreshBus.js';
+
+// Re-fetch everything when the app returns from the background (iOS keeps
+// Home Screen apps suspended with stale data otherwise).
+installResumeRefresh();
 
 // Installable app (PWA): register the service worker in production builds
 // only — in `npm run dev` it would cache Vite's dev modules and get in the
