@@ -169,8 +169,70 @@ function parsePerGame(html) {
     const name = nameM ? nameM[1].replace(/<[^>]+>/g, '').trim() : null;
     const mpgRaw = pickCell(row, 'mp_per_g');
     const mpg = mpgRaw != null && !Number.isNaN(parseFloat(mpgRaw)) ? parseFloat(mpgRaw) : null;
+    // Games played FOR THIS TEAM — the injury model uses g / team games as
+    // the share of the team's season rating that still includes the player.
+    const g = numOrNull(pickCell(row, 'games'));
     if (!name) continue;
-    out.set(slug, { name, slug, team, mpg });
+    out.set(slug, { name, slug, team, mpg, g });
+  }
+  return out;
+}
+
+function numOrNull(v) {
+  if (v == null || v === '') return null;
+  const n = parseFloat(v);
+  return Number.isNaN(n) ? null : n;
+}
+
+// Season-aggregate BPM per player for a (prior) season: prefers the
+// multi-team TOT/2TM row so traded players get their whole-season value.
+// Feeds the injury model's BPM prior (see combinePriorSeasons).
+function parseAdvancedSeason(html) {
+  const stripped = html.replace(/<!--/g, '').replace(/-->/g, '');
+  const rows = findTableRows(stripped, ['advanced']);
+  const out = new Map();
+  for (const row of rows) {
+    const slugM = row.match(SLUG_RE);
+    if (!slugM) continue;
+    const slug = slugM[1];
+    const team = readTeam(row);
+    const multi = !!team && MULTI_TEAM_RE.test(team);
+    if (out.has(slug) && !multi) continue;
+    out.set(slug, {
+      bpm:  numOrNull(pickCell(row, 'bpm')),
+      obpm: numOrNull(pickCell(row, 'obpm')),
+      dbpm: numOrNull(pickCell(row, 'dbpm')),
+      mp:   numOrNull(pickCell(row, 'mp')),
+    });
+  }
+  return out;
+}
+
+// Minutes-weighted blend of several past seasons (most recent first). Each
+// season votes by minutes played — no extra recency weight. Seasons with no
+// minutes or no BPM are skipped; priorMp = total minutes across them (the
+// model ignores priors under INJURY_V2.PRIOR_MIN_MP).
+const PRIOR_SEASONS = 3;
+function combinePriorSeasons(seasonMaps) {
+  const acc = new Map();
+  for (const m of seasonMaps) {
+    for (const [slug, r] of m) {
+      if (!r.mp || r.bpm == null) continue;
+      const a = acc.get(slug) || { mp: 0, bpm: 0, obpm: 0, dbpm: 0, seasons: 0 };
+      a.mp += r.mp; a.seasons += 1;
+      a.bpm  += r.mp * r.bpm;
+      a.obpm += r.mp * (r.obpm ?? 0);
+      a.dbpm += r.mp * (r.dbpm ?? 0);
+      acc.set(slug, a);
+    }
+  }
+  const round2 = (x) => Math.round(x * 100) / 100;
+  const out = new Map();
+  for (const [slug, a] of acc) {
+    out.set(slug, {
+      bpm: round2(a.bpm / a.mp), obpm: round2(a.obpm / a.mp), dbpm: round2(a.dbpm / a.mp),
+      mp: Math.round(a.mp), seasons: a.seasons,
+    });
   }
   return out;
 }
@@ -190,12 +252,12 @@ function parseAdvanced(html) {
     const perRaw = pickCell(row, 'per');
     const bpm = bpmRaw != null && bpmRaw !== '' && !Number.isNaN(parseFloat(bpmRaw)) ? parseFloat(bpmRaw) : null;
     const per = perRaw != null && perRaw !== '' && !Number.isNaN(parseFloat(perRaw)) ? parseFloat(perRaw) : null;
-    out.set(slug, { bpm, per });
+    out.set(slug, { bpm, per, obpm: numOrNull(pickCell(row, 'obpm')), dbpm: numOrNull(pickCell(row, 'dbpm')) });
   }
   return out;
 }
 
-async function scrapeLeague(league) {
+async function scrapeLeague(league, previous) {
   const year = league === 'nba' ? nbaSeasonYear() : wnbaSeasonYear();
   const urls = pageUrls(league, year);
   console.log(`[${league}] fetching ${urls.perGame}`);
@@ -207,20 +269,61 @@ async function scrapeLeague(league) {
   const pgMap  = parsePerGame(perGameHtml);
   const advMap = parseAdvanced(advancedHtml);
 
+  // NBA only: the injury model's BPM prior = MINUTES-WEIGHTED average of the
+  // last PRIOR_SEASONS seasons (tested 11/20: ties last-season-only on
+  // accuracy but stops one short/injured/fluky season from mis-rating a
+  // player — e.g. Haliburton, who missed all of 2025-26). Past seasons never
+  // change, so if ANY page fails we carry forward what's already on disk (by
+  // slug) rather than silently mixing a 2-season prior with 3-season ones.
+  let priorMap = null;
+  if (league === 'nba') {
+    const seasonMaps = [];
+    try {
+      for (let i = 1; i <= PRIOR_SEASONS; i++) {
+        const priorUrl = pageUrls(league, year - i).advanced;
+        console.log(`[${league}] fetching prior season ${priorUrl}`);
+        seasonMaps.push(parseAdvancedSeason(await fetchHtml(priorUrl)));
+        await new Promise((r) => setTimeout(r, 3500)); // stay well under BBR's rate limit
+      }
+      priorMap = combinePriorSeasons(seasonMaps);
+    } catch (e) {
+      console.warn(`[${league}] prior-season fetch failed (${e.message}) — carrying forward previous prior* fields`);
+    }
+  }
+  const prevPrior = new Map();
+  for (const t of Object.values(previous?.[league]?.teams ?? {})) {
+    for (const p of t.players) {
+      if (p.priorBpm !== undefined) prevPrior.set(p.slug, p);
+    }
+  }
+
   const teams = {};
   for (const [slug, pg] of pgMap) {
-    const adv = advMap.get(slug) || { bpm: null, per: null };
+    const adv = advMap.get(slug) || { bpm: null, per: null, obpm: null, dbpm: null };
     const espnAbbr = toEspnAbbr(pg.team);
     if (!teams[espnAbbr]) {
       teams[espnAbbr] = { bbrCode: pg.team, players: [] };
     }
-    teams[espnAbbr].players.push({
+    const entry = {
       name: pg.name,
       slug,
       mpg: pg.mpg,
+      g: pg.g,
       bpm: adv.bpm,
+      obpm: adv.obpm,
+      dbpm: adv.dbpm,
       per: adv.per,
-    });
+    };
+    if (league === 'nba') {
+      const pr = priorMap ? priorMap.get(slug) : null;
+      const carry = prevPrior.get(slug);
+      entry.priorBpm  = pr ? pr.bpm  : (priorMap ? null : carry?.priorBpm ?? null);
+      entry.priorObpm = pr ? pr.obpm : (priorMap ? null : carry?.priorObpm ?? null);
+      entry.priorDbpm = pr ? pr.dbpm : (priorMap ? null : carry?.priorDbpm ?? null);
+      entry.priorMp   = pr ? pr.mp   : (priorMap ? null : carry?.priorMp ?? null);
+      entry.priorSeasons = pr ? pr.seasons : (priorMap ? null : carry?.priorSeasons ?? null);
+    }
+    teams[espnAbbr].players.push(entry);
   }
 
   return {
@@ -292,7 +395,7 @@ async function main() {
 
   const result = {};
   for (const league of ['nba', 'wnba']) {
-    result[league] = await scrapeLeague(league);
+    result[league] = await scrapeLeague(league, previous);
     validate(league, result[league], previous);
   }
 

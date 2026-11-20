@@ -325,8 +325,12 @@ function findRosterEntry(injuredName, rosterByNormName) {
 //
 // Rows are returned sorted by contribution desc so the UI shows the
 // heaviest-hitting absences first.
-export function computeInjuryScoreDetailed(players, rosterByNormName) {
-  if (!Array.isArray(players)) return { score: 0, rows: [] };
+// opts.league === 'nba'  → v2 valuation (nbaInjuryValue below), score in
+//                          POINTS PER 100 POSSESSIONS, plus offScore/defScore.
+// anything else (WNBA)    → legacy impactFactor scoring (no BPM to rebuild on).
+export function computeInjuryScoreDetailed(players, rosterByNormName, opts = {}) {
+  if (opts.league === 'nba') return computeInjuryScoreV2(players, rosterByNormName, opts.availability);
+  if (!Array.isArray(players)) return { score: 0, rows: [], model: 'legacy' };
   let score = 0;
   const rows = [];
   for (const p of players) {
@@ -349,7 +353,119 @@ export function computeInjuryScoreDetailed(players, rosterByNormName) {
     });
   }
   rows.sort((a, b) => b.contribution - a.contribution);
-  return { score, rows };
+  return { score, rows, model: 'legacy' };
+}
+
+// ── NBA injury value v2 (rebuilt + backtested 11/19/26) ─────────────────
+//
+// Backtest: 3,216 games (2023-24..2025-26), point-in-time, fit on two
+// seasons / tested on the third. Replaced the hand-picked Δ_Star (IAF ×0.05
+// ×20, BPM_SCALE 2.8, 1.0 floor, ±5 NET cap) which (a) let below-replacement
+// players cancel stars, (b) under-scaled stars, (c) capped the NET so
+// stacked/star injuries got crushed, (d) double-counted long absences.
+//
+//   value (pts per 100 poss) = SCALE × max(0, BPM − REPLACEMENT)
+//                              × (mpg / 48) × share,  capped at PLAYER_CAP
+//   share = ½ × (games played / team games) + ½ × (played in last 10 / 10)
+//           → how much of him is still baked into the team's ratings.
+//   Spread:  Δ_Star = (und score − fav score) × game possessions / 100. No net cap.
+//   Totals:  same values split OBPM / DBPM — losing offense lowers his
+//            team's expected points, losing defense raises the opponent's.
+//
+// Results vs the old formula (held-out RMSE): all games 14.433 → 14.387,
+// games where a star sat 14.486 → 14.252, totals 19.074 → 18.896 (the old
+// totals rule was worse than ignoring injuries). ATS unchanged (books
+// already price injuries — ATS gains must come from team strength).
+// Tested and rejected: on/off net rating (14.479, too noisy), blends, any
+// cap on the net or a team total, cutoffs 0/12/15/21 (18 locked by Jordan).
+export const INJURY_V2 = {
+  MIN_MPG:          18,    // LOCKED 11/19/26 — below 18 mpg no measurable margin effect
+  REPLACEMENT_BPM:  -3,    // flat optimum −3..−6 (trades off with SCALE)
+  SCALE:            0.58,  // fitted 0.55–0.60 on every held-out season
+  PLAYER_CAP:       5.0,   // per player, pts per 100 poss — beat no cap & every net cap
+  OFF_REPLACEMENT:  -1.5,  // totals split (OBPM side)
+  DEF_REPLACEMENT:  -1.5,  // totals split (DBPM side)
+  NO_PRIOR_BPM:     -1,    // players w/o a usable prior season (fit vs −2 / replacement)
+  PRIOR_MIN_MP:     250,   // total minutes over the prior seasons (3-season, minutes-weighted) needed for the prior to count
+  // UNVALIDATED (backtest only had last season's BPM): regress this season's
+  // BPM toward last season's — this season reaches 50% weight at 20 games.
+  PRIOR_GAMES:      20,
+};
+
+function regressBpm(cur, prior, gp) {
+  if (cur == null) return prior;
+  const g = Math.max(0, gp || 0);
+  const K = INJURY_V2.PRIOR_GAMES;
+  return (prior * K + cur * g) / (K + g);
+}
+
+// Share of the player that is still IN the team's (season + L10) ratings.
+// Without the ESPN availability feed for his team, both halves use the
+// season share. If his name isn't in the feed, the L10 half falls back to
+// the season share rather than treating him as absent.
+function availabilityShare(entry, avail) {
+  const tg = avail?.teamGames;
+  const seasonShare = entry.g != null && tg > 0 ? Math.min(1, entry.g / tg) : 1;
+  if (!avail || !avail.window) return seasonShare;
+  const n = avail.played?.[normalizeName(entry.name)];
+  const l10Share = n != null ? Math.min(1, n / avail.window) : seasonShare;
+  return 0.5 * seasonShare + 0.5 * l10Share;
+}
+
+export function nbaInjuryValue(entry, avail) {
+  const zero = { value: 0, off: 0, def: 0, bpm: entry?.bpm ?? null, share: null, capped: false, belowMin: false };
+  if (!entry) return zero;
+  const mpg = entry.mpg ?? 0;
+  if (mpg < INJURY_V2.MIN_MPG) return { ...zero, belowMin: true };
+  const priorOk = entry.priorMp != null && entry.priorMp >= INJURY_V2.PRIOR_MIN_MP;
+  const pB = priorOk && entry.priorBpm  != null ? entry.priorBpm  : INJURY_V2.NO_PRIOR_BPM;
+  const pO = priorOk && entry.priorObpm != null ? entry.priorObpm : INJURY_V2.NO_PRIOR_BPM / 2;
+  const pD = priorOk && entry.priorDbpm != null ? entry.priorDbpm : INJURY_V2.NO_PRIOR_BPM / 2;
+  const bpm  = regressBpm(entry.bpm,  pB, entry.g);
+  const obpm = regressBpm(entry.obpm, pO, entry.g);
+  const dbpm = regressBpm(entry.dbpm, pD, entry.g);
+  const share = availabilityShare(entry, avail);
+  const k = INJURY_V2.SCALE * (mpg / 48) * share;
+  const raw = k * Math.max(0, bpm - INJURY_V2.REPLACEMENT_BPM);
+  const value = Math.min(INJURY_V2.PLAYER_CAP, raw);
+  let off = k * Math.max(0, obpm - INJURY_V2.OFF_REPLACEMENT);
+  let def = k * Math.max(0, dbpm - INJURY_V2.DEF_REPLACEMENT);
+  const od = off + def;
+  if (od > INJURY_V2.PLAYER_CAP) { off *= INJURY_V2.PLAYER_CAP / od; def *= INJURY_V2.PLAYER_CAP / od; }
+  return { value, off, def, bpm, share, capped: raw > INJURY_V2.PLAYER_CAP, belowMin: false };
+}
+
+function computeInjuryScoreV2(players, rosterByNormName, avail) {
+  if (!Array.isArray(players)) return { score: 0, offScore: 0, defScore: 0, rows: [], model: 'v2' };
+  let score = 0, offScore = 0, defScore = 0;
+  const rows = [];
+  for (const p of players) {
+    const key = String(p?.status || '').toLowerCase().trim();
+    const statusWeight = INJURY_STATUS_WEIGHTS[key] || 0;
+    if (statusWeight === 0) continue;
+    const entry = rosterByNormName ? findRosterEntry(p?.player, rosterByNormName) : null;
+    const v = nbaInjuryValue(entry, avail);
+    const contribution = statusWeight * v.value;
+    score += contribution;
+    offScore += statusWeight * v.off;
+    defScore += statusWeight * v.def;
+    rows.push({
+      player: p?.player || '',
+      status: p?.status || '',
+      statusWeight,
+      mpg: entry?.mpg ?? null,
+      bpm: v.bpm,                 // BPM actually used (this season regressed to last)
+      bpmSeason: entry?.bpm ?? null,
+      per: entry?.per ?? null,
+      share: v.share,
+      capped: v.capped,
+      belowMin: v.belowMin,
+      impact: v.value,            // pts per 100 poss if fully out
+      contribution,               // × status weight
+    });
+  }
+  rows.sort((a, b) => b.contribution - a.contribution);
+  return { score, offScore, defScore, rows, model: 'v2' };
 }
 
 // ── Team stats accessor (resolved via ctx) ─────────────────────────────
@@ -404,10 +520,18 @@ function hcaDynamic(game, ctx) {
 // Returns a structured detail object — `.value` is what existing scalar
 // callers consume; the rest powers the breakdown surface (Step 1 of the
 // tap-to-expand work).
-function deltaStar(ctx, league, favId, undId) {
+function deltaStar(game, ctx, favId, undId) {
+  const league = game.league;
   const inj = ctx && ctx.getInjuryScore ? ctx.getInjuryScore : () => 0;
   const favScore = inj(league, favId);
   const undScore = inj(league, undId);
+  if (league === 'nba') {
+    // v2: scores are pts per 100 possessions → convert at this game's pace.
+    // No net cap (each player is already capped individually).
+    const possessions = projectedPossessions(game, ctx);
+    const value = ((undScore - favScore) * possessions) / 100;
+    return { value, favScore, undScore, iaf: null, raw: value, clamped: false, model: 'v2', possessions };
+  }
   const iaf = 1.0 + (undScore - favScore) * 0.05;
   const raw = (iaf - 1.0) * 20;
   const { min, max } = cfg(league).starCap;
@@ -454,18 +578,26 @@ function srsShrinkWeight(teamStats) {
 //   NBA Oct–Mar      → no L10 yet → falls back to plain SRS
 //   WNBA             → no L10 yet → falls back to plain SRS
 // (Adding regular-season L10 scraping is on the future-work list.)
-function blendedSRS(teamStats, league) {
+//
+// Per-100 framework (11/19/26): both halves are put on a per-100-possession
+// basis (SRS ÷ team pace × 100; L10 NetRtg already is), blended, then
+// converted at THIS GAME's shared possessions. Both teams play the same
+// number of possessions, so converting each with its own pace (the old way)
+// was slightly off — tiny numerically (~0.04 typical, ≤~0.4 at extreme
+// pace gaps) but it puts spreads on the same scale as the totals path.
+// Without gamePoss it reduces exactly to the old per-game behavior.
+function blendedSRS(teamStats, league, gamePoss) {
   const c = cfg(league);
   const rawSrs = get(teamStats, 'srs', 0);
   const srs = rawSrs * srsShrinkWeight(teamStats);
+  const pace = get(teamStats, 'pace', c.paceDefault) || c.paceDefault;
+  const poss = gamePoss ?? pace;
+  const srsPer100 = (srs * 100) / pace;
   const offL10 = get(teamStats, 'offLast10', null);
   const defL10 = get(teamStats, 'defLast10', null);
-  if (offL10 == null || defL10 == null) return srs;
-
-  const pace = get(teamStats, 'pace', c.paceDefault);
-  // Convert NetRtg (per-100-poss) → points-per-game so the units align with SRS.
-  const recentSrsProxy = ((offL10 - defL10) * pace) / 100;
-  return 0.5 * srs + 0.5 * recentSrsProxy;
+  if (offL10 == null || defL10 == null) return (srsPer100 * poss) / 100;
+  const l10Per100 = offL10 - defL10;
+  return ((0.5 * srsPer100 + 0.5 * l10Per100) * poss) / 100;
 }
 
 // B2B / rest adjustment — empirically measured from 2 full NBA seasons
@@ -513,8 +645,9 @@ function restTotalMultiplier(game) {
 
 // Returns { favoredIsHome, favSRS, undSRS, hca, deltaStar, baseANG, rest }.
 function favoritedView(game, ctx) {
-  const homeSRS = blendedSRS(stats(ctx, game.league, game.home.abbr), game.league);
-  const awaySRS = blendedSRS(stats(ctx, game.league, game.away.abbr), game.league);
+  const gamePoss = projectedPossessions(game, ctx);
+  const homeSRS = blendedSRS(stats(ctx, game.league, game.home.abbr), game.league, gamePoss);
+  const awaySRS = blendedSRS(stats(ctx, game.league, game.away.abbr), game.league, gamePoss);
 
   const hca = hcaDynamic(game, ctx);
 
@@ -529,7 +662,7 @@ function favoritedView(game, ctx) {
   const undSRS = favoredIsHome ? awaySRS : homeSRS;
   const favId  = favoredIsHome ? game.home.id : game.away.id;
   const undId  = favoredIsHome ? game.away.id : game.home.id;
-  const starDetail = deltaStar(ctx, game.league, favId, undId);
+  const starDetail = deltaStar(game, ctx, favId, undId);
 
   const hcaSigned = favoredIsHome ? +hca : -hca;
   // Rest adjustment flips sign if the away team is the favorite — same
@@ -706,9 +839,26 @@ function blendedDef(teamStats, league) {
 const INJURY_TOTAL_ALPHA = 0.7;
 const INJURY_TOTAL_BETA  = 0.2;
 
+// ↑ ALPHA/BETA are LEGACY (WNBA only). The backtest showed this rule made
+// NBA totals worse than ignoring injuries (RMSE 19.074 vs 18.952). NBA now
+// uses the v2 offense/defense split below (18.896).
+
 function teamInjuryScore(game, ctx, teamSide) {
   const inj = ctx && ctx.getInjuryScore ? ctx.getInjuryScore : () => 0;
   return inj(game.league, teamSide.id) || 0;
+}
+
+// Injury inputs for the totals path, per team.
+//   v2 (NBA):     off/def = the same per-player values that drive Δ_Star,
+//                 split OBPM/DBPM (pts per 100). One scale for both paths.
+//   legacy (WNBA): ALPHA/BETA × the scalar injury score.
+function teamInjuryParts(game, ctx, teamSide) {
+  const score = teamInjuryScore(game, ctx, teamSide);
+  if (game.league === 'nba') {
+    const d = ctx && ctx.getInjuryDetail ? ctx.getInjuryDetail(game.league, teamSide.id) : null;
+    return { score, off: d?.offScore ?? 0, def: d?.defScore ?? 0, model: 'v2' };
+  }
+  return { score, off: INJURY_TOTAL_ALPHA * score, def: INJURY_TOTAL_BETA * score, model: 'legacy' };
 }
 
 // ── Matchup dominance correction (11/8/26) ──────────────────────────────
@@ -764,20 +914,26 @@ const MATCHUP_DRTG_COEF = MATCHUP_DRTG_COEF_BASE * MATCHUP_DOMINANCE_K;  // 0.12
 //                    + MATCHUP_ORTG_COEF × (effOff(away) − leagueAvg)
 //                    + MATCHUP_DRTG_COEF × (effDef(home) − leagueAvg)
 //
-// Where effOff / effDef each have their team's injury impact subtracted
-// from offense / added to defense respectively (see INJURY_TOTAL_ALPHA
-// and INJURY_TOTAL_BETA above).
-function combinedOffRating(game, ctx) {
+// Injuries:
+//   NBA (v2):   applied straight to each team's expected points per 100 —
+//               homeExpected −= home's offense lost; += away's defense lost
+//               (and mirrored). Matches the validated backtest exactly.
+//   WNBA (legacy): folded into effOff / effDef via ALPHA / BETA.
+//
+// Single source of truth for combinedOffRating() AND totalBreakdown() —
+// they used to duplicate this math line for line.
+function totalsRatings(game, ctx) {
   const c = cfg(game.league);
   const hStats = stats(ctx, game.league, game.home.abbr);
   const aStats = stats(ctx, game.league, game.away.abbr);
-  const hInj = teamInjuryScore(game, ctx, game.home);
-  const aInj = teamInjuryScore(game, ctx, game.away);
+  const hI = teamInjuryParts(game, ctx, game.home);
+  const aI = teamInjuryParts(game, ctx, game.away);
+  const v2 = game.league === 'nba';
 
-  const effHomeOff = blendedOff(hStats, game.league) - INJURY_TOTAL_ALPHA * hInj;
-  const effAwayOff = blendedOff(aStats, game.league) - INJURY_TOTAL_ALPHA * aInj;
-  const effHomeDef = blendedDef(hStats, game.league) + INJURY_TOTAL_BETA  * hInj;
-  const effAwayDef = blendedDef(aStats, game.league) + INJURY_TOTAL_BETA  * aInj;
+  const effHomeOff = blendedOff(hStats, game.league) - (v2 ? 0 : hI.off);
+  const effAwayOff = blendedOff(aStats, game.league) - (v2 ? 0 : aI.off);
+  const effHomeDef = blendedDef(hStats, game.league) + (v2 ? 0 : hI.def);
+  const effAwayDef = blendedDef(aStats, game.league) + (v2 ? 0 : aI.def);
 
   // League anchor — ORtg and DRtg averages are identical by construction
   // at the league level (one team's points scored equals another's
@@ -787,17 +943,35 @@ function combinedOffRating(game, ctx) {
 
   const homeBase = (effHomeOff + effAwayDef) / 2;
   const awayBase = (effAwayOff + effHomeDef) / 2;
-
   const homeCorrection =
     MATCHUP_ORTG_COEF * (effHomeOff - leagueAvg) +
     MATCHUP_DRTG_COEF * (effAwayDef - leagueAvg);
   const awayCorrection =
     MATCHUP_ORTG_COEF * (effAwayOff - leagueAvg) +
     MATCHUP_DRTG_COEF * (effHomeDef - leagueAvg);
+  const homeInjuryAdj = v2 ? -hI.off + aI.def : 0;
+  const awayInjuryAdj = v2 ? -aI.off + hI.def : 0;
 
-  const homeExpected = homeBase + homeCorrection;
-  const awayExpected = awayBase + awayCorrection;
-  return homeExpected + awayExpected;
+  const homeExpected = homeBase + homeCorrection + homeInjuryAdj;
+  const awayExpected = awayBase + awayCorrection + awayInjuryAdj;
+
+  const hPace = get(hStats, 'pace', c.paceDefault);
+  const aPace = get(aStats, 'pace', c.paceDefault);
+  const paceDeflate = isNbaPlayoffs(game.league) ? c.paceDeflate : 0;
+
+  return {
+    leagueAvg, hPace, aPace, paceDeflate,
+    possessions: projectedPossessions(game, ctx),
+    home: { abbr: game.home.abbr, ratingOff: effHomeOff, ratingDef: effHomeDef, injury: hI,
+            baseExpected: homeBase, correction: homeCorrection, injuryAdj: homeInjuryAdj, expected: homeExpected },
+    away: { abbr: game.away.abbr, ratingOff: effAwayOff, ratingDef: effAwayDef, injury: aI,
+            baseExpected: awayBase, correction: awayCorrection, injuryAdj: awayInjuryAdj, expected: awayExpected },
+    combined: homeExpected + awayExpected,
+  };
+}
+
+function combinedOffRating(game, ctx) {
+  return totalsRatings(game, ctx).combined;
 }
 
 // ── Totals matchup adjustment (11/6/26 trimmed to only the signals that
@@ -902,34 +1076,21 @@ export function projectedTotal(game, ctx) {
 // in format so the UI can render it the same way. Called once; its output
 // is frozen into the snapshot alongside the DBP breakdown.
 export function totalBreakdown(game, ctx) {
-  const c = cfg(game.league);
-  const hStats = stats(ctx, game.league, game.home.abbr);
-  const aStats = stats(ctx, game.league, game.away.abbr);
-  const hInj = teamInjuryScore(game, ctx, game.home);
-  const aInj = teamInjuryScore(game, ctx, game.away);
-
-  const effHomeOff = blendedOff(hStats, game.league) - INJURY_TOTAL_ALPHA * hInj;
-  const effAwayOff = blendedOff(aStats, game.league) - INJURY_TOTAL_ALPHA * aInj;
-  const effHomeDef = blendedDef(hStats, game.league) + INJURY_TOTAL_BETA  * hInj;
-  const effAwayDef = blendedDef(aStats, game.league) + INJURY_TOTAL_BETA  * aInj;
-
-  const leagueAvg = c.offRtgDefault;
-  const homeBase = (effHomeOff + effAwayDef) / 2;
-  const awayBase = (effAwayOff + effHomeDef) / 2;
-  const homeCorrection =
-    MATCHUP_ORTG_COEF * (effHomeOff - leagueAvg) +
-    MATCHUP_DRTG_COEF * (effAwayDef - leagueAvg);
-  const awayCorrection =
-    MATCHUP_ORTG_COEF * (effAwayOff - leagueAvg) +
-    MATCHUP_DRTG_COEF * (effHomeDef - leagueAvg);
-  const homeExpected = homeBase + homeCorrection;
-  const awayExpected = awayBase + awayCorrection;
-  const combined = homeExpected + awayExpected;
-
-  const hPace = get(hStats, 'pace', c.paceDefault);
-  const aPace = get(aStats, 'pace', c.paceDefault);
-  const paceDeflate = isNbaPlayoffs(game.league) ? c.paceDeflate : 0;
-  const possessions = (hPace + aPace) / 2 - paceDeflate;
+  const tr = totalsRatings(game, ctx);
+  const { leagueAvg, hPace, aPace, paceDeflate, possessions, combined } = tr;
+  const teamRow = (t) => ({
+    abbr: t.abbr,
+    ratingOff: t.ratingOff,
+    ratingDef: t.ratingDef,
+    injuryScore: t.injury.score,
+    injuryOff: t.injury.off,       // pts per 100 of THIS team's offense lost
+    injuryDef: t.injury.def,       // pts per 100 of THIS team's defense lost
+    injuryModel: t.injury.model,   // 'v2' (NBA) | 'legacy' (WNBA)
+    baseExpected: t.baseExpected,
+    correction: t.correction,
+    injuryAdj: t.injuryAdj,        // v2: change to this team's expected pts per 100
+    expected: t.expected,
+  });
 
   const baseTotal = (possessions * combined) / 100;
   const matchup = totalMatchupDetail(game, ctx);
@@ -946,24 +1107,8 @@ export function totalBreakdown(game, ctx) {
       value: possessions,
     },
     ratings: {
-      home: {
-        abbr: game.home.abbr,
-        ratingOff: effHomeOff,
-        ratingDef: effHomeDef,
-        injuryScore: hInj,
-        baseExpected: homeBase,
-        correction: homeCorrection,
-        expected: homeExpected,
-      },
-      away: {
-        abbr: game.away.abbr,
-        ratingOff: effAwayOff,
-        ratingDef: effAwayDef,
-        injuryScore: aInj,
-        baseExpected: awayBase,
-        correction: awayCorrection,
-        expected: awayExpected,
-      },
+      home: teamRow(tr.home),
+      away: teamRow(tr.away),
       combined,
       baseTotal,
       matchupCorrection: {
@@ -1079,6 +1224,8 @@ export function predictionBreakdown(game, ctx) {
       raw: star.raw,
       clamped: star.clamped,
       value: star.value,
+      model: star.model || 'legacy',        // 'v2' = rebuilt NBA injury value
+      possessions: star.possessions ?? null,
     },
     dbp: {
       intercept: c.intercept,
