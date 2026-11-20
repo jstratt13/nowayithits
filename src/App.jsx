@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTrackerSyncTicker } from './hooks/useTrackerSync.js';
 import { useAuth } from './auth/AuthContext.jsx';
+import InstallPrompt from './components/InstallPrompt.jsx';
 
 function todayLabel() {
   return new Date().toLocaleDateString('en-US', {
@@ -72,6 +73,8 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {isAuthed && <InstallPrompt />}
 
       <main>
         <Outlet />

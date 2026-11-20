@@ -2489,3 +2489,34 @@ footer {
     width: 100%;
   }
 }
+
+/* ── Install-the-app banner (PWA) ─────────────────────────────────────── */
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 1200px;
+  margin: 0.75rem auto 0;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  width: calc(100% - 2rem);
+}
+.install-icon { width: 40px; height: 40px; border-radius: 9px; flex-shrink: 0; }
+.install-text { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.85rem; color: var(--muted); flex: 1; min-width: 0; }
+.install-text strong { color: var(--text); font-size: 0.9rem; }
+.install-btn {
+  background: var(--accent); color: #fff; border: 0; border-radius: var(--radius);
+  padding: 0.45rem 0.9rem; font-weight: 600; cursor: pointer; flex-shrink: 0;
+}
+.install-close {
+  background: none; border: 0; color: var(--muted2); font-size: 1.3rem; line-height: 1;
+  cursor: pointer; padding: 0.2rem 0.35rem; flex-shrink: 0;
+}
+/* Installed app: respect the iPhone notch / home indicator. */
+@media (display-mode: standalone) {
+  .nav { padding-top: env(safe-area-inset-top); }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+}
