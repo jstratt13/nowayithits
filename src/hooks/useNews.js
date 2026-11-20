@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchNews } from '../data/espnNews.js';
+import { onRefresh } from '../data/refreshBus.js';
 
 const REFRESH_MS = 10 * 60 * 1000; // 10 min — news ages slowly
 
@@ -22,7 +23,8 @@ export function useNews(league) {
     };
     load();
     const t = setInterval(load, REFRESH_MS);
-    return () => { cancelled = true; clearInterval(t); };
+    const off = onRefresh(load);
+    return () => { cancelled = true; clearInterval(t); off(); };
   }, [league]);
 
   return state;

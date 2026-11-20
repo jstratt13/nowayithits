@@ -2587,3 +2587,21 @@ footer {
 .tracker-pager { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.85rem 1rem; border-top: 1px solid var(--border); }
 .tracker-pager-count { font-size: 0.8rem; color: var(--muted); margin-right: auto; }
 .tracker-pager-msg { flex-basis: 100%; font-size: 0.8rem; color: var(--muted); }
+
+/* ── Refresh (↻ button + pull-to-refresh) ─────────────────────────────── */
+.nav-refresh {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--border2); background: var(--surface); color: var(--text);
+  cursor: pointer; align-self: center;
+}
+.nav-refresh:hover { color: var(--accent2); }
+.nav-refresh.spinning svg, .ptr-icon.spinning { animation: nwih-spin 0.8s linear infinite; }
+@keyframes nwih-spin { to { transform: rotate(360deg); } }
+.ptr {
+  position: fixed; top: calc(env(safe-area-inset-top) + 6px); left: 50%; z-index: 50;
+  display: flex; align-items: center; gap: 0.4rem;
+  background: var(--surface); border: 1px solid var(--border2); box-shadow: var(--shadow-md);
+  border-radius: 999px; padding: 0.35rem 0.8rem; font-size: 0.8rem; color: var(--muted);
+}
+.ptr-icon { display: inline-block; font-size: 1rem; color: var(--text); }

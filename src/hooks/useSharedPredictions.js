@@ -22,9 +22,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { useFetchWithAuth } from '../auth/useFetchWithAuth.js';
+import { onRefresh } from '../data/refreshBus.js';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
-const POLL_MS = 10 * 60 * 1000; // 10 minutes
+const POLL_MS = 2 * 60 * 1000; // 2 minutes — the worker updates every 2 min near game time
 
 function ymd(date) {
   // Same convention as src/data/espn.js — local calendar day formatted as
@@ -66,8 +67,8 @@ export function useSharedPredictions(league, date) {
         // Per-hour cache-buster so neither the browser nor Cloudflare's
         // edge serves a stale response. The worker reads from KV so its
         // own freshness is independent of HTTP cache.
-        const hourSlot = Math.floor(Date.now() / 3_600_000);
-        const url = `${WORKER_URL}/predictions/${league}?date=${dateStr}&_h=${hourSlot}`;
+        const minuteSlot = Math.floor(Date.now() / 60_000);
+        const url = `${WORKER_URL}/predictions/${league}?date=${dateStr}&_m=${minuteSlot}`;
         const res = await fetchAuth(url);
         if (!res.ok) throw new Error(`worker → ${res.status}`);
         const body = await res.json();
@@ -94,9 +95,11 @@ export function useSharedPredictions(league, date) {
 
     fetchOnce();
     const timer = setInterval(fetchOnce, POLL_MS);
+    const off = onRefresh(fetchOnce);
     return () => {
       cancelled = true;
       clearInterval(timer);
+      off();
     };
   }, [league, dateStr, token, authStatus, fetchAuth]);
 

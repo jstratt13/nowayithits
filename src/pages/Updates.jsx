@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { useFetchWithAuth } from '../auth/useFetchWithAuth.js';
 import AlertsPanel from '../components/AlertsPanel.jsx';
+import { onRefresh } from '../data/refreshBus.js';
 
 // Updates feed (app phase 2). The worker diffs every 10-minute run and
 // stores what changed — injury status changes, pick flips, line moves,
@@ -70,7 +71,8 @@ export default function Updates() {
     load();
     const poll = setInterval(load, POLL_MS);
     const tick = setInterval(() => setTick((t) => t + 1), 30000);
-    return () => { cancelled = true; clearInterval(poll); clearInterval(tick); };
+    const off = onRefresh(load);
+    return () => { cancelled = true; clearInterval(poll); clearInterval(tick); off(); };
   }, [authStatus, token, fetchAuth]);
 
   const shown = useMemo(() => (filter === 'all' ? events : events.filter((e) => e.type === filter)), [events, filter]);

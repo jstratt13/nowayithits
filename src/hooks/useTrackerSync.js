@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { reconcileAndNotify, getSyncMeta, subscribeSync } from '../data/trackerSync.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { useFetchWithAuth } from '../auth/useFetchWithAuth.js';
+import { onRefresh } from '../data/refreshBus.js';
 
 // Sync interval — re-runs reconcile while the app stays open.
 // 15 min is plenty since games take 2+ hours to finalize after tipoff.
@@ -38,7 +39,13 @@ export function useTrackerSyncTicker({ enabled = true } = {}) {
     if (status !== 'authenticated' || !token) return;
     runOnce(authFetch);
     const t = setInterval(() => runOnce(authFetch), INTERVAL_MS);
-    return () => clearInterval(t);
+    // A refresh re-grades finished games too, but the sync scans 30 days of
+    // ESPN scoreboards (~60 requests) — at most once per 5 minutes.
+    const off = onRefresh(() => {
+      const last = Date.parse(getSyncMeta().lastSyncAt || 0) || 0;
+      if (Date.now() - last > 5 * 60 * 1000) runOnce(authFetch);
+    });
+    return () => { clearInterval(t); off(); };
   }, [enabled, token, status, authFetch]);
 }
 
