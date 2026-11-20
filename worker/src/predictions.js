@@ -27,6 +27,7 @@ import * as core from '../../src/data/formulaCore.js';
 import { scrapeTeamStats, teamsCacheKey } from './scrapers/bbref.js';
 import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
+import { detectGameEvents, appendEvents } from './events.js';
 import { resolveAbbr } from '../../src/data/abbrAlias.js';
 // Per-player last-10 availability (ESPN box scores), refreshed daily by
 // .github/workflows/refresh-availability.yml and bundled at deploy time.
@@ -430,6 +431,8 @@ export async function refreshPredictions(env, league, etDateStr) {
   // actually the next day (e.g. 10pm PT = 1am ET); those get picked up by
   // the cron run for the next date instead.
   const games = [];
+  const newEvents = [];
+  const nowIso = new Date(now).toISOString();
   for (const game of slate) {
     if (etYmdFromIso(game.date) !== etDateStr) continue;
 
@@ -466,7 +469,19 @@ export async function refreshPredictions(env, league, etDateStr) {
       odds: game.odds,
       predictions: usable ? withLines(snapshotFor(game, ctx), game, new Date(now).toISOString()) : null,
     };
-    games.push(mergeGame(existingById.get(game.id), fresh, now));
+    const prev = existingById.get(game.id);
+    const merged = mergeGame(prev, fresh, now);
+    // Change detection (Updates feed / push). Skipped for games that were
+    // already locked — mergeGame returned them untouched.
+    if (!(prev && prev.locked)) {
+      // When this game first had a line — survives a run where the book
+      // briefly pulls odds, so "line posted" can't fire twice.
+      merged.lineSeenAt = prev?.lineSeenAt ?? (prev?.predictions || merged.predictions ? nowIso : null);
+      const { events, alertState } = detectGameEvents(prev, merged, nowIso);
+      if (merged.predictions && alertState) merged.predictions = { ...merged.predictions, alertState };
+      newEvents.push(...events);
+    }
+    games.push(merged);
   }
 
   // Carry over locked snapshots whose game disappeared from the live slate
@@ -483,6 +498,7 @@ export async function refreshPredictions(env, league, etDateStr) {
     date: etDateStr,
     computedAt: new Date(now).toISOString(),
     games,
+    events: appendEvents(existingBlob?.events, newEvents),
   };
 
   if (env.CACHE) {

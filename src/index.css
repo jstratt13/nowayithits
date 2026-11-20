@@ -2520,3 +2520,49 @@ footer {
   .nav { padding-top: env(safe-area-inset-top); }
   body { padding-bottom: env(safe-area-inset-bottom); }
 }
+
+/* ── Updates feed (app phase 2) ───────────────────────────────────────── */
+.updates-page { max-width: 820px; margin: 1rem auto; padding: 0 1rem; }
+.upd-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0 0.5rem; }
+.upd-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  border: 1px solid var(--border2); background: var(--surface); color: var(--text);
+  border-radius: 999px; padding: 0.3rem 0.7rem; font-size: 0.8rem; cursor: pointer;
+}
+.upd-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.upd-count { font-size: 0.72rem; opacity: 0.7; }
+.upd-empty { color: var(--muted); font-size: 0.9rem; padding: 1rem 0; }
+.upd-list { list-style: none; margin: 0; padding: 0; }
+.upd-item { padding: 0.75rem 0; border-top: 1px solid var(--border); }
+.upd-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--muted2); }
+.upd-badge { font-weight: 700; font-size: 0.7rem; letter-spacing: 0.02em; text-transform: uppercase; padding: 0.12rem 0.45rem; border-radius: var(--radius-sm); }
+.upd-injury { background: var(--lockbg); color: var(--lock); }
+.upd-flip   { background: var(--superbg); color: var(--super); }
+.upd-line   { background: var(--basebg); color: var(--base); }
+.upd-edge   { background: var(--safebg); color: var(--safe); }
+.upd-first  { background: var(--surface2); color: var(--muted); }
+.upd-ago { margin-left: auto; }
+.upd-title { font-weight: 600; margin-top: 0.3rem; color: var(--text); }
+.upd-body { font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
+
+/* Below laptop width, four nav links + account + date don't fit beside the
+   logo (was ~90px of sideways scroll on phones, ~50px at 768–1024). Logo +
+   account stay on the top row; the page links get their own row below. */
+@media (max-width: 1100px) {
+  .nav-inner { flex-wrap: wrap; row-gap: 0.35rem; }
+  .nav-links {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+}
+
+/* Laptop widths: with four nav links the full date ("Fri, Nov 20, 2026")
+   pushed the header ~50px past the edge at 1024px — use the short date. */
+@media (max-width: 1100px) {
+  .nav-date-full  { display: none; }
+  .nav-date-short { display: inline; }
+}

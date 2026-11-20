@@ -6,6 +6,7 @@ import App from './App.jsx';
 import Home from './pages/Home.jsx';
 import Predictions from './pages/Predictions.jsx';
 import Tracker from './pages/Tracker.jsx';
+import Updates from './pages/Updates.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import Verify from './pages/Verify.jsx';
@@ -35,6 +36,7 @@ createRoot(document.getElementById('root')).render(
               <Route index element={<Home />} />
               <Route path="/predictions" element={<Predictions />} />
               <Route path="/tracker" element={<Tracker />} />
+              <Route path="/updates" element={<Updates />} />
             </Route>
 
             {/* Auth-only — login / signup. Already-authenticated users
