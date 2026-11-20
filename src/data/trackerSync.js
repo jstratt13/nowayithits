@@ -15,6 +15,7 @@ import { fetchScoreboard } from './espn.js';
 import { getLocked } from './lockedPredictions.js';
 import { getZone, BLOWOUT_THRESHOLD } from './formulaCore.js';
 import { SEED_TRACKER } from './seedTracker.js';
+import { gradeSpread, gradeOU } from './grading.js';
 
 const TRACKER_KEY = 'dbp-tracker-v1';
 const SYNC_META_KEY = 'dbp-tracker-sync-v1';
@@ -139,28 +140,8 @@ function fmtSignedLine(n) {
   return `${sign}${Math.abs(n).toFixed(1)}`;
 }
 
-// Did the picked side cover the spread?
-// sp = { side, line, edge } where line is signed FOR the picked side.
-function gradeSpread(sp, away, home) {
-  if (!sp || sp.line == null) return null;
-  const pickedScore = sp.side === home.abbr ? home.score : away.abbr ? away.score : null;
-  const oppScore    = sp.side === home.abbr ? away.score : home.score;
-  if (pickedScore == null || oppScore == null) return null;
-  const margin = pickedScore - oppScore;
-  const cover = margin + sp.line;
-  if (cover > 0) return 'Hit';
-  if (cover < 0) return 'Miss';
-  return 'Miss'; // push — treat as miss to match the existing tracker convention
-}
-
-function gradeOU(ou, away, home) {
-  if (!ou || ou.line == null) return null;
-  if (away.score == null || home.score == null) return null;
-  const total = away.score + home.score;
-  if (ou.direction === 'OVER')  return total > ou.line ? 'Hit' : total < ou.line ? 'Miss' : 'Miss';
-  if (ou.direction === 'UNDER') return total < ou.line ? 'Hit' : total > ou.line ? 'Miss' : 'Miss';
-  return null;
-}
+// gradeSpread / gradeOU now live in ./grading.js (shared with the worker's
+// server-side /tracker/graded export so the two can't drift). Imported above.
 
 // Blowout column: pure outcome flag. "Yes" if the actual final margin
 // hit the league's blowout threshold (NBA ≥ 16, WNBA ≥ 14), "No"

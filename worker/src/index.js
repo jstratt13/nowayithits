@@ -33,6 +33,7 @@ import {
   refreshAllForCron,
   etYmd,
 } from './predictions.js';
+import { exportGraded } from './tracker.js';
 import { handleAuthRoute } from './auth/handlers.js';
 import { requireAuth, requireAdmin } from './auth/middleware.js';
 
@@ -154,6 +155,28 @@ export default {
         const dateStr = (url.searchParams.get('date') || etYmd()).replace(/-/g, '');
         const blob = await readPredictions(env, league, dateStr);
         return json({ ok: true, ...blob });
+      }
+
+      // ── GET /tracker/graded?league=&from=YYYYMMDD&to=YYYYMMDD ──
+      // Server-side graded tracker rows (spread + O/U Hit/Miss vs ESPN
+      // finals) for the refresh-tracker-graded GitHub Action, which commits
+      // src/data/trackerGraded.json. Gated by a static EXPORT_TOKEN secret
+      // (x-export-token header) — not public, not behind the JWT gate so CI
+      // can call it without a user session. Range cap = readPredictionsRange's
+      // 60 days; the Action requests a rolling window and merges.
+      if (parts[0] === 'tracker' && parts[1] === 'graded') {
+        if (!env.EXPORT_TOKEN) return err('export not configured', 503);
+        if (request.headers.get('x-export-token') !== env.EXPORT_TOKEN) {
+          return err('unauthorized', 401);
+        }
+        const league = leagueFromPath(url.searchParams.get('league') || '');
+        if (!league) return err('unknown league', 400);
+        const fromStr = (url.searchParams.get('from') || '').replace(/-/g, '');
+        const toStr   = (url.searchParams.get('to') || etYmd()).replace(/-/g, '');
+        if (!fromStr) return err('from (YYYYMMDD) required', 400);
+        const result = await exportGraded(env, league, fromStr, toStr);
+        if (result.tooLarge) return err(`range exceeds ${result.maxDays} days`, 400);
+        return json({ ok: true, league, from: fromStr, to: toStr, rows: result.rows });
       }
 
       // ── Admin: GET /admin/refresh ──
