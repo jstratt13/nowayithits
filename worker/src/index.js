@@ -23,7 +23,7 @@
 // frontend can fetch directly. Scraper caching lives in cache.js /
 // predictions.js.
 
-import { scrapeTeamStats } from './scrapers/bbref.js';
+import { scrapeTeamStats, teamsCacheKey } from './scrapers/bbref.js';
 import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
 import {
@@ -105,7 +105,7 @@ export default {
         // Use the hour slot from the frontend's cache-buster param as the KV key
         // so we return fresh data once per hour without always scraping BBR.
         const hSlot = url.searchParams.get('_h') || '0';
-        const cacheKey = `teams:${league}:${hSlot}`;
+        const cacheKey = teamsCacheKey(league, hSlot);
         const data = await cached(env, cacheKey, 60 * 60 * 6, () =>
           scrapeTeamStats(league, env)
         );
