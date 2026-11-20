@@ -35,6 +35,7 @@ import {
 } from './predictions.js';
 import { handleAuthRoute } from './auth/handlers.js';
 import { requireAuth, requireAdmin } from './auth/middleware.js';
+import { handlePushRoute } from './push.js';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -80,6 +81,13 @@ export default {
       // dispatched before the GET-only guard below.
       const authResp = await handleAuthRoute(request, env, url, parts, CORS);
       if (authResp) return authResp;
+
+      // ── Push alerts (GET + POST, login required) ──
+      if (parts[0] === 'push') {
+        const a = await requireAuth(request, env, CORS);
+        if (!a.ok) return a.response;
+        return await handlePushRoute(request, env, url, parts, a.payload.sub, { json, err });
+      }
 
       // Everything else is GET-only.
       if (request.method !== 'GET') return err('method not allowed', 405);

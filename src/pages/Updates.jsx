@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { useFetchWithAuth } from '../auth/useFetchWithAuth.js';
+import AlertsPanel from '../components/AlertsPanel.jsx';
 
 // Updates feed (app phase 2). The worker diffs every 10-minute run and
 // stores what changed — injury status changes, pick flips, line moves,
@@ -81,6 +82,7 @@ export default function Updates() {
 
   return (
     <div className="updates-page">
+      <AlertsPanel />
       <div className="panel">
         <div className="panel-head">
           <div>

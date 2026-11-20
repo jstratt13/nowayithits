@@ -2566,3 +2566,19 @@ footer {
   .nav-date-full  { display: none; }
   .nav-date-short { display: inline; }
 }
+
+/* ── Phone alerts panel (app phase 3) ─────────────────────────────────── */
+.alerts-panel { margin-bottom: 1rem; }
+.alerts-on { background: var(--safebg); color: var(--safe); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm); }
+.alerts-note { color: var(--muted); font-size: 0.88rem; margin: 0.6rem 0; }
+.alerts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem; }
+.alerts-grid fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.75rem; margin: 0; min-width: 0; }
+.alerts-grid legend { font-size: 0.75rem; color: var(--muted2); padding: 0 0.3rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.alerts-check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; padding: 0.25rem 0; }
+.alerts-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.85rem; padding: 0.3rem 0; color: var(--text); }
+.alerts-row select { font: inherit; padding: 0.2rem 0.3rem; }
+.alerts-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.85rem; }
+.alerts-secondary { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 0.45rem 0.9rem; cursor: pointer; color: var(--text); }
+.alerts-actions button:disabled { opacity: 0.5; cursor: default; }
+.alerts-msg { font-size: 0.85rem; color: var(--muted); margin: 0.6rem 0 0; }
+@media (max-width: 640px) { .alerts-grid { grid-template-columns: 1fr; } }
