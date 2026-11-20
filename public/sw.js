@@ -8,9 +8,9 @@
 //    • hashed build assets (/assets/*) → cache first (filenames change on
 //      every build, so a cached one can never be stale)
 //    • everything else (worker API, ESPN, fonts) → straight to the network
-//  Phase 3 adds `push` + `notificationclick` handlers here.
+//  Phase 3: `push` shows game alerts; tapping one opens the Updates page.
 // ─────────────────────────────────────────────────────────────────────────
-const CACHE = 'nwih-shell-v1';
+const CACHE = 'nwih-shell-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {
@@ -52,4 +52,36 @@ self.addEventListener('fetch', (event) => {
       })),
     );
   }
+});
+
+// ── Push alerts (app phase 3) ─────────────────────────────────────────
+// Payload (worker/src/push.js buildNotification): { title, body, tag, url }.
+self.addEventListener('push', (event) => {
+  let data;
+  try { data = event.data ? event.data.json() : {}; } catch { data = { title: 'No Way It Hits', body: event.data?.text() || '' }; }
+  const scope = self.registration.scope;
+  event.waitUntil(self.registration.showNotification(data.title || 'No Way It Hits', {
+    body: data.body || '',
+    tag: data.tag || undefined,
+    renotify: !!data.tag,
+    icon: scope + 'icons/icon-192.png',
+    badge: scope + 'icons/icon-192.png',
+    data: { url: scope + (data.url || '#/updates') },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || self.registration.scope;
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) {
+      if (w.url.startsWith(self.registration.scope)) {
+        await w.focus();
+        if ('navigate' in w) await w.navigate(target);
+        return;
+      }
+    }
+    await self.clients.openWindow(target);
+  })());
 });

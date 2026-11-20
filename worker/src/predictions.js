@@ -28,6 +28,7 @@ import { scrapeTeamStats, teamsCacheKey } from './scrapers/bbref.js';
 import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
 import { detectGameEvents, appendEvents } from './events.js';
+import { dispatchPush } from './push.js';
 import { resolveAbbr } from '../../src/data/abbrAlias.js';
 // Per-player last-10 availability (ESPN box scores), refreshed daily by
 // .github/workflows/refresh-availability.yml and bundled at deploy time.
@@ -504,7 +505,8 @@ export async function refreshPredictions(env, league, etDateStr) {
   if (env.CACHE) {
     await env.CACHE.put(kvKey, JSON.stringify(blob));
   }
-  return blob;
+  // This run's new events (not stored separately) for push dispatch.
+  return Object.assign(blob, { newEvents });
 }
 
 // Read-only access used by the GET /predictions route.
@@ -560,16 +562,25 @@ export async function refreshAllForCron(env) {
   const today = etYmd();
   const tomorrow = shiftEtYmd(today, 1);
   const results = [];
+  const allNew = [];
 
   for (const league of ['nba', 'wnba']) {
     for (const dateStr of [today, tomorrow]) {
       try {
         const blob = await refreshPredictions(env, league, dateStr);
-        results.push({ league, date: dateStr, games: blob.games.length, ok: true });
+        allNew.push(...(blob.newEvents || []));
+        results.push({ league, date: dateStr, games: blob.games.length, events: (blob.newEvents || []).length, ok: true });
       } catch (e) {
         results.push({ league, date: dateStr, ok: false, error: e.message || String(e) });
       }
     }
+  }
+  // Push this run's updates to subscribed phones (one bundled alert per
+  // device). Never lets a push failure break the prediction refresh.
+  try {
+    results.push({ push: await dispatchPush(env, allNew) });
+  } catch (e) {
+    results.push({ push: { error: e.message || String(e) } });
   }
   return results;
 }
