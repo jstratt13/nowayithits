@@ -24,7 +24,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import * as core from '../../src/data/formulaCore.js';
-import { scrapeTeamStats } from './scrapers/bbref.js';
+import { scrapeTeamStats, teamsCacheKey } from './scrapers/bbref.js';
 import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
 import { resolveAbbr } from '../../src/data/abbrAlias.js';
@@ -399,7 +399,7 @@ export async function refreshPredictions(env, league, etDateStr) {
   const hSlot = Math.floor(now / 3_600_000);
   const [slate, teamsBlob, lastGamePlayed] = await Promise.all([
     fetchSlate(league, etDateStr),
-    cached(env, `teams:${league}:${hSlot}`, 60 * 60 * 6, () => scrapeTeamStats(league, env)),
+    cached(env, teamsCacheKey(league, hSlot), 60 * 60 * 6, () => scrapeTeamStats(league, env)),
     fetchRecentGames(league, etDateStr),
   ]);
 

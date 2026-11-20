@@ -37,7 +37,7 @@
 //      Delta_Star beyond the Rotowire-only rollup. Outside the BBR
 //      scraper's scope, lives in its own scraper file (TODO).
 
-import { getL10 } from './bbrL10.js';
+import { getL10, getL10Meta } from './bbrL10.js';
 import { l10SosAdjustment } from '../../../src/data/formulaCore.js';
 
 const BBR = {
@@ -60,6 +60,21 @@ function wnbaSeasonYear() {
 // automated fetches from Cloudflare IPs. We use the BBR playoffs page
 // for recent-form ORtg instead, which is a better proxy in April–June.
 // import { fetchLastNGamesStats } from './nbastats.js';
+
+// KV key for the cached team table. Versioned so the table is rebuilt the
+// moment either input changes, instead of serving a copy built by older
+// code / older L10 data until the hour rolls over:
+//   TEAMS_SCHEMA — bump whenever scrapeTeamStats' OUTPUT changes shape or
+//                  meaning (e.g. 2 = adds l10Opponents/l10HomeGames/l10Sos).
+//   L10 stamp    — the bundled l10Cache.json fetchedAt, so each daily L10
+//                  refresh deploy takes effect on the next request.
+// The L10 and its SOS adjustment always come from the same table build, so
+// they can never be out of step with each other.
+export const TEAMS_SCHEMA = 2;
+export function teamsCacheKey(league, hSlot) {
+  const stamp = (getL10Meta().fetchedAt || 'none').replace(/[^0-9]/g, '').slice(0, 12);
+  return `teams:${league}:${hSlot}:v${TEAMS_SCHEMA}:${stamp}`;
+}
 
 export async function scrapeTeamStats(league, env) {
   const year = league === 'nba' ? nbaSeasonYear() : wnbaSeasonYear();
