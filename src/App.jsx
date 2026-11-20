@@ -54,6 +54,9 @@ export default function App() {
               <NavLink to="/tracker" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
                 Tracker
               </NavLink>
+              <NavLink to="/updates" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+                Updates
+              </NavLink>
             </nav>
           )}
           <div className="nav-spacer" />
