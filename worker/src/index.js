@@ -181,7 +181,7 @@ export default {
           const blob = await refreshPredictions(env, league, dateQ.replace(/-/g, ''));
           return json({ ok: true, refreshed: [{ league, date: blob.date, games: blob.games.length }] });
         }
-        const refreshed = await refreshAllForCron(env);
+        const refreshed = await refreshAllForCron(env, { force: true });
         return json({ ok: true, refreshed });
       }
 

@@ -474,6 +474,57 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS, authFetch } = 
   return { added, ungradedAdded, backfilled, skipped, meta };
 }
 
+// ── Load older games (Tracker "Load older games" button) ──────────────
+//
+// The regular sync only looks back SYNC_WINDOW_DAYS. This pulls the
+// `days` before the oldest game already in the tracker for `league`:
+// server-locked predictions for that range (one worker call) + ESPN finals
+// per day, and adds GRADED rows only — older games the model never
+// predicted would just be empty noise. Returns how many were added and
+// whether the server had any predictions in that range (none → we've
+// reached the start of saved predictions).
+// `before` (YYYYMMDD, optional) = where the previous click stopped, so
+// repeated clicks keep walking back through empty stretches.
+export async function backfillOlder({ league = 'nba', days = 30, authFetch, before } = {}) {
+  const rows = readRows();
+  const ofLeague = rows.filter((r) => (r.league || 'nba') === league);
+  let oldestMs = ofLeague.reduce((m, r) => {
+    const t = new Date(r.date).getTime();
+    return Number.isFinite(t) && t < m ? t : m;
+  }, Date.now());
+  if (before) {
+    const b = new Date(+before.slice(0, 4), +before.slice(4, 6) - 1, +before.slice(6, 8)).getTime();
+    if (b < oldestMs) oldestMs = b;
+  }
+  const end = addDays(new Date(oldestMs), -1);
+  end.setHours(0, 0, 0, 0);
+  const start = addDays(end, -(days - 1));
+
+  const locks = await fetchServerLocks(league, ymd(start), ymd(end), authFetch);
+  const ids = new Set(rows.map((r) => r.id));
+  const keys = new Set(rows.map(dedupKey));
+  const added = [];
+  if (locks.size) {
+    for (let d = new Date(end); d >= start; d = addDays(d, -1)) {
+      let games;
+      try { games = await fetchScoreboard(league, d); } catch { continue; }
+      for (const game of games) {
+        if (game.state !== 'post') continue;
+        const snap = locks.get(game.id);
+        if (!snap) continue;
+        const row = buildTrackerRow(game, snap);
+        if (ids.has(row.id) || keys.has(dedupKey(row))) continue;
+        ids.add(row.id); keys.add(dedupKey(row)); added.push(row);
+      }
+    }
+  }
+  if (added.length) {
+    writeRows([...rows, ...added]);
+    notify();
+  }
+  return { added: added.length, from: ymd(start), to: ymd(end), serverHadData: locks.size > 0 };
+}
+
 export function getSyncMeta() {
   return readMeta();
 }

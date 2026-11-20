@@ -5,6 +5,13 @@ import { useSyncStatus } from '../hooks/useTrackerSync.js';
 import { BLOWOUT_THRESHOLD, zoneLabels } from '../data/formulaCore.js';
 import NewsPanel from '../components/NewsPanel.jsx';
 import { isPreseasonRow, notPreseason } from '../data/seasonPhase.js';
+import { backfillOlder } from '../data/trackerSync.js';
+import { useFetchWithAuth } from '../auth/useFetchWithAuth.js';
+
+// Table paging: render 50 games at a time ("Show 50 more" / "Show all"),
+// newest first by default. Stats, charts and exports always use every
+// filtered row — paging only limits how many table rows are drawn.
+const PAGE_SIZE = 50;
 import {
   STATIC_WINDOWS,
   seasonWindowsFromRows,
@@ -251,12 +258,46 @@ export default function Tracker() {
     };
   }, [filtered]);
 
+  // Paging resets to the first 50 whenever the filters / sort change.
+  const filterSig = JSON.stringify([league, zone, spreadF, ouF, blowoutF, search, sortKey, sortDir, rangeKey]);
+  const [pager, setPager] = useState({ sig: filterSig, shown: PAGE_SIZE });
+  const shown = pager.sig === filterSig ? pager.shown : PAGE_SIZE;
+  const visible = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
+  const showMore = (n) => setPager({ sig: filterSig, shown: n });
+
+  // "Load older games": pull the 30 days before the oldest game in the
+  // tracker from the server (graded games only).
+  const fetchAuth = useFetchWithAuth();
+  const [older, setOlder] = useState({ busy: false, msg: '', done: false, cursor: {} });
+  async function loadOlder() {
+    setOlder((o) => ({ ...o, busy: true, msg: '' }));
+    try {
+      const r = await backfillOlder({ league, days: 30, authFetch: fetchAuth, before: older.cursor[league] });
+      setRows(loadRows());
+      const span = `${r.from.slice(4, 6)}/${r.from.slice(6)}–${r.to.slice(4, 6)}/${r.to.slice(6)}`;
+      // Empty months happen (the offseason), so the button keeps going —
+      // last season's playoffs can sit behind a gap with no games.
+      setOlder((o) => ({
+        ...o,
+        busy: false,
+        done: false,
+        cursor: { ...o.cursor, [league]: r.from },
+        msg: r.added
+          ? `Added ${r.added} older game${r.added === 1 ? '' : 's'} (${span}).`
+          : `No graded games ${span}/${r.from.slice(0, 4)} (offseason or before predictions were saved). Tap again to look further back.`,
+      }));
+      if (r.added) showMore(shown + r.added);
+    } catch (e) {
+      setOlder((o) => ({ ...o, busy: false, msg: `Couldn't load older games: ${e.message}` }));
+    }
+  }
+
   const grouped = useMemo(() => {
-    if (!groupByDate) return { '': filtered };
+    if (!groupByDate) return { '': visible };
     const g = {};
-    filtered.forEach((r) => { (g[r.date] = g[r.date] || []).push(r); });
+    visible.forEach((r) => { (g[r.date] = g[r.date] || []).push(r); });
     return g;
-  }, [filtered, groupByDate]);
+  }, [visible, groupByDate]);
 
   const handleSort = (k) => {
     if (sortKey === k) setSortDir((d) => -d);
@@ -439,6 +480,26 @@ export default function Tracker() {
             No games match — adjust filters
           </div>
         )}
+        <div className="tracker-pager">
+          {filtered.length > 0 && (
+            <span className="tracker-pager-count">Showing {visible.length} of {filtered.length} games</span>
+          )}
+          {visible.length < filtered.length && (
+            <>
+              <button type="button" className="filter-chip" onClick={() => showMore(shown + PAGE_SIZE)}>
+                Show {Math.min(PAGE_SIZE, filtered.length - visible.length)} more
+              </button>
+              <button type="button" className="filter-chip" onClick={() => showMore(filtered.length)}>Show all</button>
+            </>
+          )}
+          {visible.length >= filtered.length && !older.done && (
+            <button type="button" className="filter-chip" onClick={loadOlder} disabled={older.busy}
+              title={`Fetch graded ${league.toUpperCase()} games from the 30 days before the oldest one here`}>
+              {older.busy ? 'Loading older games…' : 'Load older games'}
+            </button>
+          )}
+          {older.msg && <span className="tracker-pager-msg">{older.msg}</span>}
+        </div>
       </div>
       </div>
       <NewsPanel league={league} />
