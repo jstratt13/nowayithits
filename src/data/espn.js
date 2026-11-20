@@ -84,6 +84,7 @@ function normalizeEvent(ev, league) {
     startTimeLabel: formatTime(ev.date),
     state, // pre | in | post
     statusLabel: status.shortDetail || status.description || "",
+    seasonType: ev.season?.type ?? null, // 1 preseason · 2 regular · 3 playoffs
     home: homeTeam,
     away: awayTeam,
     odds: {
