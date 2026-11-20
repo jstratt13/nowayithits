@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
 import Sparkline from './Sparkline.jsx';
+import { notPreseason } from '../data/seasonPhase.js';
 import { STATIC_WINDOWS, allWindowsFromRows, filterRowsByWindow } from '../data/timeWindows.js';
 
 // League-specific blowout thresholds (margin >= threshold counts as a blowout).
 const BLOWOUT_MARGIN = { nba: 16, wnba: 14 };
 const blowoutThreshold = (league) => BLOWOUT_MARGIN[league] ?? 15;
 
-export default function AccuracyPanel({ rows }) {
+export default function AccuracyPanel({ rows: allRowsIn }) {
   const [windowKey, setWindowKey] = useState('m');
+  // Preseason games never count toward accuracy (see seasonPhase.js).
+  const rows = useMemo(() => (allRowsIn || []).filter(notPreseason), [allRowsIn]);
 
   // Window set = static rolling windows + per-league seasons derived from
   // the rows present. Re-memo'd when rows change so a newly-synced game

@@ -4,6 +4,7 @@ import AccuracyPanel from '../components/AccuracyPanel.jsx';
 import { useSyncStatus } from '../hooks/useTrackerSync.js';
 import { BLOWOUT_THRESHOLD, zoneLabels } from '../data/formulaCore.js';
 import NewsPanel from '../components/NewsPanel.jsx';
+import { isPreseasonRow, notPreseason } from '../data/seasonPhase.js';
 import {
   STATIC_WINDOWS,
   seasonWindowsFromRows,
@@ -94,7 +95,7 @@ function triggerDownload(filename, text, mime) {
 // (newer captures like projMargin / injury scores) are appended so the CSV
 // never silently drops a column we add later.
 const CSV_LEAD = [
-  'id', 'league', 'date', 'matchup', 'posSRS', 'srsGap', 'starDelta',
+  'id', 'league', 'seasonType', 'date', 'matchup', 'posSRS', 'srsGap', 'starDelta',
   'hca', 'dbp', 'zone', 'spreadPick', 'ouPick', 'spreadResult', 'ouResult',
   'bookSpread', 'bookTotal', 'openHomeLine', 'firstHomeLine', 'closeHomeLine',
   'spreadPickOpen', 'spreadResultOpen', 'spreadPickFirst', 'spreadResultFirst',
@@ -192,13 +193,16 @@ export default function Tracker() {
   }, [rows, league, zone, spreadF, ouF, blowoutF, search, sortKey, sortDir, activeWindow]);
 
   const stats = useMemo(() => {
-    const n = filtered.length;
-    if (!n) return { n: 0 };
+    // Preseason games stay in the table but never count toward hit rates.
+    const preN = filtered.filter(isPreseasonRow).length;
+    const pool = filtered.filter(notPreseason);
+    const n = pool.length;
+    if (!n) return { n: 0, preN };
 
     // Spread + O/U hit-rates are model-accuracy stats — they only make
     // sense on rows where the model made a pregame call. Ungraded games
     // are excluded from numerator + denominator to avoid biasing.
-    const graded = filtered.filter(isGraded);
+    const graded = pool.filter(isGraded);
     const gradedN = graded.length;
     const sH = graded.filter((r) => r.spreadResult === 'Hit').length;
     const oH = graded.filter((r) => r.ouResult === 'Hit').length;
@@ -219,13 +223,14 @@ export default function Tracker() {
     // (graded or not) since the actual margin is known regardless.
     // Paired visually with Avg DBP so the model's predicted blowout
     // rate sits next to the realized blowout rate.
-    const blowN = filtered.filter(wasBlowout).length;
+    const blowN = pool.filter(wasBlowout).length;
 
     // 1-decimal precision — e.g. 64.1% instead of 64%
     const pct = (num, den) => den ? Math.round((num / den) * 1000) / 10 : null;
 
     return {
       n,
+      preN,
       gradedN,
       ungradedN,
       spreadPct: pct(sH, gradedN),
@@ -237,8 +242,8 @@ export default function Tracker() {
       blowPct: pct(blowN, n),
       sH, oH, blowN,
       // Margin + total are always populated, even on ungraded rows.
-      avgMargin: (filtered.reduce((s, r) => s + (r.margin || 0), 0) / n).toFixed(1),
-      avgTotal: (filtered.reduce((s, r) => s + (r.total || 0), 0) / n).toFixed(1),
+      avgMargin: (pool.reduce((s, r) => s + (r.margin || 0), 0) / n).toFixed(1),
+      avgTotal: (pool.reduce((s, r) => s + (r.total || 0), 0) / n).toFixed(1),
       // DBP is only on graded rows.
       avgDBP: gradedN
         ? (graded.reduce((s, r) => s + (r.dbp || 0), 0) / gradedN).toFixed(1)
@@ -314,7 +319,10 @@ export default function Tracker() {
             <StatCell
               l="Games"
               v={stats.n || '—'}
-              sub={stats.ungradedN ? `${stats.gradedN} graded · ${stats.ungradedN} ungraded` : ''}
+              sub={[
+                stats.ungradedN ? `${stats.gradedN} graded · ${stats.ungradedN} ungraded` : '',
+                stats.preN ? `${stats.preN} preseason excluded` : '',
+              ].filter(Boolean).join(' · ')}
             />
             <StatCell
               l="Spread hit %"

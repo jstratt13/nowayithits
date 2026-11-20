@@ -187,6 +187,7 @@ function buildUngradedRow(game) {
     id: trackerIdFor(game),
     league: game.league,
     date: formatGameDate(game.date),
+    seasonType: game.seasonType ?? null,
     matchup: `${game.away.abbr} @ ${game.home.abbr}`,
     posSRS: null,
     srsGap: null,
@@ -257,6 +258,7 @@ function buildTrackerRow(game, snapshot) {
     id: trackerIdFor(game),
     league: game.league,
     date: formatGameDate(game.date),
+    seasonType: game.seasonType ?? null,
     matchup: `${game.away.abbr} @ ${game.home.abbr}`,
     posSRS: favAbbr,
     srsGap: roundTo(inputs ? inputs.favSRS - inputs.undSRS : 0, 2),
@@ -425,6 +427,10 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS, authFetch } = 
           //      Tracker stat-bar level).
           const existing = existingById.get(id);
           if (existing) {
+            if (existing.seasonType == null && row.seasonType != null) {
+              existing.seasonType = row.seasonType;
+              backfilled++;
+            }
             if (existing.awayScore == null && row.awayScore != null) {
               existing.awayScore = row.awayScore;
               existing.homeScore = row.homeScore;
