@@ -389,9 +389,30 @@ function mergeGame(existing, fresh, nowMs) {
   };
 }
 
+// JSON without the per-run computedAt stamps — two blobs with the same
+// stableJson have the same games, picks, lines, locks and events.
+function stableJson(blob) {
+  if (!blob) return '';
+  return JSON.stringify(blob, (k, v) => (k === 'computedAt' ? undefined : v));
+}
+
+// Game-window cadence (app phase 4). The cron fires every 2 minutes; a
+// (league, date) bucket is refreshed on every tick only while it has an
+// unlocked game tipping within ACTIVE_WINDOW_MS (injury news + line moves
+// cluster in the hours before tip). Otherwise it refreshes on the old
+// 10-minute boundary. Keeps ESPN calls and KV writes low on quiet days.
+const ACTIVE_WINDOW_MS = 8 * 60 * 60 * 1000;
+function inGameWindow(blob, nowMs) {
+  return (blob?.games || []).some((g) => {
+    if (g.locked) return false;
+    const t = new Date(g.tipoff).getTime();
+    return Number.isFinite(t) && t - nowMs <= ACTIVE_WINDOW_MS && t - nowMs > -60 * 60 * 1000;
+  });
+}
+
 // ── Main entry: refresh one (league, etDate) bucket ───────────────────
 
-export async function refreshPredictions(env, league, etDateStr) {
+export async function refreshPredictions(env, league, etDateStr, preloaded) {
   const now = Date.now();
 
   // Slate + team stats + 3-day lookback in parallel. Injuries comes
@@ -418,11 +439,13 @@ export async function refreshPredictions(env, league, etDateStr) {
   // Load existing snapshots for this league/date so locked games are
   // preserved verbatim.
   const kvKey = `predictions:${league}:${etDateStr}`;
-  let existingBlob = null;
-  try {
-    if (env.CACHE) existingBlob = await env.CACHE.get(kvKey, { type: 'json' });
-  } catch {
-    /* fall through with no existing data */
+  let existingBlob = preloaded === undefined ? null : preloaded;
+  if (preloaded === undefined) {
+    try {
+      if (env.CACHE) existingBlob = await env.CACHE.get(kvKey, { type: 'json' });
+    } catch {
+      /* fall through with no existing data */
+    }
   }
   const existingById = new Map();
   for (const g of existingBlob?.games || []) existingById.set(g.gameId, g);
@@ -502,11 +525,16 @@ export async function refreshPredictions(env, league, etDateStr) {
     events: appendEvents(existingBlob?.events, newEvents),
   };
 
-  if (env.CACHE) {
+  // Free tier = 1,000 KV writes/day. With 2-minute game-window refreshes
+  // most runs change nothing, so only write when the content changed
+  // (ignoring the computedAt timestamps that tick every run).
+  let wrote = false;
+  if (env.CACHE && stableJson(blob) !== stableJson(existingBlob)) {
     await env.CACHE.put(kvKey, JSON.stringify(blob));
+    wrote = true;
   }
   // This run's new events (not stored separately) for push dispatch.
-  return Object.assign(blob, { newEvents });
+  return Object.assign(blob, { newEvents, wrote });
 }
 
 // Read-only access used by the GET /predictions route.
@@ -558,7 +586,10 @@ export async function readPredictionsRange(env, league, fromStr, toStr) {
 }
 
 // Cron driver: refresh both leagues × (today, tomorrow) in ET.
-export async function refreshAllForCron(env) {
+export async function refreshAllForCron(env, { force = false } = {}) {
+  const nowMs = Date.now();
+  // Every 10th minute = full refresh of everything (the old cadence).
+  const fullTick = force || new Date(nowMs).getUTCMinutes() % 10 === 0;
   const today = etYmd();
   const tomorrow = shiftEtYmd(today, 1);
   const results = [];
@@ -567,9 +598,16 @@ export async function refreshAllForCron(env) {
   for (const league of ['nba', 'wnba']) {
     for (const dateStr of [today, tomorrow]) {
       try {
-        const blob = await refreshPredictions(env, league, dateStr);
+        let preloaded;
+        if (!fullTick) {
+          // Between 10-minute ticks: refresh only buckets inside a game
+          // window. An empty/missing bucket waits for the next full tick.
+          try { preloaded = env.CACHE ? await env.CACHE.get(`predictions:${league}:${dateStr}`, { type: 'json' }) : null; } catch { preloaded = null; }
+          if (!inGameWindow(preloaded, nowMs)) { results.push({ league, date: dateStr, skipped: 'outside game window' }); continue; }
+        }
+        const blob = await refreshPredictions(env, league, dateStr, preloaded);
         allNew.push(...(blob.newEvents || []));
-        results.push({ league, date: dateStr, games: blob.games.length, events: (blob.newEvents || []).length, ok: true });
+        results.push({ league, date: dateStr, games: blob.games.length, events: (blob.newEvents || []).length, wrote: blob.wrote, ok: true });
       } catch (e) {
         results.push({ league, date: dateStr, ok: false, error: e.message || String(e) });
       }

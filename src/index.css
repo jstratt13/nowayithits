@@ -2582,3 +2582,8 @@ footer {
 .alerts-actions button:disabled { opacity: 0.5; cursor: default; }
 .alerts-msg { font-size: 0.85rem; color: var(--muted); margin: 0.6rem 0 0; }
 @media (max-width: 640px) { .alerts-grid { grid-template-columns: 1fr; } }
+
+/* Tracker paging footer */
+.tracker-pager { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.85rem 1rem; border-top: 1px solid var(--border); }
+.tracker-pager-count { font-size: 0.8rem; color: var(--muted); margin-right: auto; }
+.tracker-pager-msg { flex-basis: 100%; font-size: 0.8rem; color: var(--muted); }

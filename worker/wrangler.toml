@@ -22,9 +22,11 @@ id = "2c5a815539a6487398c6229200870fd1"
 # if you'd rather use a different string.
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:128.0) Gecko/20100101 Firefox/128.0"
 
-# Run the predictions pipeline every 10 minutes. The scheduled() handler in
-# src/index.js refreshes predictions for both leagues (NBA + WNBA) across
-# today and tomorrow (America/New_York). Games inside the 5-minute pre-tip
-# window get their snapshots permanently locked.
+# Run the predictions pipeline every 2 minutes (app phase 4, 11/20/26).
+# On each 10-minute boundary every (league, date) bucket refreshes, as
+# before; in between, only buckets with an unlocked game tipping within
+# 8 hours refresh — injury news and line moves cluster before tip. KV is
+# written only when a bucket's content changed (free tier: 1,000 writes/day).
+# Games inside the 5-minute pre-tip window get their snapshots locked.
 [triggers]
-crons = ["*/10 * * * *"]
+crons = ["*/2 * * * *"]
