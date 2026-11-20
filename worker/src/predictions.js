@@ -28,6 +28,9 @@ import { scrapeTeamStats } from './scrapers/bbref.js';
 import { getRosters } from './scrapers/bbrRoster.js';
 import { cached } from './cache.js';
 import { resolveAbbr } from '../../src/data/abbrAlias.js';
+// Per-player last-10 availability (ESPN box scores), refreshed daily by
+// .github/workflows/refresh-availability.yml and bundled at deploy time.
+import availabilityData from '../../src/data/availability.json';
 
 const { computeInjuryScoreDetailed, normalizeName } = core;
 
@@ -178,7 +181,10 @@ async function fetchInjuryData(league, espnAbbrByTeamId) {
         ? new Map(roster.players.map((p) => [normalizeName(p.name), p]))
         : null;
 
-      const detail = computeInjuryScoreDetailed(players, rosterByName);
+      // NBA → v2 valuation (needs the ESPN availability feed for the
+      // "still in the ratings" fade); WNBA → legacy scoring.
+      const avail = espnAbbr ? availabilityData?.[league]?.teams?.[espnAbbr] : null;
+      const detail = computeInjuryScoreDetailed(players, rosterByName, { league, availability: avail });
       scoresByTeamId[teamId] = detail.score;
       detailByTeamId[teamId] = detail;
     }

@@ -105,12 +105,21 @@ function TotalSection({ total }) {
           </>
         )}
         {(ratings.home.injuryScore > 0 || ratings.away.injuryScore > 0) && (
-          <Row
-            label={`Injury adj (${ratings.home.abbr} ${ratings.home.injuryScore.toFixed(1)} · ${ratings.away.abbr} ${ratings.away.injuryScore.toFixed(1)})`}
-            value={null}
-            formatter={() => 'applied to effOff/effDef'}
-            muted
-          />
+          ratings.home.injuryModel === 'v2' ? (
+            <Row
+              label={`Injury adj (${ratings.home.abbr} ${fmtSigned(ratings.home.injuryAdj)} · ${ratings.away.abbr} ${fmtSigned(ratings.away.injuryAdj)} pts/100)`}
+              value={null}
+              formatter={() => 'applied to expected pts'}
+              muted
+            />
+          ) : (
+            <Row
+              label={`Injury adj (${ratings.home.abbr} ${ratings.home.injuryScore.toFixed(1)} · ${ratings.away.abbr} ${ratings.away.injuryScore.toFixed(1)})`}
+              value={null}
+              formatter={() => 'applied to effOff/effDef'}
+              muted
+            />
+          )
         )}
         <Row label="Base total (poss × combined ÷ 100)" value={ratings.baseTotal} formatter={(v) => v.toFixed(1)} muted />
       </ExpandRow>
@@ -276,6 +285,12 @@ function Section({ title, children }) {
   );
 }
 
+// "+1.23" / "−0.45" for inline labels (null-safe).
+function fmtSigned(n) {
+  if (n == null || Number.isNaN(n)) return '0.00';
+  return `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}`;
+}
+
 function Row({ label, value, signed, bold, muted, formatter }) {
   const fmt = formatter
     ? formatter(value)
@@ -322,9 +337,19 @@ function DeltaStarRow({ deltaStar }) {
 
       {open && (
         <div className="breakdown-substack">
-          <Row label="IAF" value={iaf} formatter={(v) => v.toFixed(3)} muted />
-          <Row label="Raw" value={raw} signed muted />
+          {/* Legacy snapshots (pre 11/19/26, and WNBA) carry IAF / clamp;
+              v2 NBA snapshots carry possessions instead — no net cap. */}
+          {iaf != null && <Row label="IAF" value={iaf} formatter={(v) => v.toFixed(3)} muted />}
+          {iaf != null && <Row label="Raw" value={raw} signed muted />}
           {clamped && <Row label="Clamped → cap" value={value} signed muted />}
+          {deltaStar.model === 'v2' && (
+            <Row
+              label={`(${undTeam.abbr} ${undTeam.score.toFixed(2)} − ${favTeam.abbr} ${favTeam.score.toFixed(2)}) pts/100 × ${(deltaStar.possessions ?? 0).toFixed(1)} poss`}
+              value={value}
+              signed
+              muted
+            />
+          )}
 
           {totalPlayers === 0 ? (
             <div className="breakdown-empty">No injured players on either side.</div>

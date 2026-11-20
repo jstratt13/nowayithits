@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────────────────
+#  Daily player-availability refresh — pulls ESPN box scores for each NBA
+#  team's last 10 games and commits src/data/availability.json (games each
+#  player appeared in, plus team games played). The v2 injury model uses it
+#  to fade an injured player's adjustment as his absence works into the
+#  team's ratings. If the JSON changed, redeploys the worker (bundled data).
+#
+#  Timing: 10:30 UTC — after the previous night's games are final.
+#  Setup: same CLOUDFLARE_API_TOKEN secret as the L10/roster workflows.
+#  Manual trigger: Actions tab → "Refresh player availability" → Run workflow.
+#  Failure mode: sanity guards (≥ 28 teams, ≥ 3 games each) fail → red ❌,
+#  JSON untouched; the model falls back to season-share fading for any
+#  team missing from the last good file.
+# ─────────────────────────────────────────────────────────────────────────
+
+name: Refresh player availability
+
+on:
+  schedule:
+    - cron: '30 10 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-availability
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install worker deps
+        working-directory: worker
+        run: npm ci || npm install
+
+      - name: Scrape ESPN availability
+        run: node scripts/scrape-availability.mjs
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet src/data/availability.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "availability.json unchanged — nothing to deploy"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat src/data/availability.json
+          fi
+
+      - name: Commit + push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data/availability.json
+          git commit -m "Refresh player availability [skip ci]"
+          git pull --rebase origin main
+          git push
+
+      - name: Deploy worker (bundled JSON change)
+        if: steps.diff.outputs.changed == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: worker
+          command: deploy
+          wranglerVersion: '4.94.0'
