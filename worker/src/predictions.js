@@ -250,7 +250,24 @@ function normalizeEvent(ev, league) {
       homeFavored,
       favored: favoredAbbr,
       provider: odds?.provider?.name || null,
+      ...openingLines(odds),
     },
+  };
+}
+
+// DraftKings' OPENING spread/total as ESPN reports it next to the current
+// line (odds.pointSpread.home.open.line, odds.total.over.open.line). Kept
+// so the tracker can grade "bet at the open" vs "bet at the close" — the
+// 11/20/26 backtest showed lines move toward the model ~71% of the time.
+function parseLineNum(s) {
+  if (s == null) return null;
+  const n = parseFloat(String(s).replace(/^[ou]/i, ''));
+  return Number.isFinite(n) ? n : null;
+}
+function openingLines(odds) {
+  return {
+    openLine:  parseLineNum(odds?.pointSpread?.home?.open?.line),
+    openTotal: parseLineNum(odds?.total?.over?.open?.line),
   };
 }
 
@@ -300,6 +317,27 @@ function snapshotFor(game, ctx) {
   };
 }
 
+// Line timing for the tracker (11/20/26). Three moments, all home-signed:
+//   open  — DraftKings' opening line (ESPN), whatever time we first see it
+//   first — the line + pick on the FIRST cron run that had usable odds,
+//           i.e. the earliest bet the app would have recommended. Carried
+//           forward unchanged by mergeGame on every later run.
+//   close — the line on this run; frozen with the snapshot at lock.
+// Grading the same game at each moment shows whether betting early beats
+// waiting (the market moves toward injury news between open and close).
+function withLines(snap, game, nowIso) {
+  return { ...snap, lines: lineTiming(game, snap, nowIso) };
+}
+
+function lineTiming(game, snap, nowIso) {
+  const o = game.odds || {};
+  return {
+    open:  { homeLine: o.openLine ?? null, total: o.openTotal ?? null },
+    first: { homeLine: o.homeLine, total: o.total, at: nowIso, sp: snap.sp, ou: snap.ou, projMargin: snap.projMargin },
+    close: { homeLine: o.homeLine, total: o.total },
+  };
+}
+
 function hasUsableOdds(game) {
   return !!game.odds && game.odds.homeLine != null && game.odds.total != null;
 }
@@ -326,6 +364,19 @@ function mergeGame(existing, fresh, nowMs) {
   let predictions = fresh.predictions;
   if (lockNow && !predictions && existing?.predictions) {
     predictions = existing.predictions;
+  }
+  // Keep the FIRST line/pick we ever saw for this game (see lineTiming).
+  // Also keep an opening line we saw earlier if ESPN stops reporting it.
+  const prevLines = existing?.predictions?.lines;
+  if (predictions?.lines && prevLines && predictions !== existing.predictions) {
+    predictions = {
+      ...predictions,
+      lines: {
+        ...predictions.lines,
+        first: prevLines.first ?? predictions.lines.first,
+        open: predictions.lines.open?.homeLine != null ? predictions.lines.open : (prevLines.open ?? predictions.lines.open),
+      },
+    };
   }
 
   return {
@@ -413,7 +464,7 @@ export async function refreshPredictions(env, league, etDateStr) {
         daysRest: game.away.daysRest,
       },
       odds: game.odds,
-      predictions: usable ? snapshotFor(game, ctx) : null,
+      predictions: usable ? withLines(snapshotFor(game, ctx), game, new Date(now).toISOString()) : null,
     };
     games.push(mergeGame(existingById.get(game.id), fresh, now));
   }
