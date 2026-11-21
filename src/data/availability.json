@@ -1,8 +1,385 @@
 {
   "source": "espn",
-  "fetchedAt": "2026-11-20T18:40:50.901Z",
+  "fetchedAt": "2026-11-21T17:42:53.502Z",
   "nba": {
     "teams": {
+      "ATL": {
+        "teamGames": 16,
+        "window": 10,
+        "played": {
+          "onyeka okongwu": 10,
+          "jalen johnson": 7,
+          "nickeil alexanderwalker": 10,
+          "aaron wiggins": 10,
+          "dyson daniels": 10,
+          "dorian finneysmith": 3,
+          "corey kispert": 7,
+          "zuby ejiofor": 8,
+          "luguentz dort": 10,
+          "rayj dennis": 4,
+          "cj mccollum": 8,
+          "kingston flemings": 6,
+          "jock landale": 3,
+          "asa newell": 3
+        }
+      },
+      "CHA": {
+        "teamGames": 15,
+        "window": 10,
+        "played": {
+          "moussa diabate": 8,
+          "brandon miller": 8,
+          "naz reid": 10,
+          "coby white": 8,
+          "sion james": 10,
+          "royce oneale": 10,
+          "tidjane salaun": 10,
+          "ryan kalkbrenner": 10,
+          "christian anderson": 9,
+          "liam mcneeley": 6,
+          "grant williams": 3,
+          "grayson allen": 8,
+          "hannes steinbach": 4,
+          "kon knueppel": 1,
+          "dennis schroder": 4,
+          "pj hall": 1
+        }
+      },
+      "BKN": {
+        "teamGames": 15,
+        "window": 10,
+        "played": {
+          "julius randle": 10,
+          "michael porter jr": 9,
+          "danny wolf": 8,
+          "dayron sharpe": 10,
+          "nolan traore": 9,
+          "noah clowney": 10,
+          "moritz wagner": 10,
+          "keon ellis": 9,
+          "mikel brown jr": 7,
+          "egor demin": 5,
+          "josh minott": 5,
+          "chaney johnson": 9,
+          "terance mann": 7,
+          "drake powell": 3
+        }
+      },
+      "ORL": {
+        "teamGames": 15,
+        "window": 10,
+        "played": {
+          "franz wagner": 10,
+          "wendell carter jr": 10,
+          "desmond bane": 9,
+          "jalen suggs": 4,
+          "anthony black": 9,
+          "tristan da silva": 8,
+          "nikola vucevic": 8,
+          "goga bitadze": 9,
+          "jevon carter": 9,
+          "jamal cain": 8,
+          "alex morales": 5,
+          "colin castleton": 2,
+          "jase richardson": 6
+        }
+      },
+      "CLE": {
+        "teamGames": 17,
+        "window": 10,
+        "played": {
+          "jarrett allen": 7,
+          "james harden": 9,
+          "donovan mitchell": 9,
+          "peyton watson": 7,
+          "tyrese proctor": 10,
+          "mario hezonja": 10,
+          "thomas bryant": 9,
+          "norchad omier": 6,
+          "sam merrill": 4,
+          "meleek thomas": 10,
+          "craig porter jr": 8,
+          "jaylon tyson": 3,
+          "riley minix": 3,
+          "evan mobley": 5,
+          "tristan enaruna": 2
+        }
+      },
+      "IND": {
+        "teamGames": 16,
+        "window": 10,
+        "played": {
+          "pascal siakam": 9,
+          "ivica zubac": 8,
+          "kelly oubre jr": 8,
+          "andrew nembhard": 7,
+          "aaron nesmith": 9,
+          "larry nance jr": 9,
+          "obi toppin": 8,
+          "jalen slawson": 9,
+          "jarace walker": 9,
+          "jay huff": 9,
+          "tj mcconnell": 7,
+          "quenton jackson": 10,
+          "braden smith": 7,
+          "kobe brown": 5
+        }
+      },
+      "DET": {
+        "teamGames": 15,
+        "window": 10,
+        "played": {
+          "john collins": 10,
+          "kevin huerter": 10,
+          "cade cunningham": 9,
+          "ausar thompson": 10,
+          "daniss jenkins": 10,
+          "paul reed": 10,
+          "javonte green": 10,
+          "isaiah joe": 2,
+          "chaz lanier": 6,
+          "tolu smith": 5,
+          "elijah harkless": 3,
+          "duncan robinson": 7,
+          "taurean prince": 1,
+          "ronald holland ii": 7,
+          "isaac jones": 4,
+          "ebuka okorie": 3
+        }
+      },
+      "TOR": {
+        "teamGames": 16,
+        "window": 10,
+        "played": {
+          "scottie barnes": 5,
+          "allen graves": 10,
+          "jakob poeltl": 9,
+          "immanuel quickley": 8,
+          "jakobe walter": 10,
+          "trayce jacksondavis": 5,
+          "jamison battle": 10,
+          "malachi smith": 4,
+          "jamal shead": 10,
+          "alijah martin": 10,
+          "collin murrayboyles": 8,
+          "kyle anderson": 6,
+          "rj barrett": 8,
+          "jaden bradley": 4
+        }
+      },
+      "CHI": {
+        "teamGames": 15,
+        "window": 10,
+        "played": {
+          "isaac okoro": 10,
+          "matas buzelis": 10,
+          "nic claxton": 6,
+          "norman powell": 8,
+          "josh giddey": 10,
+          "zach collins": 7,
+          "patrick williams": 8,
+          "noa essengue": 10,
+          "buddy hield": 8,
+          "tre jones": 10,
+          "jalen smith": 8,
+          "leonard miller": 7,
+          "dailyn swain": 3,
+          "jordan hawkins": 6,
+          "caleb wilson": 5,
+          "jaylin sellers": 4,
+          "tobe awaka": 2
+        }
+      },
+      "WSH": {
+        "teamGames": 17,
+        "window": 10,
+        "played": {
+          "anthony davis": 8,
+          "aj dybantsa": 10,
+          "kyshawn george": 10,
+          "alex sarr": 10,
+          "trae young": 10,
+          "khris middleton": 4,
+          "deandre ayton": 10,
+          "bub carrington": 9,
+          "bilal coulibaly": 9,
+          "will riley": 9,
+          "tre johnson": 9,
+          "anthony gill": 4,
+          "tre mann": 5,
+          "felix okpara": 2
+        }
+      },
+      "OKC": {
+        "teamGames": 16,
+        "window": 10,
+        "played": {
+          "isaiah hartenstein": 10,
+          "aday mara": 10,
+          "shai gilgeousalexander": 10,
+          "jared mccain": 10,
+          "ajay mitchell": 8,
+          "jaylin williams": 3,
+          "kenrich williams": 10,
+          "micah peavy": 8,
+          "nique clifford": 6,
+          "bennett stirtz": 10,
+          "alex caruso": 8,
+          "nikola topic": 3,
+          "brooks barnhizer": 4,
+          "josh dix": 4,
+          "dalen terry": 2
+        }
+      },
+      "NO": {
+        "teamGames": 17,
+        "window": 10,
+        "played": {
+          "herbert jones": 10,
+          "zion williamson": 9,
+          "saddiq bey": 10,
+          "yves missi": 4,
+          "jeremiah fears": 10,
+          "trey murphy iii": 3,
+          "karlo matkovic": 10,
+          "derik queen": 10,
+          "jordan poole": 7,
+          "jaron pierre jr": 6,
+          "deandre jordan": 3,
+          "julian reese": 5,
+          "malik dia": 2,
+          "aj johnson": 5,
+          "bennedict mathurin": 5,
+          "dejounte murray": 5,
+          "bryce mcgowens": 3,
+          "trendon watford": 3
+        }
+      },
+      "UTAH": {
+        "teamGames": 17,
+        "window": 10,
+        "played": {
+          "jaxson hayes": 8,
+          "josh green": 10,
+          "keyonte george": 9,
+          "ace bailey": 10,
+          "darryn peterson": 10,
+          "brice sensabaugh": 10,
+          "mo bamba": 9,
+          "svi mykhailiuk": 10,
+          "josh okogie": 10,
+          "kyle filipowski": 5,
+          "isaiah collier": 7,
+          "tony bradley": 6,
+          "lauri markkanen": 2
+        }
+      },
+      "PHX": {
+        "teamGames": 15,
+        "window": 10,
+        "played": {
+          "dillon brooks": 10,
+          "miles bridges": 10,
+          "oso ighodaro": 10,
+          "devin booker": 10,
+          "jalen green": 10,
+          "ryan dunn": 10,
+          "koa peat": 8,
+          "khaman maluach": 10,
+          "luke kennard": 10,
+          "jordan goodwin": 6,
+          "collin gillespie": 10,
+          "rasheer fleming": 3,
+          "jamaree bouyea": 5,
+          "duop reath": 3,
+          "pat spencer": 3
+        }
+      },
+      "DEN": {
+        "teamGames": 14,
+        "window": 10,
+        "played": {
+          "aaron gordon": 10,
+          "cameron johnson": 10,
+          "nikola jokic": 10,
+          "jamal murray": 10,
+          "christian braun": 10,
+          "marvin bagley iii": 10,
+          "spencer jones": 7,
+          "trevon brazile": 10,
+          "demar derozan": 9,
+          "tyus jones": 10,
+          "bryce hopkins": 4,
+          "alpha diallo": 3,
+          "daron holmes ii": 2,
+          "zeke nnaji": 1,
+          "ryan nembhard": 1
+        }
+      },
+      "HOU": {
+        "teamGames": 17,
+        "window": 10,
+        "played": {
+          "kevin durant": 10,
+          "jabari smith jr": 10,
+          "alperen sengun": 10,
+          "fred vanvleet": 9,
+          "amen thompson": 9,
+          "tari eason": 10,
+          "steven adams": 3,
+          "marcus smart": 7,
+          "bogdan bogdanovic": 10,
+          "reed sheppard": 10,
+          "jaesean tate": 5,
+          "isaiah crawford": 6,
+          "oscar tshiebwe": 8,
+          "bruce thornton": 6
+        }
+      },
+      "LAL": {
+        "teamGames": 17,
+        "window": 10,
+        "played": {
+          "ziaire williams": 10,
+          "walker kessler": 9,
+          "matisse thybulle": 10,
+          "luka doncic": 9,
+          "quentin grimes": 8,
+          "jarred vanderbilt": 9,
+          "sandro mamukelashvili": 10,
+          "jake laravia": 10,
+          "collin sexton": 10,
+          "cameron carr": 6,
+          "adou thiero": 6,
+          "carson cooper": 2,
+          "bronny james": 4,
+          "jaden hardy": 4,
+          "kevon looney": 2,
+          "austin reaves": 5,
+          "lawson lovering": 2
+        }
+      },
+      "SAC": {
+        "teamGames": 15,
+        "window": 10,
+        "played": {
+          "domantas sabonis": 9,
+          "deandre hunter": 8,
+          "keegan murray": 6,
+          "zach lavine": 9,
+          "darius acuff jr": 10,
+          "leaky black": 9,
+          "dylan cardwell": 8,
+          "malik monk": 10,
+          "emanuel sharp": 10,
+          "precious achiuwa": 7,
+          "alex karaban": 4,
+          "mason plumlee": 2,
+          "daeqwon plowden": 7,
+          "jonathan mogbo": 2,
+          "nique clifford": 4
+        }
+      },
       "MEM": {
         "teamGames": 16,
         "window": 10,
@@ -171,68 +548,6 @@
           "blake wesley": 2
         }
       },
-      "CLE": {
-        "teamGames": 16,
-        "window": 10,
-        "played": {
-          "mario hezonja": 10,
-          "jarrett allen": 7,
-          "james harden": 9,
-          "donovan mitchell": 9,
-          "tyrese proctor": 10,
-          "thomas bryant": 9,
-          "norchad omier": 5,
-          "sam merrill": 4,
-          "craig porter jr": 9,
-          "meleek thomas": 10,
-          "peyton watson": 6,
-          "jaylon tyson": 3,
-          "riley minix": 3,
-          "evan mobley": 6,
-          "tristan enaruna": 2
-        }
-      },
-      "IND": {
-        "teamGames": 15,
-        "window": 10,
-        "played": {
-          "pascal siakam": 9,
-          "ivica zubac": 7,
-          "kelly oubre jr": 8,
-          "aaron nesmith": 9,
-          "quenton jackson": 10,
-          "larry nance jr": 9,
-          "obi toppin": 7,
-          "jalen slawson": 9,
-          "jarace walker": 9,
-          "jay huff": 9,
-          "tj mcconnell": 6,
-          "kobe brown": 6,
-          "braden smith": 7,
-          "andrew nembhard": 7
-        }
-      },
-      "HOU": {
-        "teamGames": 16,
-        "window": 10,
-        "played": {
-          "kevin durant": 10,
-          "jabari smith jr": 10,
-          "alperen sengun": 10,
-          "fred vanvleet": 8,
-          "amen thompson": 9,
-          "jaesean tate": 6,
-          "tari eason": 10,
-          "isaiah crawford": 7,
-          "steven adams": 2,
-          "oscar tshiebwe": 9,
-          "marcus smart": 7,
-          "bogdan bogdanovic": 10,
-          "reed sheppard": 9,
-          "bruce thornton": 7,
-          "clint capela": 1
-        }
-      },
       "MIA": {
         "teamGames": 15,
         "window": 10,
@@ -253,25 +568,6 @@
           "keshad johnson": 2,
           "tim hardaway jr": 6,
           "dru smith": 4
-        }
-      },
-      "ORL": {
-        "teamGames": 14,
-        "window": 10,
-        "played": {
-          "franz wagner": 10,
-          "wendell carter jr": 10,
-          "desmond bane": 9,
-          "jalen suggs": 3,
-          "anthony black": 9,
-          "jamal cain": 9,
-          "tristan da silva": 8,
-          "goga bitadze": 9,
-          "jevon carter": 8,
-          "nikola vucevic": 8,
-          "alex morales": 6,
-          "colin castleton": 2,
-          "jase richardson": 7
         }
       },
       "PHI": {
@@ -295,176 +591,6 @@
           "adem bona": 3
         }
       },
-      "BKN": {
-        "teamGames": 14,
-        "window": 10,
-        "played": {
-          "julius randle": 10,
-          "michael porter jr": 9,
-          "dayron sharpe": 10,
-          "egor demin": 4,
-          "nolan traore": 9,
-          "josh minott": 6,
-          "noah clowney": 10,
-          "danny wolf": 8,
-          "chaney johnson": 10,
-          "moritz wagner": 10,
-          "terance mann": 8,
-          "keon ellis": 9,
-          "mikel brown jr": 7,
-          "drake powell": 4
-        }
-      },
-      "CHI": {
-        "teamGames": 14,
-        "window": 10,
-        "played": {
-          "jalen smith": 9,
-          "isaac okoro": 10,
-          "matas buzelis": 10,
-          "norman powell": 8,
-          "josh giddey": 10,
-          "zach collins": 6,
-          "patrick williams": 7,
-          "leonard miller": 8,
-          "noa essengue": 10,
-          "nic claxton": 5,
-          "buddy hield": 8,
-          "tre jones": 10,
-          "dailyn swain": 3,
-          "jordan hawkins": 6,
-          "caleb wilson": 6,
-          "jaylin sellers": 4,
-          "tobe awaka": 2
-        }
-      },
-      "TOR": {
-        "teamGames": 15,
-        "window": 10,
-        "played": {
-          "jamison battle": 10,
-          "collin murrayboyles": 9,
-          "jakob poeltl": 8,
-          "immanuel quickley": 8,
-          "jakobe walter": 10,
-          "kyle anderson": 7,
-          "trayce jacksondavis": 5,
-          "allen graves": 10,
-          "malachi smith": 3,
-          "jamal shead": 10,
-          "alijah martin": 10,
-          "rj barrett": 9,
-          "scottie barnes": 5,
-          "jaden bradley": 5
-        }
-      },
-      "WSH": {
-        "teamGames": 16,
-        "window": 10,
-        "played": {
-          "anthony davis": 8,
-          "aj dybantsa": 10,
-          "kyshawn george": 10,
-          "alex sarr": 9,
-          "trae young": 10,
-          "khris middleton": 3,
-          "deandre ayton": 10,
-          "bilal coulibaly": 9,
-          "will riley": 9,
-          "tre johnson": 9,
-          "anthony gill": 4,
-          "tre mann": 5,
-          "bub carrington": 9,
-          "felix okpara": 2
-        }
-      },
-      "NO": {
-        "teamGames": 16,
-        "window": 10,
-        "played": {
-          "herbert jones": 10,
-          "zion williamson": 9,
-          "saddiq bey": 10,
-          "yves missi": 3,
-          "jeremiah fears": 10,
-          "karlo matkovic": 10,
-          "deandre jordan": 3,
-          "derik queen": 10,
-          "jordan poole": 6,
-          "jaron pierre jr": 5,
-          "julian reese": 5,
-          "malik dia": 2,
-          "aj johnson": 5,
-          "bennedict mathurin": 6,
-          "dejounte murray": 5,
-          "bryce mcgowens": 4,
-          "trey murphy iii": 3,
-          "trendon watford": 4
-        }
-      },
-      "DET": {
-        "teamGames": 14,
-        "window": 10,
-        "played": {
-          "john collins": 10,
-          "javonte green": 10,
-          "kevin huerter": 10,
-          "ausar thompson": 10,
-          "daniss jenkins": 10,
-          "paul reed": 10,
-          "tolu smith": 6,
-          "isaiah joe": 1,
-          "elijah harkless": 3,
-          "chaz lanier": 5,
-          "cade cunningham": 9,
-          "duncan robinson": 8,
-          "taurean prince": 2,
-          "ronald holland ii": 8,
-          "isaac jones": 4,
-          "ebuka okorie": 3
-        }
-      },
-      "OKC": {
-        "teamGames": 15,
-        "window": 10,
-        "played": {
-          "isaiah hartenstein": 10,
-          "aday mara": 10,
-          "shai gilgeousalexander": 10,
-          "jared mccain": 10,
-          "ajay mitchell": 8,
-          "jaylin williams": 3,
-          "alex caruso": 8,
-          "kenrich williams": 10,
-          "nique clifford": 5,
-          "nikola topic": 3,
-          "bennett stirtz": 10,
-          "brooks barnhizer": 5,
-          "micah peavy": 8,
-          "josh dix": 5,
-          "dalen terry": 2
-        }
-      },
-      "ATL": {
-        "teamGames": 15,
-        "window": 10,
-        "played": {
-          "onyeka okongwu": 10,
-          "jalen johnson": 7,
-          "nickeil alexanderwalker": 10,
-          "aaron wiggins": 10,
-          "dyson daniels": 10,
-          "dorian finneysmith": 2,
-          "corey kispert": 6,
-          "zuby ejiofor": 7,
-          "luguentz dort": 10,
-          "rayj dennis": 3,
-          "cj mccollum": 9,
-          "kingston flemings": 7,
-          "jock landale": 4,
-          "asa newell": 3
-        }
-      },
       "DAL": {
         "teamGames": 15,
         "window": 10,
@@ -484,27 +610,6 @@
           "walter clayton jr": 10,
           "tobi lawal": 5,
           "jett howard": 5
-        }
-      },
-      "DEN": {
-        "teamGames": 13,
-        "window": 10,
-        "played": {
-          "aaron gordon": 10,
-          "cameron johnson": 9,
-          "nikola jokic": 10,
-          "jamal murray": 10,
-          "christian braun": 10,
-          "marvin bagley iii": 10,
-          "spencer jones": 6,
-          "trevon brazile": 10,
-          "demar derozan": 9,
-          "tyus jones": 10,
-          "bryce hopkins": 5,
-          "alpha diallo": 3,
-          "daron holmes ii": 2,
-          "zeke nnaji": 1,
-          "ryan nembhard": 1
         }
       },
       "BOS": {
@@ -527,112 +632,6 @@
           "devin carter": 1,
           "mike conley": 3,
           "dillon mitchell": 1
-        }
-      },
-      "LAL": {
-        "teamGames": 16,
-        "window": 10,
-        "played": {
-          "ziaire williams": 9,
-          "walker kessler": 9,
-          "matisse thybulle": 10,
-          "luka doncic": 9,
-          "quentin grimes": 8,
-          "jarred vanderbilt": 9,
-          "sandro mamukelashvili": 10,
-          "jake laravia": 10,
-          "adou thiero": 6,
-          "carson cooper": 2,
-          "collin sexton": 10,
-          "bronny james": 5,
-          "jaden hardy": 5,
-          "cameron carr": 6,
-          "kevon looney": 2,
-          "austin reaves": 6,
-          "lawson lovering": 2
-        }
-      },
-      "UTAH": {
-        "teamGames": 16,
-        "window": 10,
-        "played": {
-          "mo bamba": 9,
-          "josh green": 10,
-          "keyonte george": 9,
-          "ace bailey": 10,
-          "darryn peterson": 10,
-          "kyle filipowski": 6,
-          "brice sensabaugh": 10,
-          "jaxson hayes": 8,
-          "svi mykhailiuk": 10,
-          "josh okogie": 10,
-          "isaiah collier": 8,
-          "tony bradley": 7,
-          "lauri markkanen": 3
-        }
-      },
-      "SAC": {
-        "teamGames": 14,
-        "window": 10,
-        "played": {
-          "domantas sabonis": 9,
-          "deandre hunter": 8,
-          "keegan murray": 5,
-          "zach lavine": 9,
-          "darius acuff jr": 10,
-          "leaky black": 8,
-          "precious achiuwa": 8,
-          "alex karaban": 5,
-          "mason plumlee": 2,
-          "dylan cardwell": 7,
-          "malik monk": 10,
-          "daeqwon plowden": 7,
-          "emanuel sharp": 10,
-          "jonathan mogbo": 2,
-          "nique clifford": 5
-        }
-      },
-      "PHX": {
-        "teamGames": 14,
-        "window": 10,
-        "played": {
-          "dillon brooks": 10,
-          "miles bridges": 10,
-          "oso ighodaro": 10,
-          "devin booker": 10,
-          "jalen green": 10,
-          "ryan dunn": 10,
-          "koa peat": 7,
-          "rasheer fleming": 3,
-          "khaman maluach": 10,
-          "luke kennard": 10,
-          "jordan goodwin": 6,
-          "collin gillespie": 10,
-          "jamaree bouyea": 5,
-          "duop reath": 3,
-          "pat spencer": 3
-        }
-      },
-      "CHA": {
-        "teamGames": 14,
-        "window": 10,
-        "played": {
-          "grant williams": 3,
-          "moussa diabate": 8,
-          "brandon miller": 8,
-          "naz reid": 10,
-          "coby white": 7,
-          "royce oneale": 10,
-          "tidjane salaun": 10,
-          "ryan kalkbrenner": 10,
-          "sion james": 10,
-          "christian anderson": 9,
-          "grayson allen": 9,
-          "liam mcneeley": 5,
-          "hannes steinbach": 4,
-          "kon knueppel": 1,
-          "dennis schroder": 5,
-          "pj hall": 1
         }
       }
     }
