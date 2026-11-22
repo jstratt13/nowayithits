@@ -8,8 +8,8 @@
 //    • the ↻ button in the header
 //    • pull-to-refresh (installed app)
 //    • returning to the app after it was in the background ≥ 30 s
-//  On a manual refresh we also check whether a new version of the app was
-//  deployed and, if so, reload the page to pick it up.
+//  On a manual refresh or reopen we also check whether a new version of
+//  the app was deployed and, if so, reload the page to pick it up.
 // ─────────────────────────────────────────────────────────────────────────
 
 export const REFRESH_EVENT = 'nwih:refresh';
@@ -35,11 +35,19 @@ export function installResumeRefresh() {
   let hiddenAt = document.hidden ? Date.now() : null;
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { hiddenAt = Date.now(); return; }
-    if (hiddenAt && Date.now() - hiddenAt >= RESUME_AFTER_MS) requestRefresh('resume');
+    if (hiddenAt && Date.now() - hiddenAt >= RESUME_AFTER_MS) resumeRefresh();
     hiddenAt = null;
   });
   // Safari restoring the page from its back/forward cache.
-  window.addEventListener('pageshow', (e) => { if (e.persisted) requestRefresh('resume'); });
+  window.addEventListener('pageshow', (e) => { if (e.persisted) resumeRefresh(); });
+}
+
+// Reopening the app refreshes data AND picks up a newly deployed version
+// (iOS resumes Home Screen apps with the old code otherwise — a deploy
+// only showed up after force-closing the app or tapping ↻).
+async function resumeRefresh() {
+  requestRefresh('resume');
+  if (await newVersionAvailable()) window.location.reload();
 }
 
 // Has a newer build been deployed? Compares the entry script in the live
