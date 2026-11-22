@@ -1,6 +1,6 @@
 {
   "source": "basketball-reference.com",
-  "fetchedAt": "2026-11-22T17:40:49.598Z",
+  "fetchedAt": "2026-11-22T19:02:26.918Z",
   "nba": {
     "ATL": {
       "gameCount": 10,
@@ -26,7 +26,11 @@
         "OKC",
         "CHO"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": -0.26,
+      "roadNet": 4.94,
+      "venueHomeGames": 7,
+      "venueRoadGames": 9
     },
     "BOS": {
       "gameCount": 10,
@@ -52,7 +56,11 @@
         "DEN",
         "SAC"
       ],
-      "homeGames": 3
+      "homeGames": 3,
+      "homeNet": 12.83,
+      "roadNet": 8.09,
+      "venueHomeGames": 7,
+      "venueRoadGames": 9
     },
     "BRK": {
       "gameCount": 10,
@@ -78,7 +86,11 @@
         "CHI",
         "ORL"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": -12.08,
+      "roadNet": -4.43,
+      "venueHomeGames": 7,
+      "venueRoadGames": 8
     },
     "CHI": {
       "gameCount": 10,
@@ -104,7 +116,11 @@
         "BRK",
         "WAS"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": -2.93,
+      "roadNet": -11.14,
+      "venueHomeGames": 6,
+      "venueRoadGames": 9
     },
     "CHO": {
       "gameCount": 10,
@@ -130,7 +146,11 @@
         "LAL",
         "ATL"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": -14.93,
+      "roadNet": -7.61,
+      "venueHomeGames": 7,
+      "venueRoadGames": 8
     },
     "CLE": {
       "gameCount": 10,
@@ -156,7 +176,11 @@
         "MEM",
         "IND"
       ],
-      "homeGames": 6
+      "homeGames": 6,
+      "homeNet": 5,
+      "roadNet": -1.42,
+      "venueHomeGames": 10,
+      "venueRoadGames": 7
     },
     "DAL": {
       "gameCount": 10,
@@ -182,7 +206,11 @@
         "GSW",
         "LAC"
       ],
-      "homeGames": 6
+      "homeGames": 6,
+      "homeNet": 9.32,
+      "roadNet": -12.13,
+      "venueHomeGames": 9,
+      "venueRoadGames": 7
     },
     "DEN": {
       "gameCount": 10,
@@ -208,7 +236,11 @@
         "BOS",
         "HOU"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": -0.39,
+      "roadNet": 3.39,
+      "venueHomeGames": 7,
+      "venueRoadGames": 7
     },
     "DET": {
       "gameCount": 10,
@@ -234,7 +266,11 @@
         "NOP",
         "TOR"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": 2.23,
+      "roadNet": 8.36,
+      "venueHomeGames": 6,
+      "venueRoadGames": 9
     },
     "GSW": {
       "gameCount": 10,
@@ -260,7 +296,11 @@
         "DAL",
         "MEM"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 15.61,
+      "roadNet": -13.78,
+      "venueHomeGames": 7,
+      "venueRoadGames": 9
     },
     "HOU": {
       "gameCount": 10,
@@ -286,7 +326,11 @@
         "IND",
         "DEN"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 10.33,
+      "roadNet": 5.75,
+      "venueHomeGames": 8,
+      "venueRoadGames": 9
     },
     "IND": {
       "gameCount": 10,
@@ -312,7 +356,11 @@
         "HOU",
         "CLE"
       ],
-      "homeGames": 6
+      "homeGames": 6,
+      "homeNet": -5.74,
+      "roadNet": -1.58,
+      "venueHomeGames": 8,
+      "venueRoadGames": 8
     },
     "LAC": {
       "gameCount": 10,
@@ -338,7 +386,11 @@
         "SAS",
         "DAL"
       ],
-      "homeGames": 6
+      "homeGames": 6,
+      "homeNet": 0.15,
+      "roadNet": -14,
+      "venueHomeGames": 8,
+      "venueRoadGames": 7
     },
     "LAL": {
       "gameCount": 10,
@@ -364,7 +416,11 @@
         "UTA",
         "SAC"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 5.51,
+      "roadNet": 7,
+      "venueHomeGames": 9,
+      "venueRoadGames": 8
     },
     "MEM": {
       "gameCount": 10,
@@ -390,7 +446,11 @@
         "GSW",
         "MIN"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 7.2,
+      "roadNet": 10.96,
+      "venueHomeGames": 8,
+      "venueRoadGames": 9
     },
     "MIA": {
       "gameCount": 10,
@@ -416,7 +476,11 @@
         "HOU",
         "MIL"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 3.83,
+      "roadNet": -2.98,
+      "venueHomeGames": 8,
+      "venueRoadGames": 7
     },
     "MIL": {
       "gameCount": 10,
@@ -442,7 +506,11 @@
         "POR",
         "PHI"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": -13.1,
+      "roadNet": -11.64,
+      "venueHomeGames": 9,
+      "venueRoadGames": 8
     },
     "MIN": {
       "gameCount": 10,
@@ -468,7 +536,11 @@
         "NYK",
         "MEM"
       ],
-      "homeGames": 8
+      "homeGames": 8,
+      "homeNet": 10.33,
+      "roadNet": 8.57,
+      "venueHomeGames": 11,
+      "venueRoadGames": 6
     },
     "NOP": {
       "gameCount": 10,
@@ -494,7 +566,11 @@
         "OKC",
         "SAS"
       ],
-      "homeGames": 6
+      "homeGames": 6,
+      "homeNet": -4.19,
+      "roadNet": -14.73,
+      "venueHomeGames": 11,
+      "venueRoadGames": 7
     },
     "NYK": {
       "gameCount": 10,
@@ -520,7 +596,11 @@
         "MIN",
         "POR"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 8.86,
+      "roadNet": 3.01,
+      "venueHomeGames": 8,
+      "venueRoadGames": 8
     },
     "OKC": {
       "gameCount": 10,
@@ -546,7 +626,11 @@
         "ATL",
         "NOP"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": 11.15,
+      "roadNet": -0.69,
+      "venueHomeGames": 7,
+      "venueRoadGames": 9
     },
     "ORL": {
       "gameCount": 10,
@@ -572,7 +656,11 @@
         "PHI",
         "BRK"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": -7.92,
+      "roadNet": 0.06,
+      "venueHomeGames": 6,
+      "venueRoadGames": 9
     },
     "PHI": {
       "gameCount": 10,
@@ -598,7 +686,11 @@
         "ORL",
         "MIL"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 3.21,
+      "roadNet": 2.68,
+      "venueHomeGames": 9,
+      "venueRoadGames": 8
     },
     "PHO": {
       "gameCount": 10,
@@ -624,7 +716,11 @@
         "SAC",
         "UTA"
       ],
-      "homeGames": 7
+      "homeGames": 7,
+      "homeNet": -0.1,
+      "roadNet": -2.05,
+      "venueHomeGames": 9,
+      "venueRoadGames": 6
     },
     "POR": {
       "gameCount": 10,
@@ -650,7 +746,11 @@
         "MIL",
         "NYK"
       ],
-      "homeGames": 3
+      "homeGames": 3,
+      "homeNet": 5.67,
+      "roadNet": 5.95,
+      "venueHomeGames": 5,
+      "venueRoadGames": 11
     },
     "SAC": {
       "gameCount": 10,
@@ -676,7 +776,11 @@
         "LAL",
         "BOS"
       ],
-      "homeGames": 8
+      "homeGames": 8,
+      "homeNet": -11.68,
+      "roadNet": -13.49,
+      "venueHomeGames": 10,
+      "venueRoadGames": 6
     },
     "SAS": {
       "gameCount": 10,
@@ -702,7 +806,11 @@
         "LAC",
         "NOP"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 10.56,
+      "roadNet": 14.39,
+      "venueHomeGames": 10,
+      "venueRoadGames": 7
     },
     "TOR": {
       "gameCount": 10,
@@ -728,7 +836,11 @@
         "WAS",
         "DET"
       ],
-      "homeGames": 5
+      "homeGames": 5,
+      "homeNet": 3.79,
+      "roadNet": -3.17,
+      "venueHomeGames": 8,
+      "venueRoadGames": 8
     },
     "UTA": {
       "gameCount": 10,
@@ -754,7 +866,11 @@
         "LAL",
         "PHO"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": -8.96,
+      "roadNet": -5.7,
+      "venueHomeGames": 9,
+      "venueRoadGames": 8
     },
     "WAS": {
       "gameCount": 10,
@@ -780,7 +896,11 @@
         "TOR",
         "CHI"
       ],
-      "homeGames": 4
+      "homeGames": 4,
+      "homeNet": -6.38,
+      "roadNet": -6.76,
+      "venueHomeGames": 7,
+      "venueRoadGames": 10
     }
   },
   "wnba": {}

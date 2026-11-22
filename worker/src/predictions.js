@@ -167,24 +167,31 @@ async function fetchInjuryData(league, espnAbbrByTeamId) {
     const data = await res.json();
     const rosters = getRosters(league).teams || {};
 
-    const scoresByTeamId = {};
-    const detailByTeamId = {};
+    // Injury list per team, then score EVERY team on the slate — a team with
+    // nobody listed can still have returning players to credit (NBA v2).
+    const listedByTeamId = {};
     for (const team of data.injuries || []) {
-      const teamId = String(team.id);
-      const players = (team.injuries || []).map((inj) => ({
+      listedByTeamId[String(team.id)] = (team.injuries || []).map((inj) => ({
         player: inj.athlete?.displayName || '',
         status: inj.status || '',
       }));
-      if (!players.length) continue;
+    }
+    const scoresByTeamId = {};
+    const detailByTeamId = {};
+    const teamIds = new Set([...Object.keys(listedByTeamId), ...Object.keys(espnAbbrByTeamId || {})]);
+    for (const teamId of teamIds) {
+      const players = listedByTeamId[teamId] || [];
+      if (!players.length && league !== 'nba') continue;
 
       const espnAbbr = espnAbbrByTeamId?.[teamId];
       const roster = espnAbbr ? rosters[espnAbbr] : null;
       const rosterByName = roster
         ? new Map(roster.players.map((p) => [normalizeName(p.name), p]))
         : null;
+      if (!players.length && !rosterByName) continue;
 
       // NBA → v2 valuation (needs the ESPN availability feed for the
-      // "still in the ratings" fade); WNBA → legacy scoring.
+      // "still in the ratings" fade + return credit); WNBA → legacy.
       const avail = espnAbbr ? availabilityData?.[league]?.teams?.[espnAbbr] : null;
       const detail = computeInjuryScoreDetailed(players, rosterByName, { league, availability: avail });
       scoresByTeamId[teamId] = detail.score;

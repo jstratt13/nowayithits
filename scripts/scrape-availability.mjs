@@ -110,10 +110,18 @@ async function main() {
   const teams = {};
   for (const [abbr, list] of Object.entries(byTeam)) {
     const counts = {};
-    for (const g of list) {
-      for (const name of played[g.id]?.[abbr] || []) counts[name] = (counts[name] || 0) + 1;
-    }
-    teams[abbr] = { teamGames: list[0]?.gp ?? null, window: list.length, played: counts };
+    // streak = team games since the player last played (0 = played the
+    // most recent game). list is newest-first, so the first game a name
+    // appears in is his last appearance. Players absent from the whole
+    // window have no entry (= missed ≥ window). Feeds the star cap.
+    const streak = {};
+    list.forEach((g, i) => {
+      for (const name of played[g.id]?.[abbr] || []) {
+        counts[name] = (counts[name] || 0) + 1;
+        if (streak[name] == null) streak[name] = i;
+      }
+    });
+    teams[abbr] = { teamGames: list[0]?.gp ?? null, window: list.length, played: counts, streak };
   }
 
   const n = Object.keys(teams).length;

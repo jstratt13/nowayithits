@@ -164,6 +164,20 @@ function averageL10(games) {
   };
 }
 
+// In-season home and road net efficiency (pts per 100 poss, pace-weighted)
+// over EVERY game this season — the third factor in the spread blend
+// (home team's home net, away team's road net; 11/22/26).
+function venueSplits(games) {
+  const acc = { home: [0, 0, 0], road: [0, 0, 0] }; // Σ net·pace, Σ pace, n
+  for (const g of games) {
+    if (g.home == null || g.offRtg == null || g.defRtg == null || !g.pace) continue;
+    const a = acc[g.home ? 'home' : 'road'];
+    a[0] += (g.offRtg - g.defRtg) * g.pace; a[1] += g.pace; a[2] += 1;
+  }
+  const net = (a) => (a[1] ? Math.round((a[0] / a[1]) * 100) / 100 : null);
+  return { homeNet: net(acc.home), roadNet: net(acc.road), venueHomeGames: acc.home[2], venueRoadGames: acc.road[2] };
+}
+
 async function scrapeNba(year) {
   const result = {};
   for (let i = 0; i < NBA_TEAMS.length; i++) {
@@ -175,7 +189,7 @@ async function scrapeNba(year) {
       const games = parseTeamGamelog(html);
       const l10 = averageL10(games);
       if (l10) {
-        result[abbr] = l10;
+        result[abbr] = { ...l10, ...venueSplits(games) };
         console.log(`  ${abbr}: ${l10.gameCount} games (${l10.firstGameNum}-${l10.lastGameNum}) · ORtg ${l10.offRtg?.toFixed(1)} DRtg ${l10.defRtg?.toFixed(1)} Pace ${l10.pace?.toFixed(1)} · ${l10.homeGames} home · opp ${l10.opponents.join(',')}`);
       } else {
         console.warn(`  ${abbr}: no games parsed`);

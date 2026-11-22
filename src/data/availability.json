@@ -1,6 +1,6 @@
 {
   "source": "espn",
-  "fetchedAt": "2026-11-22T17:57:49.119Z",
+  "fetchedAt": "2026-11-22T19:01:57.214Z",
   "nba": {
     "teams": {
       "PHI": {
@@ -23,6 +23,24 @@
           "jaylen brown": 8,
           "rayan rupert": 2,
           "adem bona": 2
+        },
+        "streak": {
+          "lebron james": 0,
+          "joel embiid": 0,
+          "kentavious caldwellpope": 0,
+          "tyrese maxey": 0,
+          "vj edgecombe": 0,
+          "jabari walker": 0,
+          "dominick barlow": 0,
+          "anfernee simons": 0,
+          "labaron philon jr": 0,
+          "justin edwards": 1,
+          "tacko fall": 1,
+          "caleb love": 1,
+          "dean wade": 2,
+          "jaylen brown": 2,
+          "rayan rupert": 5,
+          "adem bona": 8
         }
       },
       "MIL": {
@@ -45,6 +63,24 @@
           "gary trent jr": 6,
           "ousmane dieng": 5,
           "bogoljub markovic": 2
+        },
+        "streak": {
+          "kyle kuzma": 0,
+          "jaime jaquez jr": 0,
+          "myles turner": 0,
+          "tyler herro": 0,
+          "ryan rollins": 0,
+          "nate ament": 0,
+          "kelel ware": 0,
+          "caris levert": 0,
+          "aj green": 0,
+          "brayden burries": 0,
+          "kasparas jakucionis": 0,
+          "pete nance": 1,
+          "jericho sims": 1,
+          "gary trent jr": 1,
+          "ousmane dieng": 4,
+          "bogoljub markovic": 5
         }
       },
       "NY": {
@@ -65,6 +101,23 @@
           "og anunoby": 9,
           "karlanthony towns": 9,
           "jordan clarkson": 7,
+          "mohamed diawara": 5
+        },
+        "streak": {
+          "andre drummond": 0,
+          "josh hart": 0,
+          "mikal bridges": 0,
+          "landry shamet": 0,
+          "jalen brunson": 0,
+          "dalton knecht": 0,
+          "pacome dadiet": 0,
+          "james wiseman": 0,
+          "jose alvarado": 0,
+          "miles mcbride": 0,
+          "tyler kolek": 0,
+          "og anunoby": 1,
+          "karlanthony towns": 1,
+          "jordan clarkson": 2,
           "mohamed diawara": 5
         }
       },
@@ -87,6 +140,23 @@
           "micah potter": 5,
           "chris youngblood": 4,
           "vit krejci": 1
+        },
+        "streak": {
+          "toumani camara": 0,
+          "deni avdija": 0,
+          "donovan clingan": 0,
+          "damian lillard": 0,
+          "sidy cissoko": 0,
+          "robert williams iii": 0,
+          "branden carlson": 0,
+          "jrue holiday": 0,
+          "scoot henderson": 0,
+          "jayson kent": 0,
+          "john tonje": 1,
+          "yang hansen": 1,
+          "micah potter": 2,
+          "chris youngblood": 6,
+          "vit krejci": 9
         }
       },
       "DAL": {
@@ -108,6 +178,23 @@
           "marcus sasser": 6,
           "tobi lawal": 5,
           "jett howard": 5
+        },
+        "streak": {
+          "caleb martin": 0,
+          "daniel gafford": 0,
+          "cooper flagg": 0,
+          "zaccharie risacher": 0,
+          "kyrie irving": 0,
+          "naji marshall": 0,
+          "santi aldama": 0,
+          "morez johnson jr": 0,
+          "max christie": 0,
+          "walter clayton jr": 0,
+          "pj washington": 1,
+          "moussa cisse": 1,
+          "marcus sasser": 1,
+          "tobi lawal": 2,
+          "jett howard": 2
         }
       },
       "LAC": {
@@ -130,6 +217,24 @@
           "jalen pickett": 4,
           "nick martinelli": 3,
           "blake wesley": 1
+        },
+        "streak": {
+          "derrick jones jr": 0,
+          "rui hachimura": 0,
+          "brook lopez": 0,
+          "max strus": 0,
+          "darius garland": 0,
+          "isaiah jackson": 0,
+          "baba miller": 0,
+          "yanic konan niederhauser": 0,
+          "kris dunn": 0,
+          "kobe sanders": 0,
+          "cam christie": 0,
+          "gradey dick": 0,
+          "keaton wagler": 0,
+          "jalen pickett": 1,
+          "nick martinelli": 2,
+          "blake wesley": 9
         }
       },
       "MIN": {
@@ -150,6 +255,22 @@
           "zyon pullin": 1,
           "jaylen clark": 6,
           "rocco zikarsky": 1
+        },
+        "streak": {
+          "jaden mcdaniels": 0,
+          "jonathan kuminga": 0,
+          "rudy gobert": 0,
+          "ayo dosunmu": 0,
+          "lamelo ball": 0,
+          "trey lyles": 0,
+          "joan beringer": 0,
+          "terrence shannon jr": 0,
+          "bones hyland": 0,
+          "cody williams": 2,
+          "isaiah evans": 3,
+          "zyon pullin": 3,
+          "jaylen clark": 4,
+          "rocco zikarsky": 6
         }
       },
       "MEM": {
@@ -172,6 +293,24 @@
           "quinten post": 6,
           "javon small": 8,
           "gg jackson": 5
+        },
+        "streak": {
+          "cedric coward": 0,
+          "jaylen wells": 0,
+          "zach edey": 0,
+          "ty jerome": 0,
+          "jahmai mashack": 0,
+          "kris murray": 0,
+          "oliviermaxence prosper": 0,
+          "taylor hendricks": 0,
+          "isaiah stewart": 0,
+          "cam spencer": 0,
+          "cameron boozer": 1,
+          "jerami grant": 1,
+          "karim lopez": 1,
+          "quinten post": 1,
+          "javon small": 1,
+          "gg jackson": 4
         }
       },
       "SA": {
@@ -191,6 +330,21 @@
           "tarris reed jr": 6,
           "jordan mclaughlin": 8,
           "dylan harper": 8
+        },
+        "streak": {
+          "julian champagnie": 0,
+          "victor wembanyama": 0,
+          "deaaron fox": 0,
+          "devin vassell": 0,
+          "stephon castle": 0,
+          "harrison barnes": 0,
+          "keldon johnson": 0,
+          "david jones garcia": 0,
+          "carter bryant": 0,
+          "luke kornet": 0,
+          "tarris reed jr": 0,
+          "jordan mclaughlin": 0,
+          "dylan harper": 2
         }
       },
       "NO": {
@@ -215,6 +369,26 @@
           "dejounte murray": 4,
           "bryce mcgowens": 3,
           "trendon watford": 2
+        },
+        "streak": {
+          "herbert jones": 0,
+          "saddiq bey": 0,
+          "derik queen": 0,
+          "yves missi": 0,
+          "jeremiah fears": 0,
+          "karlo matkovic": 0,
+          "jordan poole": 0,
+          "jaron pierre jr": 0,
+          "aj johnson": 0,
+          "zion williamson": 1,
+          "trey murphy iii": 1,
+          "deandre jordan": 2,
+          "julian reese": 3,
+          "malik dia": 3,
+          "bennedict mathurin": 5,
+          "dejounte murray": 6,
+          "bryce mcgowens": 6,
+          "trendon watford": 8
         }
       },
       "SAC": {
@@ -236,6 +410,23 @@
           "daeqwon plowden": 6,
           "jonathan mogbo": 1,
           "nique clifford": 3
+        },
+        "streak": {
+          "domantas sabonis": 0,
+          "deandre hunter": 0,
+          "keegan murray": 0,
+          "zach lavine": 0,
+          "darius acuff jr": 0,
+          "leaky black": 0,
+          "precious achiuwa": 0,
+          "dylan cardwell": 0,
+          "malik monk": 0,
+          "emanuel sharp": 0,
+          "alex karaban": 2,
+          "mason plumlee": 2,
+          "daeqwon plowden": 2,
+          "jonathan mogbo": 6,
+          "nique clifford": 7
         }
       },
       "BOS": {
@@ -258,6 +449,24 @@
           "derrick white": 9,
           "mitchell robinson": 9,
           "dillon mitchell": 1
+        },
+        "streak": {
+          "paul george": 0,
+          "sam hauser": 0,
+          "neemias queta": 0,
+          "payton pritchard": 0,
+          "hugo gonzalez": 0,
+          "chris cenac jr": 0,
+          "luka garza": 0,
+          "mike conley": 0,
+          "ron harper jr": 0,
+          "devin carter": 0,
+          "baylor scheierman": 0,
+          "jordan walsh": 0,
+          "jayson tatum": 1,
+          "derrick white": 1,
+          "mitchell robinson": 1,
+          "dillon mitchell": 9
         }
       },
       "ATL": {
@@ -278,6 +487,22 @@
           "kingston flemings": 6,
           "jock landale": 3,
           "asa newell": 3
+        },
+        "streak": {
+          "onyeka okongwu": 0,
+          "jalen johnson": 0,
+          "nickeil alexanderwalker": 0,
+          "aaron wiggins": 0,
+          "dyson daniels": 0,
+          "dorian finneysmith": 0,
+          "corey kispert": 0,
+          "zuby ejiofor": 0,
+          "luguentz dort": 0,
+          "rayj dennis": 0,
+          "cj mccollum": 2,
+          "kingston flemings": 3,
+          "jock landale": 3,
+          "asa newell": 7
         }
       },
       "CHA": {
@@ -300,6 +525,24 @@
           "kon knueppel": 1,
           "dennis schroder": 4,
           "pj hall": 1
+        },
+        "streak": {
+          "moussa diabate": 0,
+          "brandon miller": 0,
+          "naz reid": 0,
+          "coby white": 0,
+          "sion james": 0,
+          "royce oneale": 0,
+          "tidjane salaun": 0,
+          "ryan kalkbrenner": 0,
+          "christian anderson": 0,
+          "liam mcneeley": 0,
+          "grant williams": 1,
+          "grayson allen": 2,
+          "hannes steinbach": 4,
+          "kon knueppel": 6,
+          "dennis schroder": 6,
+          "pj hall": 9
         }
       },
       "BKN": {
@@ -320,6 +563,22 @@
           "chaney johnson": 9,
           "terance mann": 7,
           "drake powell": 3
+        },
+        "streak": {
+          "julius randle": 0,
+          "michael porter jr": 0,
+          "danny wolf": 0,
+          "dayron sharpe": 0,
+          "nolan traore": 0,
+          "noah clowney": 0,
+          "moritz wagner": 0,
+          "keon ellis": 0,
+          "mikel brown jr": 0,
+          "egor demin": 0,
+          "josh minott": 1,
+          "chaney johnson": 1,
+          "terance mann": 1,
+          "drake powell": 3
         }
       },
       "ORL": {
@@ -339,6 +598,21 @@
           "alex morales": 5,
           "colin castleton": 2,
           "jase richardson": 6
+        },
+        "streak": {
+          "franz wagner": 0,
+          "wendell carter jr": 0,
+          "desmond bane": 0,
+          "jalen suggs": 0,
+          "anthony black": 0,
+          "tristan da silva": 0,
+          "nikola vucevic": 0,
+          "goga bitadze": 0,
+          "jevon carter": 0,
+          "jamal cain": 1,
+          "alex morales": 4,
+          "colin castleton": 4,
+          "jase richardson": 4
         }
       },
       "CLE": {
@@ -360,6 +634,23 @@
           "riley minix": 3,
           "evan mobley": 5,
           "tristan enaruna": 2
+        },
+        "streak": {
+          "jarrett allen": 0,
+          "james harden": 0,
+          "donovan mitchell": 0,
+          "peyton watson": 0,
+          "tyrese proctor": 0,
+          "mario hezonja": 0,
+          "thomas bryant": 0,
+          "norchad omier": 0,
+          "sam merrill": 0,
+          "meleek thomas": 0,
+          "craig porter jr": 1,
+          "jaylon tyson": 3,
+          "riley minix": 3,
+          "evan mobley": 5,
+          "tristan enaruna": 8
         }
       },
       "IND": {
@@ -380,6 +671,22 @@
           "quenton jackson": 10,
           "braden smith": 7,
           "kobe brown": 5
+        },
+        "streak": {
+          "pascal siakam": 0,
+          "ivica zubac": 0,
+          "kelly oubre jr": 0,
+          "andrew nembhard": 0,
+          "aaron nesmith": 0,
+          "larry nance jr": 0,
+          "obi toppin": 0,
+          "jalen slawson": 0,
+          "jarace walker": 0,
+          "jay huff": 0,
+          "tj mcconnell": 0,
+          "quenton jackson": 0,
+          "braden smith": 0,
+          "kobe brown": 1
         }
       },
       "DET": {
@@ -402,6 +709,24 @@
           "ronald holland ii": 7,
           "isaac jones": 4,
           "ebuka okorie": 3
+        },
+        "streak": {
+          "john collins": 0,
+          "kevin huerter": 0,
+          "cade cunningham": 0,
+          "ausar thompson": 0,
+          "daniss jenkins": 0,
+          "paul reed": 0,
+          "javonte green": 0,
+          "isaiah joe": 0,
+          "chaz lanier": 0,
+          "tolu smith": 1,
+          "elijah harkless": 1,
+          "duncan robinson": 3,
+          "taurean prince": 3,
+          "ronald holland ii": 3,
+          "isaac jones": 3,
+          "ebuka okorie": 5
         }
       },
       "TOR": {
@@ -421,6 +746,22 @@
           "collin murrayboyles": 8,
           "kyle anderson": 6,
           "rj barrett": 8,
+          "jaden bradley": 4
+        },
+        "streak": {
+          "scottie barnes": 0,
+          "allen graves": 0,
+          "jakob poeltl": 0,
+          "immanuel quickley": 0,
+          "jakobe walter": 0,
+          "trayce jacksondavis": 0,
+          "jamison battle": 0,
+          "malachi smith": 0,
+          "jamal shead": 0,
+          "alijah martin": 0,
+          "collin murrayboyles": 1,
+          "kyle anderson": 1,
+          "rj barrett": 2,
           "jaden bradley": 4
         }
       },
@@ -445,6 +786,25 @@
           "caleb wilson": 5,
           "jaylin sellers": 4,
           "tobe awaka": 2
+        },
+        "streak": {
+          "isaac okoro": 0,
+          "matas buzelis": 0,
+          "nic claxton": 0,
+          "norman powell": 0,
+          "josh giddey": 0,
+          "zach collins": 0,
+          "patrick williams": 0,
+          "noa essengue": 0,
+          "buddy hield": 0,
+          "tre jones": 0,
+          "jalen smith": 1,
+          "leonard miller": 1,
+          "dailyn swain": 1,
+          "jordan hawkins": 2,
+          "caleb wilson": 5,
+          "jaylin sellers": 5,
+          "tobe awaka": 8
         }
       },
       "WSH": {
@@ -465,6 +825,22 @@
           "anthony gill": 4,
           "tre mann": 5,
           "felix okpara": 2
+        },
+        "streak": {
+          "anthony davis": 0,
+          "aj dybantsa": 0,
+          "kyshawn george": 0,
+          "alex sarr": 0,
+          "trae young": 0,
+          "khris middleton": 0,
+          "deandre ayton": 0,
+          "bub carrington": 0,
+          "bilal coulibaly": 0,
+          "will riley": 0,
+          "tre johnson": 0,
+          "anthony gill": 2,
+          "tre mann": 2,
+          "felix okpara": 6
         }
       },
       "OKC": {
@@ -486,6 +862,23 @@
           "brooks barnhizer": 4,
           "josh dix": 4,
           "dalen terry": 2
+        },
+        "streak": {
+          "isaiah hartenstein": 0,
+          "aday mara": 0,
+          "shai gilgeousalexander": 0,
+          "jared mccain": 0,
+          "ajay mitchell": 0,
+          "jaylin williams": 0,
+          "kenrich williams": 0,
+          "micah peavy": 0,
+          "nique clifford": 0,
+          "bennett stirtz": 0,
+          "alex caruso": 1,
+          "nikola topic": 1,
+          "brooks barnhizer": 2,
+          "josh dix": 3,
+          "dalen terry": 6
         }
       },
       "UTAH": {
@@ -505,6 +898,21 @@
           "isaiah collier": 7,
           "tony bradley": 6,
           "lauri markkanen": 2
+        },
+        "streak": {
+          "jaxson hayes": 0,
+          "josh green": 0,
+          "keyonte george": 0,
+          "ace bailey": 0,
+          "darryn peterson": 0,
+          "brice sensabaugh": 0,
+          "mo bamba": 0,
+          "svi mykhailiuk": 0,
+          "josh okogie": 0,
+          "kyle filipowski": 1,
+          "isaiah collier": 1,
+          "tony bradley": 2,
+          "lauri markkanen": 8
         }
       },
       "PHX": {
@@ -526,6 +934,23 @@
           "jamaree bouyea": 5,
           "duop reath": 3,
           "pat spencer": 3
+        },
+        "streak": {
+          "dillon brooks": 0,
+          "miles bridges": 0,
+          "oso ighodaro": 0,
+          "devin booker": 0,
+          "jalen green": 0,
+          "ryan dunn": 0,
+          "koa peat": 0,
+          "khaman maluach": 0,
+          "luke kennard": 0,
+          "jordan goodwin": 0,
+          "collin gillespie": 0,
+          "rasheer fleming": 1,
+          "jamaree bouyea": 1,
+          "duop reath": 6,
+          "pat spencer": 6
         }
       },
       "DEN": {
@@ -547,6 +972,23 @@
           "daron holmes ii": 2,
           "zeke nnaji": 1,
           "ryan nembhard": 1
+        },
+        "streak": {
+          "aaron gordon": 0,
+          "cameron johnson": 0,
+          "nikola jokic": 0,
+          "jamal murray": 0,
+          "christian braun": 0,
+          "marvin bagley iii": 0,
+          "spencer jones": 0,
+          "trevon brazile": 0,
+          "demar derozan": 0,
+          "tyus jones": 0,
+          "bryce hopkins": 2,
+          "alpha diallo": 5,
+          "daron holmes ii": 5,
+          "zeke nnaji": 7,
+          "ryan nembhard": 7
         }
       },
       "HOU": {
@@ -567,6 +1009,22 @@
           "isaiah crawford": 6,
           "oscar tshiebwe": 8,
           "bruce thornton": 6
+        },
+        "streak": {
+          "kevin durant": 0,
+          "jabari smith jr": 0,
+          "alperen sengun": 0,
+          "fred vanvleet": 0,
+          "amen thompson": 0,
+          "tari eason": 0,
+          "steven adams": 0,
+          "marcus smart": 0,
+          "bogdan bogdanovic": 0,
+          "reed sheppard": 0,
+          "jaesean tate": 1,
+          "isaiah crawford": 1,
+          "oscar tshiebwe": 1,
+          "bruce thornton": 1
         }
       },
       "LAL": {
@@ -590,6 +1048,25 @@
           "kevon looney": 2,
           "austin reaves": 5,
           "lawson lovering": 2
+        },
+        "streak": {
+          "ziaire williams": 0,
+          "walker kessler": 0,
+          "matisse thybulle": 0,
+          "luka doncic": 0,
+          "quentin grimes": 0,
+          "jarred vanderbilt": 0,
+          "sandro mamukelashvili": 0,
+          "jake laravia": 0,
+          "collin sexton": 0,
+          "cameron carr": 0,
+          "adou thiero": 1,
+          "carson cooper": 1,
+          "bronny james": 1,
+          "jaden hardy": 1,
+          "kevon looney": 2,
+          "austin reaves": 4,
+          "lawson lovering": 8
         }
       },
       "GS": {
@@ -611,6 +1088,23 @@
           "draymond green": 8,
           "stephen curry": 5,
           "brandon williams": 4
+        },
+        "streak": {
+          "gui santos": 0,
+          "yaxel lendeborg": 0,
+          "charles bassey": 0,
+          "deanthony melton": 0,
+          "brandin podziemski": 0,
+          "georges niang": 0,
+          "graham ike": 0,
+          "malevy leons": 0,
+          "al horford": 0,
+          "gary payton ii": 0,
+          "lj cryer": 0,
+          "will richard": 0,
+          "draymond green": 1,
+          "stephen curry": 4,
+          "brandon williams": 5
         }
       },
       "MIA": {
@@ -633,6 +1127,24 @@
           "keshad johnson": 2,
           "tim hardaway jr": 6,
           "dru smith": 4
+        },
+        "streak": {
+          "giannis antetokounmpo": 0,
+          "bam adebayo": 0,
+          "klay thompson": 0,
+          "davion mitchell": 0,
+          "pelle larsson": 0,
+          "andrew wiggins": 0,
+          "bobby portis": 0,
+          "simone fontecchio": 0,
+          "nikola jovic": 0,
+          "nick richards": 0,
+          "tre donaldson": 0,
+          "ryan conwell": 0,
+          "myron gardner": 1,
+          "keshad johnson": 1,
+          "tim hardaway jr": 3,
+          "dru smith": 3
         }
       }
     }
