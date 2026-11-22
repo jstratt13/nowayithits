@@ -106,6 +106,8 @@ const CSV_LEAD = [
   'hca', 'dbp', 'zone', 'spreadPick', 'ouPick', 'spreadResult', 'ouResult',
   'bookSpread', 'bookTotal', 'openHomeLine', 'firstHomeLine', 'closeHomeLine',
   'spreadPickOpen', 'spreadResultOpen', 'spreadPickFirst', 'spreadResultFirst',
+  'openTotal', 'firstTotal', 'closeTotal',
+  'ouPickOpen', 'ouResultOpen', 'ouPickFirst', 'ouResultFirst',
   'projMargin', 'projTotal', 'margin',
   'actualHomeMargin', 'total', 'awayScore', 'homeScore', 'blowout', 'graded',
 ];
@@ -213,16 +215,22 @@ export default function Tracker() {
     const gradedN = graded.length;
     const sH = graded.filter((r) => r.spreadResult === 'Hit').length;
     const oH = graded.filter((r) => r.ouResult === 'Hit').length;
-    // Line timing (rows captured from 11/20/26 on): same games graded at
-    // DraftKings' opening line and at the app's first pick. Compare each
-    // against the close on the SAME rows so the three numbers line up.
-    const timed = graded.filter((r) => r.spreadResultOpen || r.spreadResultFirst);
-    const tN = timed.length;
-    const tClose = timed.filter((r) => r.spreadResult === 'Hit').length;
-    const openRows = timed.filter((r) => r.spreadResultOpen);
-    const tOpen = openRows.filter((r) => r.spreadResultOpen === 'Hit').length;
-    const firstRows = timed.filter((r) => r.spreadResultFirst);
-    const tFirst = firstRows.filter((r) => r.spreadResultFirst === 'Hit').length;
+    // Line timing (rows captured from 11/20/26 on): the same games graded
+    // at DraftKings' opening line, at the app's first pick, and at the
+    // close — each compared on the SAME rows so the three numbers line up.
+    const timing = (result, openKey, firstKey) => {
+      const timed = graded.filter((r) => r[openKey] || r[firstKey]);
+      const openRows = timed.filter((r) => r[openKey]);
+      const firstRows = timed.filter((r) => r[firstKey]);
+      const hits = (rs, k) => rs.filter((r) => r[k] === 'Hit').length;
+      return {
+        n: timed.length,
+        close: hits(timed, result), open: hits(openRows, openKey), first: hits(firstRows, firstKey),
+        openN: openRows.length, firstN: firstRows.length,
+      };
+    };
+    const spT = timing('spreadResult', 'spreadResultOpen', 'spreadResultFirst');
+    const ouT = timing('ouResult', 'ouResultOpen', 'ouResultFirst');
     const ungradedN = n - gradedN;
 
     // Blowout % is a pure outcome stat now — what fraction of games
@@ -241,10 +249,8 @@ export default function Tracker() {
       gradedN,
       ungradedN,
       spreadPct: pct(sH, gradedN),
-      tN, tClose, tOpen, tFirst, openN: openRows.length, firstN: firstRows.length,
-      closePctTimed: pct(tClose, tN),
-      openPct: pct(tOpen, openRows.length),
-      firstPct: pct(tFirst, firstRows.length),
+      spT, ouT,
+      timingPct: (t) => [pct(t.open, t.openN), pct(t.first, t.firstN), pct(t.close, t.n)],
       ouPct: pct(oH, gradedN),
       blowPct: pct(blowN, n),
       sH, oH, blowN,
@@ -371,14 +377,15 @@ export default function Tracker() {
               sub={stats.gradedN ? `${stats.sH}/${stats.gradedN}` : ''}
               color={stats.spreadPct == null ? 'var(--muted)' : stats.spreadPct >= 50 ? 'var(--hit)' : 'var(--miss)'}
             />
-            {stats.tN > 0 && (
+            {[['Spread', stats.spT], ['O/U', stats.ouT]].map(([label, t]) => t && t.n > 0 && (
               <StatCell
-                l="Spread · open / first / close"
-                v={[stats.openPct, stats.firstPct, stats.closePctTimed].map((p) => p == null ? '—' : `${p.toFixed(1)}`).join(' / ')}
-                sub={`${stats.tOpen}/${stats.openN} · ${stats.tFirst}/${stats.firstN} · ${stats.tClose}/${stats.tN}`}
+                key={label}
+                l={`${label} · open / first / close`}
+                v={stats.timingPct(t).map((p) => (p == null ? '—' : p.toFixed(1))).join(' / ')}
+                sub={`${t.open}/${t.openN} · ${t.first}/${t.firstN} · ${t.close}/${t.n}`}
                 color="var(--accent2)"
               />
-            )}
+            ))}
             <StatCell
               l="O/U hit %"
               v={stats.ouPct == null ? '—' : `${stats.ouPct.toFixed(1)}%`}
