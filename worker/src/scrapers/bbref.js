@@ -65,12 +65,12 @@ function wnbaSeasonYear() {
 // moment either input changes, instead of serving a copy built by older
 // code / older L10 data until the hour rolls over:
 //   TEAMS_SCHEMA — bump whenever scrapeTeamStats' OUTPUT changes shape or
-//                  meaning (e.g. 2 = adds l10Opponents/l10HomeGames/l10Sos).
+//                  meaning (2 = l10Opponents/l10HomeGames/l10Sos, 3 = homeNet/roadNet).
 //   L10 stamp    — the bundled l10Cache.json fetchedAt, so each daily L10
 //                  refresh deploy takes effect on the next request.
 // The L10 and its SOS adjustment always come from the same table build, so
 // they can never be out of step with each other.
-export const TEAMS_SCHEMA = 2;
+export const TEAMS_SCHEMA = 3; // 3 = adds homeNet/roadNet (11/22/26)
 export function teamsCacheKey(league, hSlot) {
   const stamp = (getL10Meta().fetchedAt || 'none').replace(/[^0-9]/g, '').slice(0, 12);
   return `teams:${league}:${hSlot}:v${TEAMS_SCHEMA}:${stamp}`;
@@ -158,6 +158,10 @@ export async function scrapeTeamStats(league, env) {
       team.drbDefLast10 = l10.oppOrbPct != null ? 100 - l10.oppOrbPct : null;
       team.l10GameCount = l10.gameCount;
       team.l10Opponents = l10.opponents ?? null;
+      team.homeNet      = l10.homeNet ?? null;   // in-season, per 100
+      team.roadNet      = l10.roadNet ?? null;
+      team.venueHomeGames = l10.venueHomeGames ?? null; // season home games (≠ l10HomeGames)
+      team.venueRoadGames = l10.venueRoadGames ?? null;
       team.l10HomeGames = l10.homeGames ?? null;
       team.l10Source    = 'bundled';
       bundledUsed.add(abbr);

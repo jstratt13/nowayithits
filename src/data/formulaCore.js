@@ -398,6 +398,16 @@ export const INJURY_V2 = {
   // 14.674 → 14.649, ×1.0 → 14.645, ATS 50.7 → 51.0–51.7%; no proven ATS
   // edge at 3+ pt edges.
   RETURN_CREDIT:    0.75,
+  // Star cap (11/22/26, Jordan: "we need a cap"). A star — worth ≥
+  // STAR_CAP_VALUE pts/100 at full strength (≈ BPM +4.5 at 30+ mpg) — keeps
+  // at least STAR_CAP_SHARE of his value for his first STAR_CAP_GAMES
+  // straight missed games, then the normal taper. Chosen from 225 cap
+  // variants (level 40–100%, 3–15 games, all players vs stars): the only
+  // one better in both 2024-25 and 2025-26+ (RMSE 14.243→14.232 /
+  // 14.625→14.617, ATS 52.1→52.5 / 51.2→51.4). Longer caps were worse.
+  STAR_CAP_VALUE:   3.0,
+  STAR_CAP_SHARE:   0.9,
+  STAR_CAP_GAMES:   3,
 };
 
 function regressBpm(cur, prior, gp) {
@@ -432,7 +442,17 @@ export function nbaInjuryValue(entry, avail, opts = {}) {
   const bpm  = regressBpm(entry.bpm,  pB, entry.g);
   const obpm = regressBpm(entry.obpm, pO, entry.g);
   const dbpm = regressBpm(entry.dbpm, pD, entry.g);
-  const share = opts.share ?? availabilityShare(entry, avail);
+  let share = opts.share ?? availabilityShare(entry, avail);
+  // Star cap: recently-out stars keep ≥ 90% (see INJURY_V2.STAR_CAP_*).
+  // `streak` = team games since he last played (availability feed).
+  let starCapped = false;
+  if (opts.share == null && share < INJURY_V2.STAR_CAP_SHARE) {
+    const streak = avail?.streak?.[normalizeName(entry.name)];
+    if (streak != null && streak <= INJURY_V2.STAR_CAP_GAMES) {
+      const fullValue = INJURY_V2.SCALE * (mpg / 48) * Math.max(0, bpm - INJURY_V2.REPLACEMENT_BPM);
+      if (fullValue >= INJURY_V2.STAR_CAP_VALUE) { share = INJURY_V2.STAR_CAP_SHARE; starCapped = true; }
+    }
+  }
   const k = INJURY_V2.SCALE * (mpg / 48) * share;
   const raw = k * Math.max(0, bpm - INJURY_V2.REPLACEMENT_BPM);
   const value = Math.min(INJURY_V2.PLAYER_CAP, raw);
@@ -440,7 +460,7 @@ export function nbaInjuryValue(entry, avail, opts = {}) {
   let def = k * Math.max(0, dbpm - INJURY_V2.DEF_REPLACEMENT);
   const od = off + def;
   if (od > INJURY_V2.PLAYER_CAP) { off *= INJURY_V2.PLAYER_CAP / od; def *= INJURY_V2.PLAYER_CAP / od; }
-  return { value, off, def, bpm, share, capped: raw > INJURY_V2.PLAYER_CAP, belowMin: false };
+  return { value, off, def, bpm, share, capped: raw > INJURY_V2.PLAYER_CAP, belowMin: false, starCapped };
 }
 
 function computeInjuryScoreV2(players, rosterByNormName, avail) {
@@ -467,6 +487,7 @@ function computeInjuryScoreV2(players, rosterByNormName, avail) {
       per: entry?.per ?? null,
       share: v.share,
       capped: v.capped,
+      starCapped: !!v.starCapped,
       belowMin: v.belowMin,
       impact: v.value,            // pts per 100 poss if fully out
       contribution,               // × status weight
@@ -637,6 +658,16 @@ function srsShrinkWeight(teamStats) {
 // edge (inside the best-of-168 luck band) — margin RMSE is ~0.03 worse
 // than 0.5 raw. WNBA untested → keeps 0.5, no SOS.
 export const L10_WEIGHT = { nba: 0.60, wnba: 0.5 };
+
+// Third factor (11/22/26, Jordan): the HOME team's in-season home net and the
+// AWAY team's in-season road net, blended in at VENUE_WEIGHT:
+//   rating = (1 − w)·(season/L10 blend) + w·venue net        (HCA 2.1 kept)
+// Backtest, fit 2024-25 → test 2025-26+26-27: w 0.10 RMSE 14.232→14.199 /
+// 14.617→14.601, ATS 52.5→52.7 / 51.4→51.5; 2025-26 alone RMSE better, ATS
+// flat. w ≥ 0.15 lowered ATS. Totals: no effect → not used there. Needs
+// VENUE_MIN_GAMES at that venue this season.
+export const VENUE_WEIGHT = { nba: 0.10 };
+const VENUE_MIN_GAMES = 3;
 const L10_SOS_HCA_PER100 = 2.1; // home edge per 100 poss stripped out of L10
 
 // SOS adjustment for a team's last-10 NetRtg, in pts per 100 possessions:
@@ -664,7 +695,7 @@ export function l10SosAdjustment(team, teamsByCode, league = 'nba') {
   return sum / n - L10_SOS_HCA_PER100 * homeShare;
 }
 
-function blendedSRS(teamStats, league, gamePoss) {
+function blendedSRS(teamStats, league, gamePoss, venue) {
   const c = cfg(league);
   const rawSrs = get(teamStats, 'srs', 0);
   const srs = rawSrs * srsShrinkWeight(teamStats);
@@ -673,11 +704,23 @@ function blendedSRS(teamStats, league, gamePoss) {
   const srsPer100 = (srs * 100) / pace;
   const offL10 = get(teamStats, 'offLast10', null);
   const defL10 = get(teamStats, 'defLast10', null);
-  if (offL10 == null || defL10 == null) return (srsPer100 * poss) / 100;
+  if (offL10 == null || defL10 == null) return (withVenue(srsPer100, teamStats, league, venue) * poss) / 100;
   const sos = league === 'nba' ? get(teamStats, 'l10Sos', null) : null;
   const l10Per100 = offL10 - defL10 + (sos ?? 0);
   const w = L10_WEIGHT[league] ?? 0.5;
-  return (((1 - w) * srsPer100 + w * l10Per100) * poss) / 100;
+  const core = (1 - w) * srsPer100 + w * l10Per100;
+  return (withVenue(core, teamStats, league, venue) * poss) / 100;
+}
+
+// Blend in the in-season home (or road) net when this team has enough games
+// at that venue. `venue` = 'home' | 'away' | undefined (no venue factor).
+function withVenue(core, teamStats, league, venue) {
+  const vw = VENUE_WEIGHT[league] ?? 0;
+  if (!vw || !venue) return core;
+  const net = get(teamStats, venue === 'home' ? 'homeNet' : 'roadNet', null);
+  const n = get(teamStats, venue === 'home' ? 'venueHomeGames' : 'venueRoadGames', 0);
+  if (net == null || n < VENUE_MIN_GAMES) return core;
+  return (1 - vw) * core + vw * net;
 }
 
 // B2B / rest adjustment — empirically measured from 2 full NBA seasons
@@ -726,8 +769,8 @@ function restTotalMultiplier(game) {
 // Returns { favoredIsHome, favSRS, undSRS, hca, deltaStar, baseANG, rest }.
 function favoritedView(game, ctx) {
   const gamePoss = projectedPossessions(game, ctx);
-  const homeSRS = blendedSRS(stats(ctx, game.league, game.home.abbr), game.league, gamePoss);
-  const awaySRS = blendedSRS(stats(ctx, game.league, game.away.abbr), game.league, gamePoss);
+  const homeSRS = blendedSRS(stats(ctx, game.league, game.home.abbr), game.league, gamePoss, 'home');
+  const awaySRS = blendedSRS(stats(ctx, game.league, game.away.abbr), game.league, gamePoss, 'away');
 
   const hca = hcaDynamic(game, ctx);
 
