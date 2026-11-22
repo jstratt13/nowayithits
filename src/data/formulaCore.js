@@ -390,6 +390,14 @@ export const INJURY_V2 = {
   // UNVALIDATED (backtest only had last season's BPM): regress this season's
   // BPM toward last season's — this season reaches 50% weight at 20 games.
   PRIOR_GAMES:      20,
+  // Returning-player credit (11/22/26, Jordan: 75% — back players are rarely
+  // at full strength / full minutes). A rotation player who is playing but
+  // missed part of the games in the team's ratings gets back RETURN_CREDIT ×
+  // his value × the share of those games he missed — the mirror of the
+  // taper. Backtest (fit 2024-25 → test 2025-26+26-27): ×0.5 RMSE
+  // 14.674 → 14.649, ×1.0 → 14.645, ATS 50.7 → 51.0–51.7%; no proven ATS
+  // edge at 3+ pt edges.
+  RETURN_CREDIT:    0.75,
 };
 
 function regressBpm(cur, prior, gp) {
@@ -412,7 +420,7 @@ function availabilityShare(entry, avail) {
   return 0.5 * seasonShare + 0.5 * l10Share;
 }
 
-export function nbaInjuryValue(entry, avail) {
+export function nbaInjuryValue(entry, avail, opts = {}) {
   const zero = { value: 0, off: 0, def: 0, bpm: entry?.bpm ?? null, share: null, capped: false, belowMin: false };
   if (!entry) return zero;
   const mpg = entry.mpg ?? 0;
@@ -424,7 +432,7 @@ export function nbaInjuryValue(entry, avail) {
   const bpm  = regressBpm(entry.bpm,  pB, entry.g);
   const obpm = regressBpm(entry.obpm, pO, entry.g);
   const dbpm = regressBpm(entry.dbpm, pD, entry.g);
-  const share = availabilityShare(entry, avail);
+  const share = opts.share ?? availabilityShare(entry, avail);
   const k = INJURY_V2.SCALE * (mpg / 48) * share;
   const raw = k * Math.max(0, bpm - INJURY_V2.REPLACEMENT_BPM);
   const value = Math.min(INJURY_V2.PLAYER_CAP, raw);
@@ -463,6 +471,39 @@ function computeInjuryScoreV2(players, rosterByNormName, avail) {
       impact: v.value,            // pts per 100 poss if fully out
       contribution,               // × status weight
     });
+  }
+  // Returning players: on the roster, 18+ mpg, NOT on the injury list, but
+  // missing from part of the games the team's ratings are built on → credit
+  // back RETURN_CREDIT × their full value × the missed share. Lowers the
+  // team's injury score (can go below 0 = stronger than its ratings).
+  if (rosterByNormName && rosterByNormName.size) {
+    const listed = new Set(players.map((p) => normalizeName(p?.player)));
+    for (const entry of rosterByNormName.values()) {
+      if (!entry || (entry.mpg ?? 0) < INJURY_V2.MIN_MPG || listed.has(normalizeName(entry.name))) continue;
+      const share = availabilityShare(entry, avail);
+      const missed = 1 - share;
+      if (missed <= 0.001) continue;
+      const full = nbaInjuryValue(entry, avail, { share: 1 });
+      const credit = INJURY_V2.RETURN_CREDIT * missed;
+      if (full.value * credit < 0.005) continue;
+      score -= credit * full.value;
+      offScore -= credit * full.off;
+      defScore -= credit * full.def;
+      rows.push({
+        player: entry.name,
+        status: 'Returning',
+        statusWeight: -credit,
+        mpg: entry.mpg ?? null,
+        bpm: full.bpm,
+        bpmSeason: entry.bpm ?? null,
+        per: entry.per ?? null,
+        share,
+        capped: full.capped,
+        belowMin: false,
+        impact: full.value,               // full value (pts/100)
+        contribution: -credit * full.value, // negative = adds strength back
+      });
+    }
   }
   rows.sort((a, b) => b.contribution - a.contribution);
   return { score, offScore, defScore, rows, model: 'v2' };
