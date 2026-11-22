@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTrackerSyncTicker } from './hooks/useTrackerSync.js';
 import { useAuth } from './auth/AuthContext.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
+import { RefreshButton, PullToRefresh } from './components/AppRefresh.jsx';
 
 function todayLabel() {
   return new Date().toLocaleDateString('en-US', {
@@ -62,6 +63,7 @@ export default function App() {
           <div className="nav-spacer" />
           {isAuthed && (
             <div className="nav-auth">
+              <RefreshButton />
               <span className="nav-auth-who" title={user?.email || ''}>
                 {user?.isAdmin ? 'Admin' : (user?.email || '—')}
               </span>
@@ -77,6 +79,7 @@ export default function App() {
         </div>
       </header>
 
+      {isAuthed && <PullToRefresh />}
       {isAuthed && <InstallPrompt />}
 
       <main>
