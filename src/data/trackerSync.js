@@ -308,12 +308,36 @@ function pickVsLine(projMargin, homeLine, game) {
     ? { side: game.home.abbr, line: homeLine, edge: homeEdge }
     : { side: game.away.abbr, line: -homeLine, edge: -homeEdge };
 }
+// O/U equivalent: the model's FINAL projected total vs another total line.
+function ouVsLine(projTotal, total) {
+  if (projTotal == null || total == null) return null;
+  return { direction: projTotal > total ? 'OVER' : 'UNDER', line: total, edge: projTotal - total };
+}
+
+// Every field lineTimingFields can set — also used to backfill rows that
+// were added before a field existed (see reconcileTracker).
+export const LINE_TIMING_KEYS = [
+  'openHomeLine', 'firstHomeLine', 'firstLineAt', 'closeHomeLine',
+  'spreadPickOpen', 'spreadResultOpen', 'spreadPickFirst', 'spreadResultFirst',
+  'openTotal', 'firstTotal', 'closeTotal',
+  'ouPickOpen', 'ouResultOpen', 'ouPickFirst', 'ouResultFirst',
+];
+
 function lineTimingFields(game, snapshot) {
   const lines = snapshot?.lines;
   if (!lines) return {};
   const openSp  = pickVsLine(snapshot.projMargin, lines.open?.homeLine, game);
   const firstSp = lines.first?.sp || null;
+  const openOu  = ouVsLine(snapshot.projTotal, lines.open?.total);
+  const firstOu = lines.first?.ou || null;
   return {
+    openTotal:         lines.open?.total ?? null,
+    firstTotal:        lines.first?.total ?? null,
+    closeTotal:        lines.close?.total ?? null,
+    ouPickOpen:        openOu ? `${openOu.direction} ${openOu.line.toFixed(1)}` : '',
+    ouResultOpen:      gradeOU(openOu, game.away, game.home) || '',
+    ouPickFirst:       firstOu ? `${firstOu.direction} ${Number(firstOu.line).toFixed(1)}` : '',
+    ouResultFirst:     gradeOU(firstOu, game.away, game.home) || '',
     openHomeLine:      lines.open?.homeLine ?? null,
     firstHomeLine:     lines.first?.homeLine ?? null,
     firstLineAt:       lines.first?.at ?? null,
@@ -427,6 +451,14 @@ export async function reconcileTracker({ days = SYNC_WINDOW_DAYS, authFetch } = 
           //      Tracker stat-bar level).
           const existing = existingById.get(id);
           if (existing) {
+            // Line-timing grades added after this row was first stored
+            // (e.g. O/U open/first, 11/22/26): fill any that are missing.
+            for (const k of LINE_TIMING_KEYS) {
+              if ((existing[k] == null || existing[k] === '') && row[k] != null && row[k] !== '') {
+                existing[k] = row[k];
+                backfilled++;
+              }
+            }
             if (existing.seasonType == null && row.seasonType != null) {
               existing.seasonType = row.seasonType;
               backfilled++;
